@@ -18,8 +18,6 @@ type APIController struct {
 	BaseController
 	inboundController     *InboundController
 	serverController      *ServerController
-	nodeController        *NodeController
-	hostController        *HostController
 	settingController     *SettingController
 	xraySettingController *XraySettingController
 	userService           panel.UserService
@@ -87,7 +85,6 @@ var monitorScopeAllow = map[string]struct{}{
 	"/server/xrayObservatoryHistory/:tag/:bucket": {},
 	"/server/getXrayVersion":                      {},
 	"/server/getPanelUpdateInfo":                  {},
-	"/nodes/history/:id/:metric/:bucket":          {},
 }
 
 // nodeSyncScopeAllow is the node-sync route/method allowlist relative to
@@ -114,7 +111,6 @@ var nodeSyncScopeAllow = map[string]map[string]struct{}{
 	"/inbounds/pushClientTraffics": {http.MethodPost: {}},
 	"/server/clientIps":            {http.MethodGet: {}, http.MethodPost: {}},
 	"/clients/clientIpsByGuid":     {http.MethodPost: {}},
-	"/hosts/list":                  {http.MethodGet: {}},
 }
 
 // enforceTokenScope applies explicit allowlists to monitor and node-sync tokens.
@@ -185,19 +181,12 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 
 	clients := api.Group("/clients")
 	NewClientController(clients)
-	NewGroupController(clients)
 
 	// Server API
 	server := api.Group("/server")
 	a.serverController = NewServerController(server)
 
-	// Nodes API — multi-panel management
-	nodes := api.Group("/nodes")
-	a.nodeController = NewNodeController(nodes)
 
-	// Hosts API — per-inbound override endpoints for subscription links
-	hosts := api.Group("/hosts")
-	a.hostController = NewHostController(hosts)
 
 	// Settings + Xray config management live under the API surface too, so the
 	// same API token drives them. Paths are /panel/api/setting/* and
