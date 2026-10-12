@@ -1,0 +1,17 @@
+[Unit]
+Description=Miniray independent Xray proxy core
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/usr/local/miniray/bin/config.json
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/miniray
+ExecStart=/usr/local/miniray/bin/xray -c /usr/local/miniray/bin/config.json
+Restart=on-failure
+RestartSec=3s
+LimitNOFILE=1048576
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

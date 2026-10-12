@@ -135,6 +135,7 @@ type process struct {
 	mu   sync.RWMutex
 	cmd  *exec.Cmd
 	done chan struct{}
+	managedCore bool
 
 	version string
 	apiPort int
@@ -633,6 +634,10 @@ func (p *process) Start() (err error) {
 	if p.configPath != "" {
 		configPath = p.configPath
 	}
+	if p.configPath==""&&independentCoreEnabled(){
+		existing,_:=os.ReadFile(configPath)
+		return p.startIndependentCore(configPath,existing,data)
+	}
 	err = writeFileAtomic(configPath, data, 0o600)
 	if err != nil {
 		return common.NewErrorf("Failed to write configuration file: %v", err)
@@ -761,6 +766,10 @@ func (p *process) Stop() error {
 	}
 	p.intentionalStop.Store(true)
 
+	if p.managedCore{
+		if err:=stopIndependentCore();err!=nil{return err}
+		return p.waitForExit(xrayForceStopTimeout+xrayGracefulStopTimeout)
+	}
 	// Snapshot cmd once, then run the blocking Signal/Kill/Wait on the local copy
 	// without holding the lock.
 	p.mu.RLock()
