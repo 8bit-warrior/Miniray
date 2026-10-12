@@ -18,6 +18,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { catTabLabel } from './catTabLabel';
 import { sanitizePath } from './uriPath';
 import SecretInput from './SecretInput';
+import PanelAutoOfflineTab from './PanelAutoOfflineTab';
 
 interface ApiMsg<T = unknown> {
   success?: boolean;
@@ -27,9 +28,10 @@ interface ApiMsg<T = unknown> {
 interface GeneralTabProps {
   allSetting: AllSetting;
   updateSetting: (patch: Partial<AllSetting>) => void;
+  onOfflineValidationChange: (valid: boolean) => void;
 }
 
-export default function GeneralTab({ allSetting, updateSetting }: GeneralTabProps) {
+export default function GeneralTab({ allSetting, updateSetting, onOfflineValidationChange }: GeneralTabProps) {
   const { t } = useTranslation();
   const { isMobile } = useMediaQuery();
 
@@ -178,6 +180,10 @@ export default function GeneralTab({ allSetting, updateSetting }: GeneralTabProp
     <Tabs
       defaultActiveKey="1"
       items={[
+        {key:'panel-auto-offline',label:'面板自动离线',children:(
+          <PanelAutoOfflineTab allSetting={allSetting} updateSetting={updateSetting}
+            onValidityChange={onOfflineValidationChange}/>
+        )},
         {
           key: '1',
           label: catTabLabel(<SettingOutlined />, t('pages.settings.panelSettings'), isMobile),

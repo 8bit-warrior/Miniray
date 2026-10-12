@@ -9,6 +9,9 @@ export type SubProfileMode = z.infer<typeof SubProfileModeSchema>;
 
 export const AllSettingSchema = z
   .object({
+    panelOfflineEnabled: z.boolean().optional(),
+    panelOfflineValue: z.number().int().min(1).max(525600).optional(),
+    panelOfflineUnit: z.enum(['minute', 'hour', 'day']).optional(),
     webListen: z.string().optional(),
     webDomain: z.string().optional(),
     webPort: port.optional(),

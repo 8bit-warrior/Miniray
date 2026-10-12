@@ -106,6 +106,18 @@ export default function IndexPage() {
     await refresh();
   }, [refresh]);
 
+  const [offlineModal, offlineModalHolder] = Modal.useModal();
+  const panelOffline = useCallback(()=>{
+    offlineModal.confirm({
+      title:'确认让面板离线？',
+      content:'面板网页与订阅服务将停止监听端口，代理内核继续运行。使用 miniray start-panel 重新开启。',
+      okText:'确认离线',okButtonProps:{danger:true},cancelText:'取消',
+      onOk:async()=>{
+        const result=await HttpUtil.post('/panel/api/setting/offlinePanel');
+        if(!result?.success) throw new Error('面板离线操作失败');
+      },
+    })
+  },[offlineModal]);
   const restartXray = useCallback(async () => {
     await HttpUtil.post('/panel/api/server/restartXrayService');
     await refresh();
@@ -167,6 +179,7 @@ export default function IndexPage() {
   return (
     <ConfigProvider theme={antdThemeConfig}>
       {messageContextHolder}
+      {offlineModalHolder}
       <Layout className={pageClass}>
         <AppSidebar />
 
@@ -202,6 +215,7 @@ export default function IndexPage() {
                     updateAvailable={panelUpdateInfo.updateAvailable}
                     onStopXray={stopXray}
                     onRestartXray={restartXray}
+                    onPanelOffline={panelOffline}
                     onOpenLogs={() => setLogsOpen(true)}
                     onOpenXrayLogs={() => setXrayLogsOpen(true)}
                     onOpenAmneziaWGLogs={() => setAmneziawgLogsOpen(true)}

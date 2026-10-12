@@ -2,6 +2,9 @@ import { ObjectUtil } from '@/utils';
 import type { SubProfileMode } from '@/schemas/setting';
 
 export class AllSetting {
+  panelOfflineEnabled = false;
+  panelOfflineValue = 60;
+  panelOfflineUnit: 'minute' | 'hour' | 'day' = 'minute';
   webListen = '';
   webDomain = '';
   webPort = 2053;

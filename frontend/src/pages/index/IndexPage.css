@@ -485,3 +485,5 @@
 .index-page .ip-hidden {
   filter: blur(6px);
 }
+
+.miniray-offline-button{box-shadow:0 0 0 1px rgba(230,50,50,.7),0 0 10px rgba(230,50,50,.45);border:1px solid rgba(230,50,50,.8)!important}
