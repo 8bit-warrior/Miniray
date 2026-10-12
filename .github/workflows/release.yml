@@ -1,0 +1,125 @@
+name: Build Miniray packages
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-24.04
+    outputs:
+      passed: ${{ steps.build.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Frontend dependencies
+        run: npm ci
+        working-directory: frontend
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: frontend
+      - name: Build static web assets
+        id: build
+        run: npm run build
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: internal/web/dist/
+          retention-days: 5
+  packages:
+    needs: [frontend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: linux, arch: amd64, artifact_ext: tar.gz, xray_asset: Xray-linux-64.zip, zig_target: x86_64-linux-musl }
+          - { os: linux, arch: arm64, artifact_ext: tar.gz, xray_asset: Xray-linux-arm64-v8a.zip, zig_target: aarch64-linux-musl }
+          - { os: windows, arch: amd64, artifact_ext: zip, xray_asset: Xray-windows-64.zip, zig_target: x86_64-windows-gnu }
+          - { os: windows, arch: arm64, artifact_ext: zip, xray_asset: Xray-windows-arm64-v8a.zip, zig_target: aarch64-windows-gnu }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.14.1
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: internal/web/dist/
+      - name: Build panel binaries and stage archives
+        env:
+          TARGET_OS: ${{ matrix.os }}
+          TARGET_ARCH: ${{ matrix.arch }}
+          ZIG_TARGET: ${{ matrix.zig_target }}
+          XRAY_ASSET: ${{ matrix.xray_asset }}
+          ARTIFACT_EXT: ${{ matrix.artifact_ext }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export GOOS="$TARGET_OS" GOARCH="$TARGET_ARCH" CGO_ENABLED=1
+          export CC="zig cc -target $ZIG_TARGET"
+          mkdir -p staging/miniray/bin
+          SUFFIX=''; if [ "$GOOS" = windows ]; then SUFFIX='.exe'; fi
+          go build -trimpath -ldflags '-w -s' -o "staging/miniray/miniray${SUFFIX}" .
+          curl -fL --retry 4 --connect-timeout 15 -o /tmp/miniray-xray.zip             "https://github.com/XTLS/Xray-core/releases/download/v26.6.27/${XRAY_ASSET}"
+          mkdir -p /tmp/miniray-xray
+          unzip -qo /tmp/miniray-xray.zip -d /tmp/miniray-xray
+          XRAY_BINARY=/tmp/miniray-xray/xray
+          if [ "$GOOS" = windows ]; then XRAY_BINARY=/tmp/miniray-xray/xray.exe; fi
+          test -s "$XRAY_BINARY"
+          cp "$XRAY_BINARY" "staging/miniray/bin/xray-${GOOS}-${GOARCH}${SUFFIX}"
+          for data in geoip.dat geosite.dat; do
+            test -s "/tmp/miniray-xray/$data"
+            cp "/tmp/miniray-xray/$data" staging/miniray/bin/
+          done
+          cp README.md LICENSE staging/miniray/
+          if [ "$GOOS" = linux ]; then
+            cp miniray.sh install.sh update.sh miniray-core.service miniray.service.* staging/miniray/
+            chmod +x staging/miniray/miniray staging/miniray/*.sh staging/miniray/bin/xray-${GOOS}-${GOARCH}
+            (cd staging && tar -czf "../miniray-${GOOS}-${GOARCH}.tar.gz" miniray)
+          else
+            (cd staging && zip -qr "../miniray-${GOOS}-${GOARCH}.zip" miniray)
+          fi
+          ls -lh miniray-*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: miniray-${{ matrix.os }}-${{ matrix.arch }}
+          path: miniray-${{ matrix.os }}-${{ matrix.arch }}.${{ matrix.artifact_ext }}
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [packages]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: miniray-*
+          path: dist
+          merge-multiple: true
+      - name: Assert four archives and write SHA256SUMS
+        run: |
+          cd dist
+          for f in miniray-linux-amd64.tar.gz miniray-linux-arm64.tar.gz miniray-windows-amd64.zip miniray-windows-arm64.zip; do
+            test -s "$f"
+          done
+          sha256sum miniray-* > SHA256SUMS
+      - name: Create release only after all builds succeed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*             --title "Miniray $GITHUB_REF_NAME"             --notes "Miniray with pinned Xray-core v26.6.27. See included LICENSE. Test on non-production hosts before adoption."

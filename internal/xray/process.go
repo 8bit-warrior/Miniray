@@ -28,7 +28,9 @@ func GetBinaryName() string {
 	if arch == "arm" {
 		arch = "arm32"
 	}
-	return fmt.Sprintf("xray-%s-%s", runtime.GOOS, arch)
+	name:=fmt.Sprintf("xray-%s-%s", runtime.GOOS, arch)
+	if runtime.GOOS=="windows"{name+=".exe"}
+	return name
 }
 
 // GetBinaryPath returns the full path to the Xray binary executable.
@@ -53,17 +55,17 @@ func GetGeoipPath() string {
 
 // GetIPLimitLogPath returns the path to the IP limit log file.
 func GetIPLimitLogPath() string {
-	return config.GetLogFolder() + "/3xipl.log"
+	return config.GetLogFolder() + "/miniray-ipl.log"
 }
 
 // GetIPLimitBannedLogPath returns the path to the banned IP log file.
 func GetIPLimitBannedLogPath() string {
-	return config.GetLogFolder() + "/3xipl-banned.log"
+	return config.GetLogFolder() + "/miniray-ipl-banned.log"
 }
 
 // GetIPLimitBannedPrevLogPath returns the path to the previous banned IP log file.
 func GetIPLimitBannedPrevLogPath() string {
-	return config.GetLogFolder() + "/3xipl-banned.prev.log"
+	return config.GetLogFolder() + "/miniray-ipl-banned.prev.log"
 }
 
 func getLogPath(key string) (string, error) {
