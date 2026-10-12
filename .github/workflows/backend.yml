@@ -1,0 +1,30 @@
+name: Go backend checks
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  go:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Create compile-only frontend embed fixtures
+        run: |
+          mkdir -p internal/web/dist/assets
+          printf '<html><body>Miniray test fixture</body></html>' > internal/web/dist/index.html
+          printf '/* test fixture */' > internal/web/dist/assets/fixture.css
+      - name: Check Go formatting
+        run: |
+          # Formatting is checked separately from compilation.
+          test -z "$(gofmt -l internal/paneloffline internal/xray/supervisor_linux.go internal/xray/supervisor_windows.go internal/xray/supervisor_other.go)"
+      - name: Compile and test Go backend
+        env:
+          CGO_ENABLED: '1'
+        run: go test ./...
