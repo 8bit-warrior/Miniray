@@ -28,7 +28,7 @@ interface ApiMsg<T = unknown> {
 interface GeneralTabProps {
   allSetting: AllSetting;
   updateSetting: (patch: Partial<AllSetting>) => void;
-  onOfflineValidationChange: (valid: boolean) => void;
+  onOfflineValidationChange?: (valid: boolean) => void;
 }
 
 export default function GeneralTab({ allSetting, updateSetting, onOfflineValidationChange }: GeneralTabProps) {

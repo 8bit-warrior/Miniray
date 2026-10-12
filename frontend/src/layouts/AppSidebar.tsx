@@ -190,7 +190,7 @@ export default function AppSidebar() {
   const showSubFormats = !!(allSetting.subJsonEnable || allSetting.subClashEnable);
   const showSubBalancers = !!allSetting.subJsonEnable;
 
-  const [hovered, setHovered] = useState(() => hoveredAcrossRemounts);
+  const [, setHovered] = useState(() => hoveredAcrossRemounts);
   const [pinned, setPinned] = useState(readSidebarPinned);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const railCollapsed = false;

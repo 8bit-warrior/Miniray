@@ -7,13 +7,13 @@ type Unit = 'minute' | 'hour' | 'day';
 const MAX:Record<Unit,number>={minute:525600,hour:8760,day:365};
 export default function PanelAutoOfflineTab({allSetting,updateSetting,onValidityChange}:{
  allSetting:AllSetting;updateSetting:(v:Partial<AllSetting>)=>void;
- onValidityChange:(valid:boolean)=>void;
+ onValidityChange?:(valid:boolean)=>void;
 }){
  const [text,setText]=useState(()=>String(allSetting.panelOfflineValue));
  useEffect(()=>setText(String(allSetting.panelOfflineValue)),[allSetting.panelOfflineValue]);
  const valid=useMemo(()=>/^[1-9]\d*$/.test(text)&&Number.isSafeInteger(Number(text))&&Number(text)<=MAX[allSetting.panelOfflineUnit],
   [text,allSetting.panelOfflineUnit]);
- useEffect(()=>onValidityChange(!allSetting.panelOfflineEnabled||valid),
+ useEffect(()=>onValidityChange?.(!allSetting.panelOfflineEnabled||valid),
   [allSetting.panelOfflineEnabled,valid,onValidityChange]);
  return <>
   <SettingListItem title="自动离线" description="每次面板启动后开始计时，到期只停止面板进程并保留代理内核。">
