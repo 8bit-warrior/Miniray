@@ -47,7 +47,7 @@ import './AppSidebar.css';
 // The palette listens for Ctrl as well as Cmd, so the chip must not show a
 // Mac glyph to the Linux and Windows operators who are most of this panel's.
 const SHORTCUT_MODIFIER = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? '⌘' : 'Ctrl';
-const DOCS_URL = 'https://docs.sanaei.dev/';
+const DOCS_URL = 'https://github.com/8bit-warrior/Miniray';
 const REPO_URL = 'https://github.com/8bit-warrior/Miniray';
 const LOGOUT_KEY = '__logout__';
 const RAIL_WIDTH = 72;
@@ -359,7 +359,7 @@ export default function AppSidebar() {
       >
         <div className="sider-brand">
           <div className="brand-block">
-            <span className="brand-text">{railCollapsed ? '3X' : 'miniray'}</span>
+            <span className="brand-text">{'miniray'}</span>
           </div>
           {!railCollapsed && (
             <div className="brand-actions">
