@@ -2913,7 +2913,7 @@ func InitDB(dbPath string) error {
 			return err
 		}
 	}
-	sqlDB, err := db.DB()
+	sqlDB, err = db.DB()
 	if err != nil {
 		return err
 	}
