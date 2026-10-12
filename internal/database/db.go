@@ -28,7 +28,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/xray"
 
 	"github.com/mattn/go-sqlite3"
-	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -39,16 +38,11 @@ var db *gorm.DB
 var backupSQLiteTimeout = 2 * time.Minute
 
 const (
-	DialectSQLite   = "sqlite"
-	DialectPostgres = "postgres"
+	DialectSQLite = "sqlite"
 )
 
-func IsPostgres() bool {
-	if db == nil {
-		return config.GetDBKind() == "postgres"
-	}
-	return db.Name() == "postgres"
-}
+// IsPostgres is a temporary compatibility shim and is always false.
+func IsPostgres()bool{return false}
 
 func Dialect() string {
 	if db == nil {
@@ -127,9 +121,6 @@ func initModels() error {
 	}
 	models := allModels()
 	for _, mdl := range models {
-		if IsPostgres() && postgresModelSettled(mdl) {
-			continue
-		}
 		if err := db.AutoMigrate(mdl); err != nil {
 			if isIgnorableDuplicateColumnErr(db, err, mdl) {
 				log.Printf("Ignoring duplicate column during auto migration for %T: %v", mdl, err)
@@ -199,36 +190,9 @@ func initModels() error {
 	if err := migrateClientEmailLowerIndex(); err != nil {
 		return err
 	}
-	if IsPostgres() {
-		if err := resyncPostgresSequences(db, models); err != nil {
-			log.Printf("Error resyncing postgres sequences: %v", err)
-			return err
-		}
-	}
 	return nil
 }
 
-func postgresModelSettled(mdl any) bool {
-	migrator := db.Migrator()
-	if !migrator.HasTable(mdl) {
-		return false
-	}
-	stmt := &gorm.Statement{DB: db}
-	if err := stmt.Parse(mdl); err != nil || stmt.Schema == nil {
-		return false
-	}
-	for _, dbName := range stmt.Schema.DBNames {
-		if !migrator.HasColumn(mdl, dbName) {
-			return false
-		}
-	}
-	for _, idx := range stmt.Schema.ParseIndexes() {
-		if !migrator.HasIndex(mdl, idx.Name) {
-			return false
-		}
-	}
-	return true
-}
 
 func dropLegacyForeignKeys() error {
 	if !IsPostgres() {
@@ -2913,68 +2877,48 @@ func InitDB(dbPath string) error {
 	}
 
 	var err error
-	switch config.GetDBKind() {
-	case "postgres":
-		dsn := config.GetDBDSN()
-		if dsn == "" {
-			return errors.New("MINIRAY_DB_TYPE=postgres but MINIRAY_DB_DSN is empty")
-		}
-		db, err = openPostgresWithRetry(dsn, c)
-		if err != nil {
-			return err
-		}
-	default:
-		dir := path.Dir(dbPath)
-		if err = os.MkdirAll(dir, 0o700); err != nil {
-			return err
-		}
-		if err = cleanupSQLiteBackupDirs(filepath.Dir(dbPath)); err != nil {
-			log.Printf("clean SQLite backup directories: %v", err)
-		}
-
-		sync := sqliteSynchronous()
-		journal := sqliteJournalMode()
-		dsn := dbPath + "?_journal_mode=" + journal + "&_busy_timeout=10000&_synchronous=" + sync + "&_txlock=immediate"
-		db, err = gorm.Open(sqlite.Open(dsn), c)
-		if err != nil {
-			return err
-		}
-		if err := restrictSQLiteFilePerms(dbPath); err != nil {
-			log.Printf("restrict SQLite file permissions: %v", err)
-		}
-		sqlDB, err := db.DB()
-		if err != nil {
-			return err
-		}
-
-		pragmas := []string{
-			"PRAGMA journal_mode=" + journal,
-			"PRAGMA busy_timeout=10000",
-			"PRAGMA synchronous=" + sync,
-			fmt.Sprintf("PRAGMA cache_size=-%d", envInt("MINIRAY_DB_CACHE_MB", 32)*1024),
-			fmt.Sprintf("PRAGMA mmap_size=%d", int64(envInt("MINIRAY_DB_MMAP_MB", 256))*1024*1024),
-			"PRAGMA temp_store=MEMORY",
-		}
-		for _, p := range pragmas {
-			if _, err := sqlDB.ExecContext(context.Background(), p); err != nil {
-				return err
-			}
-		}
+	dir := path.Dir(dbPath)
+	if err = os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	if err = cleanupSQLiteBackupDirs(filepath.Dir(dbPath)); err != nil {
+		log.Printf("clean SQLite backup directories: %v", err)
 	}
 
+	sync := sqliteSynchronous()
+	journal := sqliteJournalMode()
+	dsn := dbPath + "?_journal_mode=" + journal + "&_busy_timeout=10000&_synchronous=" + sync + "&_txlock=immediate"
+	db, err = gorm.Open(sqlite.Open(dsn), c)
+	if err != nil {
+		return err
+	}
+	if err := restrictSQLiteFilePerms(dbPath); err != nil {
+		log.Printf("restrict SQLite file permissions: %v", err)
+	}
 	sqlDB, err := db.DB()
 	if err != nil {
 		return err
 	}
-	var maxOpen, maxIdle int
-	switch config.GetDBKind() {
-	case "postgres":
-		maxOpen = envInt("MINIRAY_DB_MAX_OPEN_CONNS", 25)
-		maxIdle = envInt("MINIRAY_DB_MAX_IDLE_CONNS", 25)
-	default:
-		maxOpen = envInt("MINIRAY_DB_MAX_OPEN_CONNS", 8)
-		maxIdle = envInt("MINIRAY_DB_MAX_IDLE_CONNS", 4)
+
+	pragmas := []string{
+		"PRAGMA journal_mode=" + journal,
+		"PRAGMA busy_timeout=10000",
+		"PRAGMA synchronous=" + sync,
+		fmt.Sprintf("PRAGMA cache_size=-%d", envInt("MINIRAY_DB_CACHE_MB", 32)*1024),
+		fmt.Sprintf("PRAGMA mmap_size=%d", int64(envInt("MINIRAY_DB_MMAP_MB", 256))*1024*1024),
+		"PRAGMA temp_store=MEMORY",
 	}
+	for _, p := range pragmas {
+		if _, err := sqlDB.ExecContext(context.Background(), p); err != nil {
+			return err
+		}
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	maxOpen:=envInt("MINIRAY_DB_MAX_OPEN_CONNS",8)
+	maxIdle:=envInt("MINIRAY_DB_MAX_IDLE_CONNS",4)
 	sqlDB.SetMaxOpenConns(maxOpen)
 	sqlDB.SetMaxIdleConns(maxIdle)
 	sqlDB.SetConnMaxLifetime(time.Hour)
@@ -3027,25 +2971,6 @@ func migrateApiTokenScopeAndExpiry() error {
 // briefly) does not immediately kill the process and trip systemd's
 // restart loop. Every failed attempt logs the real driver error, which
 // used to be buried behind a generic startup failure.
-func openPostgresWithRetry(dsn string, c *gorm.Config) (*gorm.DB, error) {
-	delays := []time.Duration{0, 2 * time.Second, 5 * time.Second, 10 * time.Second, 20 * time.Second, 30 * time.Second}
-	var lastErr error
-	for i, delay := range delays {
-		if delay > 0 {
-			time.Sleep(delay)
-		}
-		conn, err := gorm.Open(postgres.Open(dsn), c)
-		if err == nil {
-			if i > 0 {
-				log.Printf("postgres connection established on attempt %d/%d", i+1, len(delays))
-			}
-			return conn, nil
-		}
-		lastErr = err
-		log.Printf("postgres connection attempt %d/%d failed: %v", i+1, len(delays), err)
-	}
-	return nil, fmt.Errorf("postgres unreachable after %d attempts: %w", len(delays), lastErr)
-}
 
 // The store holds client secrets, so it and its WAL/SHM side files stay
 // owner-only. Best effort: a store the panel cannot chmod still opens.

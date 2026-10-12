@@ -177,16 +177,8 @@ func GetUpdateStatusFilePath() string {
 	return filepath.Join(GetDBFolderPath(), "update-status.json")
 }
 
-// GetDBKind returns the configured database backend: "sqlite" (default) or "postgres".
-func GetDBKind() string {
-	v := strings.ToLower(strings.TrimSpace(os.Getenv("MINIRAY_DB_TYPE")))
-	switch v {
-	case "postgres", "postgresql", "pg":
-		return "postgres"
-	default:
-		return "sqlite"
-	}
-}
+// GetDBKind only supports SQLite.
+func GetDBKind()string{return "sqlite"}
 
 // GetDBDSN returns the PostgreSQL DSN from MINIRAY_DB_DSN. Empty for sqlite.
 func GetDBDSN() string {
