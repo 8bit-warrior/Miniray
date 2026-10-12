@@ -1,5 +1,0 @@
-{
-  "title": "Reference",
-  "icon": "BookBookmark",
-  "pages": ["env-vars", "database", "ports-firewall", "api"]
-}
