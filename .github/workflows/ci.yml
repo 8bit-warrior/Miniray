@@ -30,6 +30,9 @@ jobs:
       - name: Frontend type check
         working-directory: frontend
         run: npm run typecheck
+      - name: Install browser test dependencies
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
       - name: Frontend unit tests
         working-directory: frontend
         run: npm test -- --run
