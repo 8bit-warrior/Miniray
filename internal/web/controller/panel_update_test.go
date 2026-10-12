@@ -18,7 +18,7 @@ import (
 // newPanelUpdateTestEngine registers only updatePanel/getUpdateStatus directly
 // on the controller's zero value, bypassing NewServerController's cron/metrics
 // setup (unrelated to these two handlers, and unnecessary weight for a unit
-// test). Callers must set up a DB first (newHostTestDB(t)) since StartUpdate
+// test). Callers must set up a DB first (newControllerTestDB(t)) since StartUpdate
 // reads the dev-channel setting before doing anything else.
 func newPanelUpdateTestEngine() *gin.Engine {
 	a := &ServerController{}
@@ -28,7 +28,7 @@ func newPanelUpdateTestEngine() *gin.Engine {
 	return engine
 }
 
-func doPanelUpdateReq(t *testing.T, engine *gin.Engine, method, path string) hostEnvelope {
+func doPanelUpdateReq(t *testing.T, engine *gin.Engine, method, path string) controllerEnvelope {
 	t.Helper()
 	req := httptest.NewRequest(method, path, nil)
 	w := httptest.NewRecorder()
@@ -36,7 +36,7 @@ func doPanelUpdateReq(t *testing.T, engine *gin.Engine, method, path string) hos
 	if w.Code != http.StatusOK {
 		t.Fatalf("%s %s: status %d, body=%s", method, path, w.Code, w.Body.String())
 	}
-	var env hostEnvelope
+	var env controllerEnvelope
 	if err := json.Unmarshal(w.Body.Bytes(), &env); err != nil {
 		t.Fatalf("%s %s: decode envelope: %v body=%s", method, path, err, w.Body.String())
 	}
@@ -47,7 +47,7 @@ func doPanelUpdateReq(t *testing.T, engine *gin.Engine, method, path string) hos
 // with no prior update having run: it must report "pending" (not an error),
 // since a missing status file is an expected, ordinary state, not a failure.
 func TestGetUpdateStatus_NoStatusFileYet(t *testing.T) {
-	newHostTestDB(t)
+	newControllerTestDB(t)
 	engine := newPanelUpdateTestEngine()
 
 	env := doPanelUpdateReq(t, engine, http.MethodGet, "/panel/api/server/getUpdateStatus")
@@ -75,7 +75,7 @@ func TestGetUpdateStatus_NoStatusFileYet(t *testing.T) {
 // value is actually a JSON string; a bare number there would fail to decode,
 // so this test doubles as the wire-format check.
 func TestGetUpdateStatus_RunIdIsAlwaysAString(t *testing.T) {
-	newHostTestDB(t)
+	newControllerTestDB(t)
 	engine := newPanelUpdateTestEngine()
 
 	statusPath := config.GetUpdateStatusFilePath()
@@ -110,7 +110,7 @@ func TestUpdatePanel_UnsupportedPlatformReturnsNoRunId(t *testing.T) {
 	if runtime.GOOS == "linux" {
 		t.Skip("this test only exercises the non-Linux guard path; on Linux, updatePanel would attempt a real download/exec")
 	}
-	newHostTestDB(t)
+	newControllerTestDB(t)
 	engine := newPanelUpdateTestEngine()
 
 	env := doPanelUpdateReq(t, engine, http.MethodPost, "/panel/api/server/updatePanel")
@@ -128,7 +128,7 @@ func TestUpdatePanel_UnsupportedPlatformReturnsNoRunId(t *testing.T) {
 // StartUpdateChannel (and therefore any real exec/network call) is ever
 // reached, on Linux or otherwise.
 func TestUpdatePanel_InvalidDevValueRejectedBeforeLaunch(t *testing.T) {
-	newHostTestDB(t)
+	newControllerTestDB(t)
 	engine := newPanelUpdateTestEngine()
 
 	form := url.Values{"dev": {"notabool"}}
@@ -139,7 +139,7 @@ func TestUpdatePanel_InvalidDevValueRejectedBeforeLaunch(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status %d, body=%s", w.Code, w.Body.String())
 	}
-	var env hostEnvelope
+	var env controllerEnvelope
 	if err := json.Unmarshal(w.Body.Bytes(), &env); err != nil {
 		t.Fatalf("decode envelope: %v body=%s", err, w.Body.String())
 	}

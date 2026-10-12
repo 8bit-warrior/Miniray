@@ -37,7 +37,7 @@ func TestImportDBSchedulesPanelRestart(t *testing.T) {
 		t.Fatalf("read upload: %v", err)
 	}
 
-	newHostTestDB(t)
+	newControllerTestDB(t)
 	binDir := t.TempDir()
 	t.Setenv("MINIRAY_BIN_FOLDER", binDir)
 	t.Setenv("MINIRAY_LOG_FOLDER", t.TempDir())
@@ -75,7 +75,7 @@ func TestImportDBSchedulesPanelRestart(t *testing.T) {
 	w := httptest.NewRecorder()
 	engine.ServeHTTP(w, req)
 
-	var env hostEnvelope
+	var env controllerEnvelope
 	if err := json.Unmarshal(w.Body.Bytes(), &env); err != nil {
 		t.Fatalf("decode envelope: %v body=%s", err, w.Body.String())
 	}
