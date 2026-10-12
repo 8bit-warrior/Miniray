@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run gen:api && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "lint": "oxlint src tools",
     "lint:fix": "oxlint --fix src tools",
