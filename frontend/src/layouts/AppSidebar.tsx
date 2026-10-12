@@ -18,7 +18,6 @@ import {
   ExportOutlined,
   GithubOutlined,
   GlobalOutlined,
-  HeartOutlined,
   ImportOutlined,
   LogoutOutlined,
   MailOutlined,
