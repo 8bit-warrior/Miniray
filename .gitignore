@@ -1,0 +1,45 @@
+# Ignore editor and IDE settings
+.idea/
+.vscode/
+.cursor/
+.specify/
+.claude/
+.cache/
+.sync*
+
+# Ignore log files
+*.log
+
+# Ignore temporary files
+tmp/
+*.tar.gz
+
+# Ignore build and distribution directories
+backup/
+bin/
+miniray/
+dist/
+release/
+node_modules/
+
+# Ignore compiled binaries
+main
+miniray
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db
+
+# Ignore Go build files
+*.exe
+miniray.db
+miniray.db-shm
+miniray.db-wal
+system_metrics.gob
+*.dump
+
+# Ignore Docker specific files
+docker-compose.override.yml
+
+# Ignore .env (Environment Variables) file
+.env
