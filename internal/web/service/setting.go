@@ -54,6 +54,9 @@ const (
 
 var defaultValueMap = map[string]string{
 	"xrayTemplateConfig": xrayTemplateConfig,
+	"panelOfflineEnabled": "false",
+	"panelOfflineValue": "60",
+	"panelOfflineUnit": "minute",
 	"webListen":          "",
 	"webDomain":          "",
 	"webPort":            "2053",

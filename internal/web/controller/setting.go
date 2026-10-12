@@ -3,10 +3,13 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/8bit-warrior/Miniray/internal/web/global"
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/util/crypto"
 	"github.com/8bit-warrior/Miniray/internal/web/entity"
@@ -73,6 +76,7 @@ func (a *SettingController) initRouter(g *gin.RouterGroup) {
 	g.POST("/validateRegex", a.validateRegex)
 	g.POST("/updateUser", a.updateUser)
 	g.POST("/restartPanel", a.restartPanel)
+	g.POST("/offlinePanel", a.offlinePanel)
 	g.GET("/getDefaultJsonConfig", a.getDefaultXrayConfig)
 	g.GET("/apiTokens", a.listApiTokens)
 	g.POST("/apiTokens/create", a.createApiToken)
@@ -391,4 +395,14 @@ func (a *SettingController) testDiscord(c *gin.Context) {
 		return
 	}
 	jsonMsg(c, I18nWeb(c, "pages.settings.discordTestSuccess"), nil)
+}
+
+// offlinePanel is an authenticated settings API endpoint. The HTTP response is
+// sent before the process closes its listener; an independent core is required.
+func (a *SettingController) offlinePanel(c *gin.Context){
+ if runtime.GOOS=="linux"&&os.Getenv("MINIRAY_SEPARATE_CORE")!="1"{
+  pureJsonMsg(c,http.StatusServiceUnavailable,false,"independent core service is required");return
+ }
+ pureJsonMsg(c,http.StatusOK,true,"panel will go offline")
+ go func(){time.Sleep(500*time.Millisecond);global.TriggerPanelOffline()}()
 }

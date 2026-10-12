@@ -15,6 +15,7 @@ var (
 
 	restartHookMu sync.RWMutex
 	restartHook   func()
+	panelOfflineHook func()
 )
 
 // WebServer interface defines methods for accessing the web server instance.
@@ -69,3 +70,8 @@ func TriggerRestart() bool {
 	fn()
 	return true
 }
+
+// SetPanelOfflineHook registers an internal panel-only stop request.
+func SetPanelOfflineHook(fn func()){restartHookMu.Lock();defer restartHookMu.Unlock();panelOfflineHook=fn}
+// TriggerPanelOffline queues a panel-only shutdown on the owning main loop.
+func TriggerPanelOffline()bool{restartHookMu.RLock();fn:=panelOfflineHook;restartHookMu.RUnlock();if fn==nil{return false};fn();return true}

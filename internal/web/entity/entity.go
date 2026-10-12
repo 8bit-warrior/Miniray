@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/8bit-warrior/Miniray/internal/paneloffline"
 	"github.com/8bit-warrior/Miniray/internal/util/common"
 )
 
@@ -19,6 +20,9 @@ type Msg struct {
 }
 
 type AllSetting struct {
+	PanelOfflineEnabled bool `json:"panelOfflineEnabled" form:"panelOfflineEnabled"`
+	PanelOfflineValue int `json:"panelOfflineValue" form:"panelOfflineValue" validate:"gte=1,lte=525600"`
+	PanelOfflineUnit string `json:"panelOfflineUnit" form:"panelOfflineUnit" validate:"oneof=minute hour day"`
 	WebListen             string `json:"webListen" form:"webListen"`
 	WebDomain             string `json:"webDomain" form:"webDomain"`
 	WebPort               int    `json:"webPort" form:"webPort" validate:"gte=1,lte=65535"`
@@ -271,6 +275,7 @@ func checkIPOrCIDRList(list, message string) error {
 }
 
 func (s *AllSetting) CheckValid() error {
+	if _,err:=paneloffline.Duration(s.PanelOfflineEnabled,s.PanelOfflineValue,s.PanelOfflineUnit);err!=nil{return err}
 	if s.WebListen != "" {
 		ip := net.ParseIP(s.WebListen)
 		if ip == nil {

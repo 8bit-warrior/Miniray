@@ -12,10 +12,13 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"runtime"
+	"time"
 	"syscall"
 	_ "unsafe"
 
 	"github.com/8bit-warrior/Miniray/internal/config"
+	"github.com/8bit-warrior/Miniray/internal/paneloffline"
 	"github.com/8bit-warrior/Miniray/internal/crypto/nodetoken"
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/logger"
@@ -71,6 +74,11 @@ func initNodeTokenCrypto() error {
 }
 
 // runWebServer initializes and starts the web server for the miniray panel.
+// offlineSignal is only sent by the internal shutdown hook.
+type offlineSignal struct{}
+func (offlineSignal) Signal(){}
+func (offlineSignal) String()string{return "panel-offline"}
+
 func runWebServer() {
 	log.Printf("Starting %v %v", config.GetName(), config.GetPanelVersion())
 
@@ -132,6 +140,7 @@ func runWebServer() {
 	sigCh := make(chan os.Signal, 8)
 	// Trap shutdown signals
 	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM, sys.SIGUSR1, os.Interrupt)
+	global.SetPanelOfflineHook(func(){select{case sigCh<-offlineSignal{}:default:}})
 	global.SetRestartHook(func() {
 		select {
 		case sigCh <- syscall.SIGHUP:
@@ -139,6 +148,11 @@ func runWebServer() {
 		}
 	})
 
+	if settings,err:=(&service.SettingService{}).GetAllSetting();err==nil {
+		if duration,err:=paneloffline.Duration(settings.PanelOfflineEnabled,settings.PanelOfflineValue,settings.PanelOfflineUnit);err==nil&&duration>0&&(runtime.GOOS=="windows"||os.Getenv("MINIRAY_SEPARATE_CORE")=="1"){
+			time.AfterFunc(duration,func(){global.TriggerPanelOffline()})
+		}else if err!=nil{logger.Warning("invalid offline schedule:",err)}
+	}
 	var stopTunnelHealthMonitor context.CancelFunc
 	monitorCfg := tunnelmonitor.ConfigFromEnv()
 	if monitorCfg.Enabled {
@@ -163,6 +177,13 @@ func runWebServer() {
 		sig := <-sigCh
 
 		switch sig {
+		case offlineSignal{}:
+			if stopTunnelHealthMonitor!=nil{stopTunnelHealthMonitor()}
+			tgbot.StopBot()
+			if err:=server.StopPanelOnly();err!=nil{logger.Warning("stop panel failed:",err)}
+			if err:=subServer.Stop();err!=nil{logger.Warning("stop subscription server failed:",err)}
+			service.StopTrafficWriter()
+			return
 		case syscall.SIGHUP:
 			logger.Info("Received SIGHUP signal. Restarting servers...")
 
@@ -207,8 +228,11 @@ func runWebServer() {
 			tgbot.StopBot()
 			// ------------------------------------------------------------
 
-			if err := server.Stop(); err != nil {
-				logger.Error("Server shutdown failed:", err)
+			if os.Getenv("MINIRAY_SEPARATE_CORE")=="1"||runtime.GOOS=="windows"{
+				if err:=server.StopPanelOnly();err!=nil{logger.Error("Panel shutdown failed:",err)}
+				service.StopTrafficWriter()
+			}else{
+				if err:=server.Stop();err!=nil{logger.Error("Server shutdown failed:",err)}
 			}
 			_ = subServer.Stop()
 			log.Println("Shutting down servers.")
