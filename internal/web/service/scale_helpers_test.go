@@ -16,9 +16,23 @@ import (
 	miniraylogger "github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/xray"
 
+	"github.com/google/uuid"
 	"github.com/op/go-logging"
 	"gorm.io/gorm"
 )
+
+func makeScaleClients(n int) []model.Client {
+	clients := make([]model.Client, n)
+	for i := range clients {
+		clients[i] = model.Client{
+			ID: uuid.NewString(),
+			Email: fmt.Sprintf("user-%07d@scale", i),
+			SubID: fmt.Sprintf("sub-%07d", i),
+			Enable: true,
+		}
+	}
+	return clients
+}
 
 // setupScaleDB initializes the DB for a scale benchmark on either Postgres
 // (MINIRAY_DB_TYPE=postgres + MINIRAY_DB_DSN) or SQLite (MINIRAY_SCALE_TEST=1, temp file;

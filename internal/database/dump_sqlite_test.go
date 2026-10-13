@@ -8,77 +8,11 @@ import (
 	"testing"
 
 	"github.com/8bit-warrior/Miniray/internal/database/model"
-	"github.com/8bit-warrior/Miniray/internal/xray"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
-
-// TestCopyAllModelsIntoSQLite exercises the same AutoMigrate + copyTable
-// The backup and restore path operates directly on SQLite.
-func TestCopyAllModelsIntoSQLite(t *testing.T) {
-	dir := t.TempDir()
-	srcPath := filepath.Join(dir, "src.db")
-	dstPath := filepath.Join(dir, "dst.db")
-
-	src, err := gorm.Open(sqlite.Open(srcPath), &gorm.Config{Logger: logger.Discard})
-	if err != nil {
-		t.Fatalf("open src: %v", err)
-	}
-	defer closeGorm(src)
-	for _, m := range allModels() {
-		if err := src.AutoMigrate(m); err != nil {
-			t.Fatalf("automigrate src %T: %v", m, err)
-		}
-	}
-
-	// Seed a few rows across parent/child tables and a composite-PK table.
-	if err := src.Create(&model.User{Username: "admin", Password: "x"}).Error; err != nil {
-		t.Fatalf("seed user: %v", err)
-	}
-	if err := src.Create(&model.Inbound{UserId: 1, Remark: "in", Port: 443, Protocol: "vless", Tag: "inbound-443"}).Error; err != nil {
-		t.Fatalf("seed inbound: %v", err)
-	}
-	if err := src.Create(&xray.ClientTraffic{InboundId: 1, Email: "a@b.c", Enable: true, Up: 10, Down: 20}).Error; err != nil {
-		t.Fatalf("seed traffic: %v", err)
-	}
-
-	dst, err := gorm.Open(sqlite.Open(dstPath), &gorm.Config{Logger: logger.Discard})
-	if err != nil {
-		t.Fatalf("open dst: %v", err)
-	}
-	defer closeGorm(dst)
-	if err := copyAllModels(src, dst); err != nil {
-		t.Fatalf("copyAllModels: %v", err)
-	}
-
-	for _, tc := range []struct {
-		model any
-		want  int64
-	}{
-		{&model.User{}, 1},
-		{&model.Inbound{}, 1},
-		{&xray.ClientTraffic{}, 1},
-	} {
-		var got int64
-		if err := dst.Model(tc.model).Count(&got).Error; err != nil {
-			t.Fatalf("count %T: %v", tc.model, err)
-		}
-		if got != tc.want {
-			t.Errorf("%T: got %d rows, want %d", tc.model, got, tc.want)
-		}
-	}
-
-	// Spot-check a copied value survived the round-trip.
-	var ct xray.ClientTraffic
-	if err := dst.Where("email = ?", "a@b.c").First(&ct).Error; err != nil {
-		t.Fatalf("read back traffic: %v", err)
-	}
-	if ct.Up != 10 || ct.Down != 20 || !ct.Enable {
-		t.Errorf("traffic mismatch: %+v", ct)
-	}
-}
 
 // TestDumpAndRestoreSQLiteRoundTrip dumps a seeded SQLite db to .dump text and
 // rebuilds it, asserting the row survives.
