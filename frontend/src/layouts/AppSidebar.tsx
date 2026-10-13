@@ -1,23 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ComponentType, CSSProperties } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Drawer, Layout, Menu, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import {
-  ApiOutlined,
   ApartmentOutlined,
   CloseOutlined,
   CloudServerOutlined,
   ClusterOutlined,
   CodeOutlined,
-  CrownOutlined,
   DashboardOutlined,
   DatabaseOutlined,
   DiscordOutlined,
   ExportOutlined,
   GithubOutlined,
-  GlobalOutlined,
   ImportOutlined,
   LogoutOutlined,
   MailOutlined,
@@ -25,15 +22,12 @@ import {
   MessageOutlined,
   MoonFilled,
   MoonOutlined,
-  PushpinFilled,
-  PushpinOutlined,
   ReadOutlined,
   SafetyOutlined,
   SearchOutlined,
   SettingOutlined,
   SunOutlined,
   SwapOutlined,
-  TagsOutlined,
   TeamOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
@@ -52,22 +46,15 @@ const REPO_URL = 'https://github.com/8bit-warrior/Miniray';
 const LOGOUT_KEY = '__logout__';
 const RAIL_WIDTH = 72;
 const SIDER_WIDTH = 220;
-const SIDEBAR_PINNED_KEY = 'sidebar-pinned';
-
-let hoveredAcrossRemounts = false;
 
 type IconName =
   | 'dashboard'
   | 'inbound'
   | 'team'
-  | 'groups'
   | 'setting'
   | 'tool'
   | 'cluster'
-  | 'hosts'
   | 'logout'
-  | 'sponsors'
-  | 'apidocs'
   | 'outbound'
   | 'routing';
 
@@ -75,14 +62,10 @@ const iconByName: Record<IconName, ComponentType> = {
   dashboard: DashboardOutlined,
   inbound: ImportOutlined,
   team: TeamOutlined,
-  groups: TagsOutlined,
   setting: SettingOutlined,
   tool: ToolOutlined,
   cluster: ClusterOutlined,
-  hosts: GlobalOutlined,
   logout: LogoutOutlined,
-  sponsors: CrownOutlined,
-  apidocs: ApiOutlined,
   outbound: ExportOutlined,
   routing: SwapOutlined,
 };
@@ -148,20 +131,6 @@ function ThemeCycleButton({
   );
 }
 
-function readSidebarPinned() {
-  try {
-    return localStorage.getItem(SIDEBAR_PINNED_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
-
-function saveSidebarPinned(pinned: boolean) {
-  try {
-    localStorage.setItem(SIDEBAR_PINNED_KEY, String(pinned));
-  } catch {}
-}
-
 export default function AppSidebar() {
   const { t } = useTranslation();
   const { isDark, isUltra, toggleTheme, toggleUltra } = useTheme();
@@ -172,34 +141,9 @@ export default function AppSidebar() {
   const showSubFormats = !!(allSetting.subJsonEnable || allSetting.subClashEnable);
   const showSubBalancers = !!allSetting.subJsonEnable;
 
-  const [, setHovered] = useState(() => hoveredAcrossRemounts);
-  const [pinned, setPinned] = useState(readSidebarPinned);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const railCollapsed = false;
-  const railStyle = useMemo(
-    () => ({ '--sider-rail': `${SIDER_WIDTH}px` }) as CSSProperties,
-    [pinned],
-  );
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  const updateHovered = useCallback((value: boolean) => {
-    hoveredAcrossRemounts = value;
-    setHovered(value);
-  }, []);
-
-  const togglePinned = useCallback(() => {
-    const next = !pinned;
-    saveSidebarPinned(next);
-    setPinned(next);
-  }, [pinned]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const el = rootRef.current;
-      if (el) updateHovered(el.matches(':hover'));
-    }, 150);
-    return () => window.clearTimeout(timer);
-  }, [updateHovered]);
+  const railStyle = { '--sider-rail': `${SIDER_WIDTH}px` } as CSSProperties;
 
   const currentTheme: 'light' | 'dark' = isDark ? 'dark' : 'light';
   const panelVersion = window.MINIRAY_CUR_VER || '';
@@ -344,13 +288,7 @@ export default function AppSidebar() {
   );
 
   return (
-    <div
-      ref={rootRef}
-      className={`ant-sidebar${pinned ? ' sidebar-pinned' : ''}`}
-      style={railStyle}
-      onMouseEnter={() => updateHovered(true)}
-      onMouseLeave={() => updateHovered(false)}
-    >
+    <div className="ant-sidebar" style={railStyle}>
       <Layout.Sider
         theme={currentTheme}
         width={SIDER_WIDTH}
@@ -363,16 +301,6 @@ export default function AppSidebar() {
           </div>
           {!railCollapsed && (
             <div className="brand-actions">
-              <button
-                type="button"
-                className="sidebar-pin"
-                aria-label={t('menu.pinSidebar')}
-                aria-pressed={pinned}
-                title={t(pinned ? 'menu.unpinSidebar' : 'menu.pinSidebar')}
-                onClick={togglePinned}
-              >
-                {pinned ? <PushpinFilled /> : <PushpinOutlined />}
-              </button>
               <DocsButton ariaLabel={t('menu.docs') || 'Documentation'} />
               <ThemeCycleButton
                 id="theme-cycle"
