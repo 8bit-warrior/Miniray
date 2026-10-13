@@ -316,7 +316,8 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 	}
 
 	importedInbound := map[int]bool{}
-	importedClient := map[int]bool{}
+	linkedSourceClients := map[int]bool{}
+	importedSourceClients := map[int]bool{}
 	importedEmails := map[string]bool{}
 	importedSubIDs := map[string]bool{}
 	rebase := func(value string) string {
@@ -395,11 +396,11 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 		}
 		for _, link := range joins {
 			if importedInbound[link.InboundId] {
-				importedClient[link.ClientId] = true
+				linkedSourceClients[link.ClientId] = true
 			}
 		}
 		for _, client := range clients {
-			if !importedClient[client.Id] {
+			if !linkedSourceClients[client.Id] {
 				continue
 			}
 			client.Group = ""
@@ -408,13 +409,14 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 				return fmt.Errorf("import client %d: %w", client.Id, err)
 			}
 			result.Clients++
+			importedSourceClients[client.Id] = true
 			importedEmails[strings.ToLower(client.Email)] = true
 			if client.SubID != "" {
 				importedSubIDs[client.SubID] = true
 			}
 		}
 		for _, link := range joins {
-			if importedInbound[link.InboundId] && importedClient[link.ClientId] {
+			if importedInbound[link.InboundId] && importedSourceClients[link.ClientId] {
 				if err := tx.Create(&link).Error; err != nil {
 					return err
 				}
@@ -469,7 +471,6 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 				if record.SubID != "" {
 					importedSubIDs[record.SubID] = true
 				}
-				importedClient[existing.Id] = true
 			}
 		}
 		for _, entry := range clientIPs {
@@ -487,7 +488,7 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 			}
 		}
 		for _, entry := range externalLinks {
-			if importedClient[entry.ClientId] {
+			if importedSourceClients[entry.ClientId] {
 				if err := tx.Create(&entry).Error; err != nil {
 					return err
 				}
