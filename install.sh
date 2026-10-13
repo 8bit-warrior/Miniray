@@ -103,7 +103,7 @@ tar -tzf "$TMP/$ASSET" | grep -vE '(^miniray/|^miniray$)' && {
   echo 'Unexpected archive paths' >&2
   exit 1
 } || :
-tar -xzf "$TMP/$ASSET" -C "$TMP"
+tar --no-same-owner -xzf "$TMP/$ASSET" -C "$TMP"
 test -x "$TMP/miniray/miniray"
 test -x "$TMP/miniray/bin/xray-linux-$ARCH"
 
