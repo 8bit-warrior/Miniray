@@ -1201,7 +1201,7 @@ func isIgnorableDuplicateColumnErr(gdb *gorm.DB, err error, mdl any) bool {
 	return false
 }
 
-func initUser() error {
+func initUser(dbPath string) error {
 	empty, err := isTableEmpty("users")
 	if err != nil {
 		log.Printf("Error checking if users table is empty: %v", err)
@@ -1217,7 +1217,7 @@ func initUser() error {
 		if err != nil {
 			return err
 		}
-		passwordPath := filepath.Join(config.GetDBFolderPath(), "initial-admin-password")
+		passwordPath := filepath.Join(filepath.Dir(dbPath), "initial-admin-password")
 		if err := os.WriteFile(passwordPath, []byte(password+"\n"), 0o600); err != nil {
 			return err
 		}
@@ -2949,7 +2949,7 @@ func InitDB(dbPath string) error {
 		}
 	}
 
-	if err := initUser(); err != nil {
+	if err := initUser(dbPath); err != nil {
 		return err
 	}
 	return runSeeders(isUsersEmpty)
