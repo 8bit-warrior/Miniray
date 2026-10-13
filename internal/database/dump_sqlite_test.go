@@ -16,9 +16,7 @@ import (
 )
 
 // TestCopyAllModelsIntoSQLite exercises the same AutoMigrate + copyTable
-// machinery that ExportPostgresToSQLite relies on, but with a SQLite source so
-// it needs no external database. The Postgres source path uses identical gorm
-// reads (see MigrateData), so this validates the destination-side copy.
+// The backup and restore path operates directly on SQLite.
 func TestCopyAllModelsIntoSQLite(t *testing.T) {
 	dir := t.TempDir()
 	srcPath := filepath.Join(dir, "src.db")
@@ -29,7 +27,7 @@ func TestCopyAllModelsIntoSQLite(t *testing.T) {
 		t.Fatalf("open src: %v", err)
 	}
 	defer closeGorm(src)
-	for _, m := range migrationModels() {
+	for _, m := range allModels() {
 		if err := src.AutoMigrate(m); err != nil {
 			t.Fatalf("automigrate src %T: %v", m, err)
 		}

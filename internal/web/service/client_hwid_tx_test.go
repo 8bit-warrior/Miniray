@@ -148,10 +148,8 @@ func TestBulkCreateWithdrawsTombstoneWhenHwidTrimFails(t *testing.T) {
 }
 
 func TestSetClientLimitHwidIsSerializedWithSyncInbound(t *testing.T) {
-	db := durablePostgresDB(t)
-	if err := db.Exec("TRUNCATE client_hwids, clients RESTART IDENTITY CASCADE").Error; err != nil {
-		t.Fatalf("reset tables: %v", err)
-	}
+	initClientHwidTestDB(t)
+	db := database.GetDB()
 	rec := seedHwidClient(t, 5)
 	seedHwids(t, db, rec.SubID, 3)
 	StartTrafficWriter()
