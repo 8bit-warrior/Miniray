@@ -4,6 +4,11 @@ REPO=https://github.com/8bit-warrior/Miniray
 VERSION="${MINIRAY_UPDATE_TAG:-latest}"
 ROOT="${MINIRAY_MAIN_FOLDER:-/usr/local/miniray}"
 DB_FOLDER="${MINIRAY_DB_FOLDER:-/etc/miniray}"
+if [[ -z "${MINIRAY_DB_FOLDER:-}" && -f /etc/default/miniray ]]; then
+  saved_db_folder=$(sed -n 's/^MINIRAY_DB_FOLDER=//p' /etc/default/miniray | tail -n 1)
+  saved_db_folder=${saved_db_folder%\"}; saved_db_folder=${saved_db_folder#\"}
+  if [[ -n "$saved_db_folder" ]]; then DB_FOLDER="$saved_db_folder"; fi
+fi
 DB_PATH="$DB_FOLDER/miniray.db"
 LEGACY_DB_FOLDER="${XUI_DB_FOLDER:-/etc/x-ui}"
 LEGACY_DB_TYPE="sqlite"
@@ -240,6 +245,14 @@ if (( REMOVE_LEGACY == 1 )); then
   systemctl daemon-reload
   LEGACY_REMOVED=1
   echo "3x-ui uninstalled; its database and configuration backup is at $BACKUP_DIR"
+fi
+
+if [[ -n "${MINIRAY_DB_FOLDER:-}" || "$DB_FOLDER" != /etc/miniray ]]; then
+  install -d -m 0755 /etc/default
+  touch /etc/default/miniray
+  chmod 600 /etc/default/miniray
+  sed -i '/^MINIRAY_DB_FOLDER=/d' /etc/default/miniray
+  printf 'MINIRAY_DB_FOLDER="%s"\n' "$DB_FOLDER" >> /etc/default/miniray
 fi
 
 if (( LEGACY_FOUND == 1 && REMOVE_LEGACY == 0 )); then
