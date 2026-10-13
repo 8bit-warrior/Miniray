@@ -12,27 +12,27 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"strings"
 	"runtime"
-	"time"
+	"strings"
 	"syscall"
+	"time"
 	_ "unsafe"
 
+	"github.com/8bit-warrior/Miniray/internal/amneziawgnet"
 	"github.com/8bit-warrior/Miniray/internal/config"
-	"github.com/8bit-warrior/Miniray/internal/paneloffline"
 	"github.com/8bit-warrior/Miniray/internal/crypto/nodetoken"
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/mtproto"
-	"github.com/8bit-warrior/Miniray/internal/tuic"
-	"github.com/8bit-warrior/Miniray/internal/amneziawgnet"
-	"github.com/8bit-warrior/Miniray/internal/web/job"
+	"github.com/8bit-warrior/Miniray/internal/paneloffline"
 	"github.com/8bit-warrior/Miniray/internal/sub"
+	"github.com/8bit-warrior/Miniray/internal/tuic"
 	"github.com/8bit-warrior/Miniray/internal/tunnelmonitor"
 	"github.com/8bit-warrior/Miniray/internal/util/crypto"
 	"github.com/8bit-warrior/Miniray/internal/util/sys"
 	"github.com/8bit-warrior/Miniray/internal/web"
 	"github.com/8bit-warrior/Miniray/internal/web/global"
+	"github.com/8bit-warrior/Miniray/internal/web/job"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 	"github.com/8bit-warrior/Miniray/internal/web/service/panel"
 	"github.com/8bit-warrior/Miniray/internal/web/service/tgbot"
@@ -81,8 +81,9 @@ func initNodeTokenCrypto() error {
 // runWebServer initializes and starts the web server for the miniray panel.
 // offlineSignal is only sent by the internal shutdown hook.
 type offlineSignal struct{}
-func (offlineSignal) Signal(){}
-func (offlineSignal) String()string{return "panel-offline"}
+
+func (offlineSignal) Signal()        {}
+func (offlineSignal) String() string { return "panel-offline" }
 
 func runWebServer() {
 	log.Printf("Starting %v %v", config.GetName(), config.GetPanelVersion())
@@ -145,7 +146,12 @@ func runWebServer() {
 	sigCh := make(chan os.Signal, 8)
 	// Trap shutdown signals
 	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM, sys.SIGUSR1, os.Interrupt)
-	global.SetPanelOfflineHook(func(){select{case sigCh<-offlineSignal{}:default:}})
+	global.SetPanelOfflineHook(func() {
+		select {
+		case sigCh <- offlineSignal{}:
+		default:
+		}
+	})
 	global.SetRestartHook(func() {
 		select {
 		case sigCh <- syscall.SIGHUP:
@@ -153,10 +159,12 @@ func runWebServer() {
 		}
 	})
 
-	if settings,err:=(&service.SettingService{}).GetAllSetting();err==nil {
-		if duration,err:=paneloffline.Duration(settings.PanelOfflineEnabled,settings.PanelOfflineValue,settings.PanelOfflineUnit);err==nil&&duration>0&&(runtime.GOOS=="windows"||os.Getenv("MINIRAY_SEPARATE_CORE")=="1"){
-			time.AfterFunc(duration,func(){global.TriggerPanelOffline()})
-		}else if err!=nil{logger.Warning("invalid offline schedule:",err)}
+	if settings, err := (&service.SettingService{}).GetAllSetting(); err == nil {
+		if duration, err := paneloffline.Duration(settings.PanelOfflineEnabled, settings.PanelOfflineValue, settings.PanelOfflineUnit); err == nil && duration > 0 && (runtime.GOOS == "windows" || os.Getenv("MINIRAY_SEPARATE_CORE") == "1") {
+			time.AfterFunc(duration, func() { global.TriggerPanelOffline() })
+		} else if err != nil {
+			logger.Warning("invalid offline schedule:", err)
+		}
 	}
 	var stopTunnelHealthMonitor context.CancelFunc
 	monitorCfg := tunnelmonitor.ConfigFromEnv()
@@ -183,10 +191,16 @@ func runWebServer() {
 
 		switch sig {
 		case offlineSignal{}:
-			if stopTunnelHealthMonitor!=nil{stopTunnelHealthMonitor()}
+			if stopTunnelHealthMonitor != nil {
+				stopTunnelHealthMonitor()
+			}
 			tgbot.StopBot()
-			if err:=server.StopPanelOnly();err!=nil{logger.Warning("stop panel failed:",err)}
-			if err:=subServer.Stop();err!=nil{logger.Warning("stop subscription server failed:",err)}
+			if err := server.StopPanelOnly(); err != nil {
+				logger.Warning("stop panel failed:", err)
+			}
+			if err := subServer.Stop(); err != nil {
+				logger.Warning("stop subscription server failed:", err)
+			}
 			service.StopTrafficWriter()
 			return
 		case syscall.SIGHUP:
@@ -233,11 +247,15 @@ func runWebServer() {
 			tgbot.StopBot()
 			// ------------------------------------------------------------
 
-			if os.Getenv("MINIRAY_SEPARATE_CORE")=="1"||runtime.GOOS=="windows"{
-				if err:=server.StopPanelOnly();err!=nil{logger.Error("Panel shutdown failed:",err)}
+			if os.Getenv("MINIRAY_SEPARATE_CORE") == "1" || runtime.GOOS == "windows" {
+				if err := server.StopPanelOnly(); err != nil {
+					logger.Error("Panel shutdown failed:", err)
+				}
 				service.StopTrafficWriter()
-			}else{
-				if err:=server.Stop();err!=nil{logger.Error("Server shutdown failed:",err)}
+			} else {
+				if err := server.Stop(); err != nil {
+					logger.Error("Server shutdown failed:", err)
+				}
 			}
 			_ = subServer.Stop()
 			log.Println("Shutting down servers.")
@@ -632,6 +650,15 @@ func main() {
 	migrateDbCmd.StringVar(&migrateRestore, "restore", "", "Rebuild a SQLite database from this SQL text dump (.dump -> .db); requires --out")
 	migrateDbCmd.StringVar(&migrateOut, "out", "", "Destination SQLite file for --restore (must not already exist)")
 
+	legacySnapshotCmd := flag.NewFlagSet("snapshot-legacy", flag.ExitOnError)
+	var legacySnapshotSrc, legacySnapshotOut string
+	legacySnapshotCmd.StringVar(&legacySnapshotSrc, "source", "", "Legacy SQLite database")
+	legacySnapshotCmd.StringVar(&legacySnapshotOut, "out", "", "New snapshot file")
+	legacyImportCmd := flag.NewFlagSet("import-legacy", flag.ExitOnError)
+	var legacyImportSrc, legacyImportAssets string
+	legacyImportCmd.StringVar(&legacyImportSrc, "source", "", "Snapshot of legacy SQLite database")
+	legacyImportCmd.StringVar(&legacyImportAssets, "assets", "", "Preserved legacy config directory for certificate references")
+
 	settingCmd := flag.NewFlagSet("setting", flag.ExitOnError)
 	var port int
 	var username string
@@ -697,6 +724,30 @@ func main() {
 		fmt.Print(string(password))
 	case "agent":
 		runProxyAgent()
+	case "snapshot-legacy":
+		if err := legacySnapshotCmd.Parse(os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+		if legacySnapshotSrc == "" || legacySnapshotOut == "" {
+			log.Fatal("snapshot-legacy requires --source and --out")
+		}
+		if err := database.SnapshotLegacySQLite(legacySnapshotSrc, legacySnapshotOut); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Legacy SQLite snapshot saved to %s\n", legacySnapshotOut)
+	case "import-legacy":
+		if err := legacyImportCmd.Parse(os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+		if legacyImportSrc == "" {
+			log.Fatal("import-legacy requires --source")
+		}
+		outcome, err := database.ImportLegacySQLite(legacyImportSrc, config.GetDBPath(), legacyImportAssets)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Legacy import complete: %d local inbounds, %d clients, %d traffic records, %d settings; skipped %d remote and %d unsupported inbounds\n",
+			outcome.Inbounds, outcome.Clients, outcome.TrafficRows, outcome.Settings, outcome.SkippedRemoteInbounds, outcome.SkippedUnsupportedInbounds)
 	case "run":
 		err := runCmd.Parse(os.Args[2:])
 		if err != nil {
@@ -804,6 +855,8 @@ Commands:
     run            run web panel
     agent          manage non-Xray proxy protocols independently of the web panel
     init-db        initialize SQLite without starting network listeners
+    snapshot-legacy create an online-consistent snapshot of a legacy SQLite database
+    import-legacy  import supported data into a new Miniray database
     initial-password  print the generated first-login password (root only)
     migrate        migrate from other/old miniray
     migrate-db     SQLite <-> .dump (--dump/--restore)
