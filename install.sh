@@ -171,6 +171,7 @@ if (( LEGACY_FOUND == 1 )); then
         LEGACY_ASSETS="$DB_FOLDER/imported-legacy-files"
         install -d -m 0700 "$LEGACY_ASSETS"
         cp -a /etc/x-ui/. "$LEGACY_ASSETS/"
+        rm -f "$LEGACY_ASSETS/x-ui.db" "$LEGACY_ASSETS/x-ui.db-wal" "$LEGACY_ASSETS/x-ui.db-shm" "$LEGACY_ASSETS/install-result.env"
       fi
     fi
     if [[ -f /etc/default/x-ui ]]; then
