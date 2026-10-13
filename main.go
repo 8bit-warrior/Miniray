@@ -623,12 +623,10 @@ func main() {
 	runCmd := flag.NewFlagSet("run", flag.ExitOnError)
 
 	migrateDbCmd := flag.NewFlagSet("migrate-db", flag.ExitOnError)
-	var migrateDsn string
 	var migrateSrc string
 	var migrateDump string
 	var migrateRestore string
 	var migrateOut string
-	migrateDbCmd.StringVar(&migrateDsn, "dsn", "", "Destination PostgreSQL DSN (postgres://user:pass@host:port/db?sslmode=disable)")
 	migrateDbCmd.StringVar(&migrateSrc, "src", "", "Source SQLite file (defaults to the configured miniray.db)")
 	migrateDbCmd.StringVar(&migrateDump, "dump", "", "Write a portable SQL text dump of --src to this file (.db -> .dump)")
 	migrateDbCmd.StringVar(&migrateRestore, "restore", "", "Rebuild a SQLite database from this SQL text dump (.dump -> .db); requires --out")
@@ -736,13 +734,8 @@ func main() {
 				os.Exit(1)
 			}
 			fmt.Printf("Restored %s -> %s\n", migrateRestore, migrateOut)
-		case migrateDsn != "":
-			if err := database.MigrateData(src, migrateDsn); err != nil {
-				fmt.Println("migration failed:", err)
-				os.Exit(1)
-			}
 		default:
-			fmt.Println("nothing to do: pass --dump <file>, --restore <file> --out <db>, or --dsn <postgres-dsn>")
+			fmt.Println("nothing to do: pass --dump <file> or --restore <file> --out <db>")
 		}
 	case "setting":
 		err := settingCmd.Parse(os.Args[2:])
@@ -813,7 +806,7 @@ Commands:
     init-db        initialize SQLite without starting network listeners
     initial-password  print the generated first-login password (root only)
     migrate        migrate from other/old miniray
-    migrate-db     SQLite <-> .dump (--dump/--restore) or copy into PostgreSQL (--dsn)
+    migrate-db     SQLite <-> .dump (--dump/--restore)
     encrypt-tokens encrypt node bearer tokens with the configured active key
     setting        set settings
 `

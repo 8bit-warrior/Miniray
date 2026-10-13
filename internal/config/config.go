@@ -180,11 +180,6 @@ func GetUpdateStatusFilePath() string {
 // GetDBKind only supports SQLite.
 func GetDBKind()string{return "sqlite"}
 
-// GetDBDSN returns the PostgreSQL DSN from MINIRAY_DB_DSN. Empty for sqlite.
-func GetDBDSN() string {
-	return strings.TrimSpace(os.Getenv("MINIRAY_DB_DSN"))
-}
-
 // GetNodeTokenEncryptionMode returns off, migration, or required. Explicit
 // policy prevents a missing key from silently downgrading encrypted storage.
 func GetNodeTokenEncryptionMode() string {
