@@ -26,11 +26,7 @@ case $1 in
         FNAME="amd64"
         ;;
 esac
-MTG_MULTI_VER=$(curl -sfL "https://api.github.com/repos/mhsanaei/mtg-multi/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1)
-if [ -z "$MTG_MULTI_VER" ]; then
-    echo "DockerInit: could not resolve the latest mtg-multi release tag" >&2
-    exit 1
-fi
+MTG_MULTI_VER=v1.15.0
 mkdir -p build/bin
 cd build/bin
 curl -sfLRO "https://github.com/XTLS/Xray-core/releases/download/v26.6.27/Xray-linux-${ARCH}.zip"

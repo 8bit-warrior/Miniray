@@ -24,6 +24,12 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
         working-directory: frontend
+      - name: Install browser testing dependencies
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Test frontend
+        run: npm test -- --run
+        working-directory: frontend
       - name: Build static web assets
         id: build
         run: npm run build
@@ -33,8 +39,23 @@ jobs:
           name: frontend-dist
           path: internal/web/dist/
           retention-days: 5
-  packages:
+  backend-tests:
     needs: [frontend]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: internal/web/dist/
+      - name: Validate Go backend
+        run: go test ./...
+  packages:
+    needs: [frontend, backend-tests]
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
@@ -84,10 +105,26 @@ jobs:
             test -s "/tmp/miniray-xray/$data"
             cp "/tmp/miniray-xray/$data" staging/miniray/bin/
           done
+          MTG_VERSION=1.15.0
+          MTG_PACKAGE="mtg-multi-${MTG_VERSION}-${GOOS}-${GOARCH}"
+          if [ "$GOOS" = linux ]; then
+            curl -fL --retry 4 -o /tmp/miniray-mtg.tar.gz \
+              "https://github.com/mhsanaei/mtg-multi/releases/download/v${MTG_VERSION}/${MTG_PACKAGE}.tar.gz"
+            mkdir -p /tmp/miniray-mtg
+            tar -xzf /tmp/miniray-mtg.tar.gz -C /tmp/miniray-mtg
+          else
+            curl -fL --retry 4 -o /tmp/miniray-mtg.zip \
+              "https://github.com/mhsanaei/mtg-multi/releases/download/v${MTG_VERSION}/${MTG_PACKAGE}.zip"
+            mkdir -p /tmp/miniray-mtg
+            unzip -qo /tmp/miniray-mtg.zip -d /tmp/miniray-mtg
+          fi
+          MTG_BINARY=$(find /tmp/miniray-mtg -type f -name "mtg-multi${SUFFIX}" -print -quit)
+          test -n "$MTG_BINARY"
+          cp "$MTG_BINARY" "staging/miniray/bin/mtg-${GOOS}-${GOARCH}${SUFFIX}"
           cp README.md LICENSE staging/miniray/
           if [ "$GOOS" = linux ]; then
-            cp miniray.sh install.sh update.sh miniray-core.service miniray.service.* staging/miniray/
-            chmod +x staging/miniray/miniray staging/miniray/*.sh staging/miniray/bin/xray-${GOOS}-${GOARCH}
+            cp miniray.sh install.sh update.sh miniray-core.service miniray-agent.service miniray.service.* staging/miniray/
+            chmod +x staging/miniray/miniray staging/miniray/*.sh staging/miniray/bin/xray-${GOOS}-${GOARCH} staging/miniray/bin/mtg-${GOOS}-${GOARCH}
             (cd staging && tar -czf "../miniray-${GOOS}-${GOARCH}.tar.gz" miniray)
           else
             (cd staging && zip -qr "../miniray-${GOOS}-${GOARCH}.zip" miniray)
