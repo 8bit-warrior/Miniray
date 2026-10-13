@@ -76,7 +76,7 @@ func legacyImportFixture(t *testing.T) string {
 	if _, err := raw.Exec(`INSERT INTO client_inbounds(client_id,inbound_id) VALUES (7,10),(7,13),(8,11)`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := raw.Exec(`INSERT INTO client_traffics(id,inbound_id,email,enable,up,down,total,expiry_time) VALUES (1,10,'alice@example.com',1,123,456,9999,123456),(2,11,'remote@example.com',1,1,1,9999,0),(3,13,'alice@example.com',1,5,9,9999,123456)`); err != nil {
+	if _, err := raw.Exec(`INSERT INTO client_traffics(id,inbound_id,email,enable,up,down,total,expiry_time) VALUES (1,10,'alice@example.com',1,123,456,9999,123456),(2,11,'remote@example.com',1,1,1,9999,0),(3,13,'bob@example.com',1,5,9,9999,123456)`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := raw.Exec(`INSERT INTO inbound_fallbacks(id,master_id,child_id,path) VALUES (1,10,13,'/cross'),(2,10,11,'/remote')`); err != nil {
