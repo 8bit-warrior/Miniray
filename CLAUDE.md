@@ -24,9 +24,8 @@ file locations when it can answer in one hop.
   falls back to a process restart on older binaries. A client's panel-side
   traffic reset also calls `POST /secrets/{name}/reset-quota` so a renewed client
   is not re-blocked by the sidecar's quota counter.
-- Storage: SQLite by default (`/etc/miniray/miniray.db` on Linux; the executable dir on
-  Windows), PostgreSQL optional (`MINIRAY_DB_TYPE` / `MINIRAY_DB_DSN`). The CGo SQLite
-  driver (`mattn/go-sqlite3`) needs a C compiler — `CGO_ENABLED=0` builds fail.
+- Storage: SQLite only (`/etc/miniray/miniray.db` on Linux; executable dir on Windows).
+  The CGo SQLite driver requires a C compiler (`CGO_ENABLED=1`).
 - Frontend: React 19 + Ant Design 6 + Vite 8 + TypeScript in `frontend/`,
   built into `internal/web/dist/` (gitignored) and embedded via `embed.FS`.
 

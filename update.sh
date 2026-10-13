@@ -16,4 +16,4 @@ record_status() {
   fi
 }
 trap 'record_status "$?"' EXIT
-bash /usr/local/miniray/install.sh "$@"
+bash "${MINIRAY_MAIN_FOLDER:-/usr/local/miniray}/install.sh" "$@"

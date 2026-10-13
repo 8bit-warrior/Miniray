@@ -32,6 +32,10 @@ test -x "$TMP/miniray/miniray"
 test -x "$TMP/miniray/bin/xray-linux-$ARCH"
 
 PANEL_BOOT=$(systemctl is-enabled miniray.service 2>/dev/null || :)
+PANEL_ACTIVE=1
+if systemctl list-unit-files --no-legend miniray.service 2>/dev/null | grep -q '^miniray.service '; then
+  systemctl is-active --quiet miniray.service || PANEL_ACTIVE=0
+fi
 CORE_BOOT=$(systemctl is-enabled miniray-core.service 2>/dev/null || :)
 AGENT_BOOT=$(systemctl is-enabled miniray-agent.service 2>/dev/null || :)
 systemctl stop miniray.service 2>/dev/null || :
@@ -43,6 +47,9 @@ for binary in "$TMP/miniray"/bin/xray-linux-*; do
   if [ ! -e "$destination" ]; then install -m 0755 "$binary" "$destination"; fi
   rm -f "$binary"
 done
+install -m 0755 "$TMP/miniray/miniray" "$ROOT/.miniray.next"
+mv -f "$ROOT/.miniray.next" "$ROOT/miniray"
+rm -f "$TMP/miniray/miniray"
 cp -a "$TMP/miniray/." "$ROOT/"
 ln -sfn "xray-linux-$ARCH" "$ROOT/bin/xray"
 chmod 755 "$ROOT/miniray" "$ROOT/miniray.sh" "$ROOT/install.sh" "$ROOT/update.sh"
@@ -57,13 +64,17 @@ install -m 0644 "$ROOT/miniray-core.service" /etc/systemd/system/miniray-core.se
 install -m 0644 "$ROOT/miniray-agent.service" /etc/systemd/system/miniray-agent.service
 install -m 0644 "$ROOT/miniray.service.$UNIT" /etc/systemd/system/miniray.service
 systemctl daemon-reload
-"$ROOT/miniray" init-db
+if [[ ! -f "${MINIRAY_DB_FOLDER:-/etc/miniray}/miniray.db" ]]; then
+  "$ROOT/miniray" init-db
+fi
 [[ "$CORE_BOOT" == disabled || "$CORE_BOOT" == masked ]] || systemctl enable miniray-core.service
 [[ "$AGENT_BOOT" == disabled || "$AGENT_BOOT" == masked ]] || systemctl enable miniray-agent.service
 [[ "$PANEL_BOOT" == disabled || "$PANEL_BOOT" == masked ]] || systemctl enable miniray.service
 systemctl start miniray-agent.service
-systemctl start miniray.service
-systemctl is-active --quiet miniray.service
+if (( PANEL_ACTIVE == 1 )); then
+  systemctl start miniray.service
+  systemctl is-active --quiet miniray.service
+fi
 echo "Miniray $VERSION installed."
 if [[ -f /etc/miniray/initial-admin-password ]]; then
   echo "First-login administrator password: run sudo miniray initial-password"
