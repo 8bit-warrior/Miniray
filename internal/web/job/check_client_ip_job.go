@@ -612,7 +612,7 @@ func (j *CheckClientIpJob) publishBans(bans []pendingBan) []pendingBan {
 }
 
 // writeBanLines emits one line per address; the wording is load-bearing, since
-// miniray.sh create_iplimit_jails builds filter.d/3x-ipl.conf failregex from it.
+// miniray.sh create_iplimit_jails builds filter.d/miniray-ipl.conf failregex from it.
 func writeBanLines(w io.Writer, clientEmail string, actionable []IPWithTimestamp) error {
 	stamp := time.Now().Format("2006/01/02 15:04:05")
 	for _, ipTime := range actionable {

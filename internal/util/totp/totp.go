@@ -7,7 +7,7 @@ import (
 )
 
 // SkewWindows is how many 30s steps around now VerifyWithSkew accepts.
-// Standard TOTP clock-drift tolerance, see MHSanaei/miniray#6535.
+// Standard TOTP clock-drift tolerance, 
 const SkewWindows = 1
 
 // VerifyWithSkew accepts the code for the current step plus/minus SkewWindows.

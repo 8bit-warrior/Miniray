@@ -44,7 +44,7 @@ write_files:
       #   export MINIRAY_DB_DSN="postgres://user:pass@host:5432/db?sslmode=disable"
       # ------------------------------------------------------------------------
 
-      curl -fsSL https://raw.githubusercontent.com/MHSanaei/miniray/main/install.sh | bash
+      curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh | bash
 
       # Surface the generated credentials. Full creds (incl. password + API token)
       # go ONLY to the serial console (/dev/console, owner-only). /etc/motd is
