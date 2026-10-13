@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 
 import BalancerFormModal from '@/pages/xray/balancers/BalancerFormModal';
 import type { BalancerFormValue } from '@/pages/xray/balancers/BalancerFormModal';
@@ -49,7 +49,7 @@ describe('BalancerFormModal', () => {
     expect(primaryButton().hasAttribute('disabled')).toBe(false);
   });
 
-  it('reveals required-field errors only after a save attempt, without confirming', () => {
+  it('reveals required-field errors only after a save attempt, without confirming', async () => {
     const { onConfirm } = renderModal();
     expect(erroredItemCount()).toBe(0);
 
@@ -59,6 +59,10 @@ describe('BalancerFormModal', () => {
     expect(explainText()).toContain('Tag is required');
     expect(explainText()).toContain('Pick at least one outbound');
     expect(onConfirm).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    });
   });
 
   it('disables save and warns when the chosen fallback would create a balancer cycle', () => {
