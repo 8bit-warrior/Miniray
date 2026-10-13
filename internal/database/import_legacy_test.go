@@ -64,7 +64,7 @@ func legacyImportFixture(t *testing.T) string {
 		{10, "local-one", "vless", clientSettings, nil},
 		{11, "remote-node", "vless", clientSettings, 4},
 		{12, "unsupported", "unknownproto", "{}", nil},
-		{13, "local-two", "trojan", "{}", nil},
+		{13, "local-two", "trojan", `{"clients":[{"id":"660e8400-e29b-41d4-a716-446655440001","email":"bob@example.com","enable":true}]}`, nil},
 	} {
 		if _, err := raw.Exec(`INSERT INTO inbounds(id,user_id,remark,tag,protocol,settings,stream_settings,sniffing,listen,port,enable,node_id,total) VALUES (?,1,'test',?,?,?,'{"security":"tls","cert":"/etc/x-ui/certs/fullchain.pem"}','{}','0.0.0.0',443,1,?,2048)`, row.id, row.tag, row.proto, row.settings, row.node); err != nil {
 			t.Fatal(err)
@@ -110,7 +110,7 @@ func TestLegacySQLiteSnapshotAndSelectiveImport(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = CloseDB() })
-	if result.Inbounds != 2 || result.Clients != 1 || result.TrafficRows != 2 || result.SkippedRemoteInbounds != 1 || result.SkippedUnsupportedInbounds != 1 || !result.ImportedAdmin {
+	if result.Inbounds != 2 || result.Clients != 2 || result.TrafficRows != 2 || result.SkippedRemoteInbounds != 1 || result.SkippedUnsupportedInbounds != 1 || !result.ImportedAdmin {
 		t.Fatalf("import result: %+v", result)
 	}
 	var inbounds []model.Inbound
@@ -142,8 +142,12 @@ func TestLegacySQLiteSnapshotAndSelectiveImport(t *testing.T) {
 	if err := GetDB().Find(&links).Error; err != nil {
 		t.Fatal(err)
 	}
-	if len(links) != 2 {
+	if len(links) != 3 {
 		t.Fatalf("client links: %+v", links)
+	}
+	var jsonOnlyClient model.ClientRecord
+	if err := GetDB().Where("email = ?", "bob@example.com").First(&jsonOnlyClient).Error; err != nil {
+		t.Fatal(err)
 	}
 	var traffic []xray.ClientTraffic
 	if err := GetDB().Find(&traffic).Error; err != nil {

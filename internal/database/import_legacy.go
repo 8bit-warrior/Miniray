@@ -420,58 +420,56 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 				}
 			}
 		}
-		if result.Clients == 0 {
-			for _, inbound := range inbounds {
-				if !importedInbound[inbound.Id] || strings.TrimSpace(inbound.Settings) == "" {
-					continue
-				}
-				var obj struct {
-					Clients []json.RawMessage `json:"clients"`
-				}
-				if err := json.Unmarshal([]byte(inbound.Settings), &obj); err != nil {
+		for _, inbound := range inbounds {
+			if !importedInbound[inbound.Id] || strings.TrimSpace(inbound.Settings) == "" {
+				continue
+			}
+			var obj struct {
+				Clients []json.RawMessage `json:"clients"`
+			}
+			if err := json.Unmarshal([]byte(inbound.Settings), &obj); err != nil {
+				return err
+			}
+			for _, rawClient := range obj.Clients {
+				var payload map[string]any
+				if err := json.Unmarshal(rawClient, &payload); err != nil {
 					return err
 				}
-				for _, rawClient := range obj.Clients {
-					var payload map[string]any
-					if err := json.Unmarshal(rawClient, &payload); err != nil {
-						return err
-					}
-					model.NormalizeLegacyClientFields(payload)
-					data, err := json.Marshal(payload)
-					if err != nil {
-						return err
-					}
-					var client model.Client
-					if err := json.Unmarshal(data, &client); err != nil {
-						return err
-					}
-					if strings.TrimSpace(client.Email) == "" {
-						continue
-					}
-					record := client.ToRecord()
-					record.Group = ""
-					var existing model.ClientRecord
-					found := tx.Where("email = ?", record.Email).First(&existing)
-					if found.Error != nil && !errors.Is(found.Error, gorm.ErrRecordNotFound) {
-						return found.Error
-					}
-					if errors.Is(found.Error, gorm.ErrRecordNotFound) {
-						if err := tx.Create(record).Error; err != nil {
-							return err
-						}
-						existing = *record
-						result.Clients++
-					}
-					link := model.ClientInbound{ClientId: existing.Id, InboundId: inbound.Id, FlowOverride: client.Flow}
-					if err := tx.Where("client_id = ? AND inbound_id = ?", link.ClientId, link.InboundId).FirstOrCreate(&link).Error; err != nil {
-						return err
-					}
-					importedEmails[strings.ToLower(record.Email)] = true
-					if record.SubID != "" {
-						importedSubIDs[record.SubID] = true
-					}
-					importedClient[existing.Id] = true
+				model.NormalizeLegacyClientFields(payload)
+				data, err := json.Marshal(payload)
+				if err != nil {
+					return err
 				}
+				var client model.Client
+				if err := json.Unmarshal(data, &client); err != nil {
+					return err
+				}
+				if strings.TrimSpace(client.Email) == "" {
+					continue
+				}
+				record := client.ToRecord()
+				record.Group = ""
+				var existing model.ClientRecord
+				found := tx.Where("email = ?", record.Email).First(&existing)
+				if found.Error != nil && !errors.Is(found.Error, gorm.ErrRecordNotFound) {
+					return found.Error
+				}
+				if errors.Is(found.Error, gorm.ErrRecordNotFound) {
+					if err := tx.Create(record).Error; err != nil {
+						return err
+					}
+					existing = *record
+					result.Clients++
+				}
+				link := model.ClientInbound{ClientId: existing.Id, InboundId: inbound.Id, FlowOverride: client.Flow}
+				if err := tx.Where("client_id = ? AND inbound_id = ?", link.ClientId, link.InboundId).FirstOrCreate(&link).Error; err != nil {
+					return err
+				}
+				importedEmails[strings.ToLower(record.Email)] = true
+				if record.SubID != "" {
+					importedSubIDs[record.SubID] = true
+				}
+				importedClient[existing.Id] = true
 			}
 		}
 		for _, entry := range clientIPs {
