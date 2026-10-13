@@ -79,10 +79,33 @@ TMP=$(mktemp -d)
 LEGACY_STOPPED=0
 LEGACY_REMOVED=0
 LEGACY_WAS_ACTIVE=0
+STAGED_INSTALL=0
+UNIT_STAGED=0
+WRAPPER_STAGED=0
+CREATED_DB=0
+ROOT_WAS_ABSENT=0
+[[ -e "$ROOT" ]] || ROOT_WAS_ABSENT=1
 finish_install() {
   local status=$?
   if (( status != 0 && LEGACY_STOPPED == 1 && LEGACY_REMOVED == 0 && LEGACY_WAS_ACTIVE == 1 )); then
     systemctl start x-ui.service || :
+  fi
+  if (( status != 0 && LEGACY_REMOVED == 0 && EXISTING_MINIRAY == 0 )); then
+    if (( CREATED_DB == 1 )); then
+      rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm" "$DB_FOLDER/initial-admin-password"
+    fi
+    if (( UNIT_STAGED == 1 )); then
+      rm -f /etc/systemd/system/miniray.service /etc/systemd/system/miniray-core.service /etc/systemd/system/miniray-agent.service
+      systemctl daemon-reload || :
+    fi
+    if (( WRAPPER_STAGED == 1 )); then rm -f /usr/local/bin/miniray; fi
+    if (( STAGED_INSTALL == 1 )); then
+      if (( ROOT_WAS_ABSENT == 1 )); then
+        rm -rf "$ROOT"
+      else
+        rm -f "$ROOT/miniray" "$ROOT/.miniray.next"
+      fi
+    fi
   fi
   if (( status != 0 && LEGACY_REMOVED == 1 )); then
     echo "Installation failed after legacy removal; restore data from $BACKUP_DIR if needed." >&2
@@ -153,17 +176,11 @@ if (( LEGACY_FOUND == 1 )); then
     if [[ -f /etc/default/x-ui ]]; then
       install -m 0600 /etc/default/x-ui "$BACKUP_DIR/service-env"
     fi
-    systemctl disable x-ui.service 2>/dev/null || :
-    rm -f /etc/systemd/system/x-ui.service /usr/lib/systemd/system/x-ui.service /lib/systemd/system/x-ui.service
-    rm -rf /usr/local/x-ui /etc/x-ui
-    rm -f /usr/bin/x-ui /usr/local/bin/x-ui
-    systemctl daemon-reload
-    LEGACY_REMOVED=1
-    echo "3x-ui uninstalled; its database and configuration backup is at $BACKUP_DIR"
   fi
 fi
 
 systemctl stop miniray.service 2>/dev/null || :
+STAGED_INSTALL=1
 install -d -m 0700 "$DB_FOLDER"
 mkdir -p "$ROOT/bin" /var/log/miniray
 for binary in "$TMP/miniray"/bin/xray-linux-*; do
@@ -184,11 +201,13 @@ if [[ "$ROOT" != /usr/local/miniray ]]; then
   sed -i "s|/usr/local/miniray|${escaped_root//|/\\|}|g" "$ROOT/miniray.sh" "$ROOT/update.sh"
 fi
 install -m 0755 "$ROOT/miniray.sh" /usr/local/bin/miniray
+WRAPPER_STAGED=1
 case "$(. /etc/os-release; echo "${ID:-}")" in
   arch|manjaro) UNIT=arch;;
   rhel|centos|rocky|almalinux|fedora) UNIT=rhel;;
   *) UNIT=debian;;
 esac
+UNIT_STAGED=1
 for service in miniray-core.service miniray-agent.service "miniray.service.$UNIT"; do
   unit_name=${service%%.service*}.service
   if [[ "$service" == miniray.service.* ]]; then unit_name=miniray.service; fi
@@ -209,6 +228,17 @@ if [[ ! -f "$DB_PATH" ]]; then
   else
     "$ROOT/miniray" init-db
   fi
+  CREATED_DB=1
+fi
+
+if (( REMOVE_LEGACY == 1 )); then
+  systemctl disable x-ui.service 2>/dev/null || :
+  rm -f /etc/systemd/system/x-ui.service /usr/lib/systemd/system/x-ui.service /lib/systemd/system/x-ui.service
+  rm -rf /usr/local/x-ui /etc/x-ui
+  rm -f /usr/bin/x-ui /usr/local/bin/x-ui
+  systemctl daemon-reload
+  LEGACY_REMOVED=1
+  echo "3x-ui uninstalled; its database and configuration backup is at $BACKUP_DIR"
 fi
 
 if (( LEGACY_FOUND == 1 && REMOVE_LEGACY == 0 )); then
