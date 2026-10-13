@@ -687,6 +687,16 @@ func main() {
 	}
 
 	switch os.Args[1] {
+	case "init-db":
+		if err := database.InitDB(config.GetDBPath()); err != nil {
+			log.Fatal(err)
+		}
+	case "initial-password":
+		password, err := os.ReadFile(config.GetDBFolderPath() + "/initial-admin-password")
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Print(string(password))
 	case "agent":
 		runProxyAgent()
 	case "run":
@@ -800,6 +810,8 @@ func commandHelp() string {
 Commands:
     run            run web panel
     agent          manage non-Xray proxy protocols independently of the web panel
+    init-db        initialize SQLite without starting network listeners
+    initial-password  print the generated first-login password (root only)
     migrate        migrate from other/old miniray
     migrate-db     SQLite <-> .dump (--dump/--restore) or copy into PostgreSQL (--dsn)
     encrypt-tokens encrypt node bearer tokens with the configured active key

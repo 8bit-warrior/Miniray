@@ -3,6 +3,8 @@ package database
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -53,7 +55,6 @@ func Dialect() string {
 
 const (
 	defaultUsername       = "admin"
-	defaultPassword       = "admin"
 	sqliteBackupDirPrefix = ".miniray-backup-"
 )
 
@@ -1207,17 +1208,27 @@ func initUser() error {
 		return err
 	}
 	if empty {
-		hashedPassword, err := crypto.HashPasswordAsBcrypt(defaultPassword)
-		if err != nil {
-			log.Printf("Error hashing default password: %v", err)
+		secret := make([]byte, 24)
+		if _, err := rand.Read(secret); err != nil {
 			return err
 		}
-
-		user := &model.User{
-			Username: defaultUsername,
-			Password: hashedPassword,
+		password := base64.RawURLEncoding.EncodeToString(secret)
+		hash, err := crypto.HashPasswordAsBcrypt(password)
+		if err != nil {
+			return err
 		}
-		return db.Create(user).Error
+		passwordPath := filepath.Join(config.GetDBFolderPath(), "initial-admin-password")
+		if err := os.WriteFile(passwordPath, []byte(password+"\n"), 0o600); err != nil {
+			return err
+		}
+		if err := os.Chmod(passwordPath, 0o600); err != nil {
+			return err
+		}
+		if err := db.Create(&model.User{Username: defaultUsername, Password: hash}).Error; err != nil {
+			_ = os.Remove(passwordPath)
+			return err
+		}
+		log.Printf("Initial admin password: read %s as root; change it after first login", passwordPath)
 	}
 	return nil
 }

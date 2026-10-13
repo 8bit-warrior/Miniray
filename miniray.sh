@@ -34,6 +34,7 @@ action() {
     logs) journalctl -u "$PANEL" -u "$CORE" -u "$AGENT" --no-pager -n 100;;
     panel-logs) journalctl -u "$PANEL" --no-pager -n 100;;
     core-logs) journalctl -u "$CORE" -u "$AGENT" --no-pager -n 100;;
+    initial-password) "$ROOT/miniray" initial-password;;
     settings) "$ROOT/miniray" setting -show;;
     reset-settings) "$ROOT/miniray" setting -reset;;
     version) "$ROOT/miniray" -v;;
@@ -51,6 +52,7 @@ Miniray independent panel and proxy services
   miniray start|stop|restart                    Control all services explicitly
   miniray status                                Service and boot states
   miniray logs|panel-logs|core-logs             View logs
+  miniray initial-password                      Read one-time initial administrator password
   miniray update                                Update installed version
 EOF
 }

@@ -84,7 +84,7 @@ Drop the xray binary (`xray-windows-amd64.exe` on Windows, `xray-linux-amd64` on
 go run .
 ```
 
-Open [http://localhost:2053](http://localhost:2053) and log in with `admin` / `admin`. Credentials must be changed on first login.
+Open [http://localhost:2053](http://localhost:2053) and log in as `admin` with the generated password in `miniray/initial-admin-password` (local development) or `/etc/miniray/initial-admin-password` (Linux service). The root-only password file is removed after changing credentials.
 
 ### Inside VS Code
 

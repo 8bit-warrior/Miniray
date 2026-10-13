@@ -57,6 +57,7 @@ install -m 0644 "$ROOT/miniray-core.service" /etc/systemd/system/miniray-core.se
 install -m 0644 "$ROOT/miniray-agent.service" /etc/systemd/system/miniray-agent.service
 install -m 0644 "$ROOT/miniray.service.$UNIT" /etc/systemd/system/miniray.service
 systemctl daemon-reload
+"$ROOT/miniray" init-db
 [[ "$CORE_BOOT" == disabled || "$CORE_BOOT" == masked ]] || systemctl enable miniray-core.service
 [[ "$AGENT_BOOT" == disabled || "$AGENT_BOOT" == masked ]] || systemctl enable miniray-agent.service
 [[ "$PANEL_BOOT" == disabled || "$PANEL_BOOT" == masked ]] || systemctl enable miniray.service
@@ -64,3 +65,6 @@ systemctl start miniray-agent.service
 systemctl start miniray.service
 systemctl is-active --quiet miniray.service
 echo "Miniray $VERSION installed."
+if [[ -f /etc/miniray/initial-admin-password ]]; then
+  echo "First-login administrator password: run sudo miniray initial-password"
+fi
