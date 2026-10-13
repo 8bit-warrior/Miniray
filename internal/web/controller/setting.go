@@ -3,6 +3,8 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"os/exec"
+	"fmt"
 	"os"
 	"runtime"
 	"strconv"
@@ -77,6 +79,8 @@ func (a *SettingController) initRouter(g *gin.RouterGroup) {
 	g.POST("/updateUser", a.updateUser)
 	g.POST("/restartPanel", a.restartPanel)
 	g.POST("/offlinePanel", a.offlinePanel)
+	g.GET("/panelAutostart", a.getPanelAutostart)
+	g.POST("/panelAutostart", a.updatePanelAutostart)
 	g.GET("/getDefaultJsonConfig", a.getDefaultXrayConfig)
 	g.GET("/apiTokens", a.listApiTokens)
 	g.POST("/apiTokens/create", a.createApiToken)
@@ -405,4 +409,50 @@ func (a *SettingController) offlinePanel(c *gin.Context){
  }
  pureJsonMsg(c,http.StatusOK,true,"panel will go offline")
  go func(){time.Sleep(500*time.Millisecond);global.TriggerPanelOffline()}()
+}
+
+type panelAutostartForm struct {
+	Enabled *bool `json:"enabled" binding:"required"`
+}
+
+func getPanelAutostartState() (bool, error) {
+	if runtime.GOOS != "linux" {
+		return false, errors.New("systemd panel autostart is supported only on Linux")
+	}
+	out, err := exec.Command("systemctl", "is-enabled", "miniray.service").CombinedOutput()
+	switch strings.TrimSpace(string(out)) {
+	case "enabled", "enabled-runtime", "linked", "linked-runtime":
+		return true, nil
+	case "disabled", "static", "indirect":
+		return false, nil
+	default:
+		return false, fmt.Errorf("query panel boot state: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+}
+
+func (a *SettingController) getPanelAutostart(c *gin.Context) {
+	enabled, err := getPanelAutostartState()
+	jsonObj(c, gin.H{"enabled": enabled}, err)
+}
+
+func (a *SettingController) updatePanelAutostart(c *gin.Context) {
+	var form panelAutostartForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		jsonObj(c, nil, err)
+		return
+	}
+	if runtime.GOOS != "linux" {
+		jsonObj(c, nil, errors.New("systemd panel autostart is supported only on Linux"))
+		return
+	}
+	action := "disable"
+	if *form.Enabled {
+		action = "enable"
+	}
+	out, err := exec.CommandContext(c.Request.Context(), "systemctl", action, "miniray.service").CombinedOutput()
+	if err != nil {
+		jsonObj(c, nil, fmt.Errorf("systemctl %s miniray.service: %w: %s", action, err, strings.TrimSpace(string(out))))
+		return
+	}
+	jsonObj(c, gin.H{"enabled": *form.Enabled}, nil)
 }

@@ -39,25 +39,8 @@ services:
       # MINIRAY_PPROF: "true"           # expose pprof on 127.0.0.1:6060 for profiling
       # MINIRAY_INIT_WEB_BASE_PATH: "/"
       # MINIRAY_PORT: "8080"
-      # To use PostgreSQL instead of the default SQLite, run:
-      #   docker compose --profile postgres up -d
-      # and uncomment the two lines below.
-      # MINIRAY_DB_TYPE: "postgres"
-      # MINIRAY_DB_DSN: "postgres://miniray:miniray@postgres:5432/miniray?sslmode=disable"
     tty: true
     ports:
       # When MINIRAY_PORT is set, publish the same container port (for example "8080:8080").
       - "2053:2053"
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:16-alpine
-    container_name: miniray_postgres
-    profiles: ["postgres"]
-    environment:
-      POSTGRES_USER: miniray
-      POSTGRES_PASSWORD: miniray
-      POSTGRES_DB: miniray
-    volumes:
-      - $PWD/pgdata/:/var/lib/postgresql/data
     restart: unless-stopped
