@@ -28,6 +28,10 @@ func legacyImportFixture(t *testing.T) string {
 		`CREATE TABLE client_inbounds (client_id INTEGER, inbound_id INTEGER, flow_override TEXT)`,
 		`CREATE TABLE client_traffics (id INTEGER PRIMARY KEY, inbound_id INTEGER, email TEXT, enable INTEGER, up INTEGER, down INTEGER, total INTEGER, expiry_time INTEGER)`,
 		`CREATE TABLE inbound_fallbacks (id INTEGER PRIMARY KEY, master_id INTEGER, child_id INTEGER, path TEXT)`,
+		`CREATE TABLE inbound_client_ips (id INTEGER PRIMARY KEY, client_email TEXT, ips TEXT)`,
+		`CREATE TABLE client_hwids (id INTEGER PRIMARY KEY, sub_id TEXT, hwid_hash TEXT, first_seen INTEGER, last_seen INTEGER)`,
+		`CREATE TABLE client_external_links (id INTEGER PRIMARY KEY, client_id INTEGER, kind TEXT, value TEXT, enable INTEGER)`,
+		`CREATE TABLE outbound_subscriptions (id INTEGER PRIMARY KEY, remark TEXT, url TEXT, enabled INTEGER)`,
 	}
 	for _, query := range statements {
 		if _, err := raw.Exec(query); err != nil {
@@ -72,11 +76,21 @@ func legacyImportFixture(t *testing.T) string {
 	if _, err := raw.Exec(`INSERT INTO client_inbounds(client_id,inbound_id) VALUES (7,10),(7,13),(8,11)`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := raw.Exec(`INSERT INTO client_traffics(id,inbound_id,email,enable,up,down,total,expiry_time) VALUES (1,10,'alice@example.com',1,123,456,9999,123456),(2,11,'remote@example.com',1,1,1,9999,0)`); err != nil {
+	if _, err := raw.Exec(`INSERT INTO client_traffics(id,inbound_id,email,enable,up,down,total,expiry_time) VALUES (1,10,'alice@example.com',1,123,456,9999,123456),(2,11,'remote@example.com',1,1,1,9999,0),(3,13,'alice@example.com',1,5,9,9999,123456)`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := raw.Exec(`INSERT INTO inbound_fallbacks(id,master_id,child_id,path) VALUES (1,10,13,'/cross'),(2,10,11,'/remote')`); err != nil {
 		t.Fatal(err)
+	}
+	for _, query := range []string{
+		`INSERT INTO inbound_client_ips(id,client_email,ips) VALUES (1,'alice@example.com','["1.2.3.4"]'),(2,'remote@example.com','["5.6.7.8"]')`,
+		`INSERT INTO client_hwids(id,sub_id,hwid_hash,first_seen,last_seen) VALUES (1,'alice-sub','abcdef',100,200),(2,'remote-sub','123456',100,200)`,
+		`INSERT INTO client_external_links(id,client_id,kind,value,enable) VALUES (1,7,'link','vless://sample',1),(2,8,'link','vless://remote',1)`,
+		`INSERT INTO outbound_subscriptions(id,remark,url,enabled) VALUES (1,'upstream','https://example.com/sub',1)`,
+	} {
+		if _, err := raw.Exec(query); err != nil {
+			t.Fatal(err)
+		}
 	}
 	return path
 }
@@ -96,7 +110,7 @@ func TestLegacySQLiteSnapshotAndSelectiveImport(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = CloseDB() })
-	if result.Inbounds != 2 || result.Clients != 1 || result.TrafficRows != 1 || result.SkippedRemoteInbounds != 1 || result.SkippedUnsupportedInbounds != 1 || !result.ImportedAdmin {
+	if result.Inbounds != 2 || result.Clients != 1 || result.TrafficRows != 2 || result.SkippedRemoteInbounds != 1 || result.SkippedUnsupportedInbounds != 1 || !result.ImportedAdmin {
 		t.Fatalf("import result: %+v", result)
 	}
 	var inbounds []model.Inbound
@@ -135,7 +149,14 @@ func TestLegacySQLiteSnapshotAndSelectiveImport(t *testing.T) {
 	if err := GetDB().Find(&traffic).Error; err != nil {
 		t.Fatal(err)
 	}
-	if len(traffic) != 1 || traffic[0].Up != 123 || traffic[0].Down != 456 || traffic[0].Total != 9999 {
+	if len(traffic) != 2 {
+		t.Fatalf("traffic: %+v", traffic)
+	}
+	byInbound := map[int]xray.ClientTraffic{}
+	for _, stat := range traffic {
+		byInbound[stat.InboundId] = stat
+	}
+	if byInbound[10].Up != 123 || byInbound[10].Down != 456 || byInbound[13].Up != 5 || byInbound[13].Down != 9 || byInbound[11].Up != 0 {
 		t.Fatalf("traffic: %+v", traffic)
 	}
 	var fallbacks []model.InboundFallback
@@ -144,6 +165,23 @@ func TestLegacySQLiteSnapshotAndSelectiveImport(t *testing.T) {
 	}
 	if len(fallbacks) != 1 || fallbacks[0].ChildId != 13 {
 		t.Fatalf("fallbacks: %+v", fallbacks)
+	}
+	for _, tc := range []struct {
+		name  string
+		model any
+	}{
+		{"IPs", &[]model.InboundClientIps{}},
+		{"HWIDs", &[]model.ClientHwid{}},
+		{"external links", &[]model.ClientExternalLink{}},
+		{"outbound subscriptions", &[]model.OutboundSubscription{}},
+	} {
+		var count int64
+		if err := GetDB().Model(tc.model).Count(&count).Error; err != nil {
+			t.Fatal(err)
+		}
+		if count != 1 {
+			t.Fatalf("%s imported count = %d, want 1", tc.name, count)
+		}
 	}
 	var importedSettings []model.Setting
 	if err := GetDB().Where("key IN ?", []string{"webCertFile", "apiToken", "obsoleteNodeSetting"}).Find(&importedSettings).Error; err != nil {

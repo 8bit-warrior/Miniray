@@ -62,13 +62,13 @@ if (( EXISTING_MINIRAY == 0 )); then
     echo 'Detected an existing 3x-ui installation.'
     if ask_yn 'Uninstall 3x-ui before installing Miniray?'; then REMOVE_LEGACY=1; fi
     if ask_yn 'Import supported 3x-ui configuration into Miniray?'; then IMPORT_LEGACY=1; fi
-    if (( IMPORT_LEGACY == 1 )); then
-      if [[ "$LEGACY_DB_TYPE" != sqlite ]]; then
-        echo "Cannot import a legacy $LEGACY_DB_TYPE database; only SQLite is supported." >&2
+    if (( IMPORT_LEGACY == 1 || REMOVE_LEGACY == 1 )); then
+      if [[ "${LEGACY_DB_TYPE,,}" != sqlite ]]; then
+        echo "Cannot back up a legacy $LEGACY_DB_TYPE database; only SQLite is supported." >&2
         exit 1
       fi
       if [[ ! -f "$LEGACY_DB" ]]; then
-        echo "Cannot import: SQLite database not found at $LEGACY_DB." >&2
+        echo "Cannot back up: legacy SQLite database not found at $LEGACY_DB." >&2
         exit 1
       fi
     fi
@@ -132,16 +132,16 @@ if (( LEGACY_FOUND == 1 )); then
       fi
     fi
   fi
-  if [[ -f "$LEGACY_DB" && "$LEGACY_DB_TYPE" == sqlite ]]; then
+  if (( REMOVE_LEGACY == 1 || IMPORT_LEGACY == 1 )); then
     "$TMP/miniray/miniray" snapshot-legacy --source "$LEGACY_DB" --out "$TMP/legacy.db"
+    test -s "$TMP/legacy.db"
   fi
   if (( REMOVE_LEGACY == 1 )); then
     install -d -m 0700 /var/backups/miniray
     BACKUP_DIR=$(mktemp -d /var/backups/miniray/legacy-XXXXXXXX)
     chmod 700 "$BACKUP_DIR"
-    if [[ -f "$TMP/legacy.db" ]]; then
-      install -m 0600 "$TMP/legacy.db" "$BACKUP_DIR/x-ui.db"
-    fi
+    install -m 0600 "$TMP/legacy.db" "$BACKUP_DIR/x-ui.db"
+    test -s "$BACKUP_DIR/x-ui.db"
     if [[ -d /etc/x-ui ]]; then
       cp -a /etc/x-ui "$BACKUP_DIR/config"
       if (( IMPORT_LEGACY == 1 )); then

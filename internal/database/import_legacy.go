@@ -276,6 +276,30 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 			return result, err
 		}
 	}
+	var clientIPs []model.InboundClientIps
+	if source.Migrator().HasTable("inbound_client_ips") {
+		if err := source.Find(&clientIPs).Error; err != nil {
+			return result, err
+		}
+	}
+	var clientHWIDs []model.ClientHwid
+	if source.Migrator().HasTable("client_hwids") {
+		if err := source.Find(&clientHWIDs).Error; err != nil {
+			return result, err
+		}
+	}
+	var externalLinks []model.ClientExternalLink
+	if source.Migrator().HasTable("client_external_links") {
+		if err := source.Find(&externalLinks).Error; err != nil {
+			return result, err
+		}
+	}
+	var outboundSubs []model.OutboundSubscription
+	if source.Migrator().HasTable("outbound_subscriptions") {
+		if err := source.Find(&outboundSubs).Error; err != nil {
+			return result, err
+		}
+	}
 
 	defer func() {
 		if err != nil {
@@ -293,8 +317,8 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 
 	importedInbound := map[int]bool{}
 	importedClient := map[int]bool{}
-	clientInbound := map[string]int{}
-	clientEmails := map[int]string{}
+	importedEmails := map[string]bool{}
+	importedSubIDs := map[string]bool{}
 	rebase := func(value string) string {
 		if legacyAssets == "" {
 			return value
@@ -384,14 +408,16 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 				return fmt.Errorf("import client %d: %w", client.Id, err)
 			}
 			result.Clients++
-			clientEmails[client.Id] = client.Email
+			importedEmails[strings.ToLower(client.Email)] = true
+			if client.SubID != "" {
+				importedSubIDs[client.SubID] = true
+			}
 		}
 		for _, link := range joins {
 			if importedInbound[link.InboundId] && importedClient[link.ClientId] {
 				if err := tx.Create(&link).Error; err != nil {
 					return err
 				}
-				clientInbound[strings.ToLower(clientEmails[link.ClientId])] = link.InboundId
 			}
 		}
 		if result.Clients == 0 {
@@ -440,17 +466,45 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 					if err := tx.Where("client_id = ? AND inbound_id = ?", link.ClientId, link.InboundId).FirstOrCreate(&link).Error; err != nil {
 						return err
 					}
-					clientInbound[strings.ToLower(record.Email)] = inbound.Id
+					importedEmails[strings.ToLower(record.Email)] = true
+					if record.SubID != "" {
+						importedSubIDs[record.SubID] = true
+					}
+					importedClient[existing.Id] = true
 				}
 			}
 		}
+		for _, entry := range clientIPs {
+			if importedEmails[strings.ToLower(entry.ClientEmail)] {
+				if err := tx.Create(&entry).Error; err != nil {
+					return err
+				}
+			}
+		}
+		for _, entry := range clientHWIDs {
+			if importedSubIDs[entry.SubID] {
+				if err := tx.Create(&entry).Error; err != nil {
+					return err
+				}
+			}
+		}
+		for _, entry := range externalLinks {
+			if importedClient[entry.ClientId] {
+				if err := tx.Create(&entry).Error; err != nil {
+					return err
+				}
+			}
+		}
+		for _, entry := range outboundSubs {
+			if err := tx.Create(&entry).Error; err != nil {
+				return err
+			}
+		}
 		for _, stat := range traffic {
-			newInbound, ok := clientInbound[strings.ToLower(stat.Email)]
-			if !ok {
+			if !importedInbound[stat.InboundId] || !importedEmails[strings.ToLower(stat.Email)] {
 				continue
 			}
 			stat.Id = 0
-			stat.InboundId = newInbound
 			if err := tx.Create(&stat).Error; err != nil {
 				return fmt.Errorf("import traffic for %s: %w", stat.Email, err)
 			}
