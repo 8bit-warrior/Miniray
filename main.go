@@ -10,6 +10,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strings"
 	"runtime"
@@ -22,6 +23,10 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/crypto/nodetoken"
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/logger"
+	"github.com/8bit-warrior/Miniray/internal/mtproto"
+	"github.com/8bit-warrior/Miniray/internal/tuic"
+	"github.com/8bit-warrior/Miniray/internal/amneziawgnet"
+	"github.com/8bit-warrior/Miniray/internal/web/job"
 	"github.com/8bit-warrior/Miniray/internal/sub"
 	"github.com/8bit-warrior/Miniray/internal/tunnelmonitor"
 	"github.com/8bit-warrior/Miniray/internal/util/crypto"
@@ -682,6 +687,8 @@ func main() {
 	}
 
 	switch os.Args[1] {
+	case "agent":
+		runProxyAgent()
 	case "run":
 		err := runCmd.Parse(os.Args[2:])
 		if err != nil {
@@ -792,9 +799,76 @@ func commandHelp() string {
 	return `
 Commands:
     run            run web panel
+    agent          manage non-Xray proxy protocols independently of the web panel
     migrate        migrate from other/old miniray
     migrate-db     SQLite <-> .dump (--dump/--restore) or copy into PostgreSQL (--dsn)
     encrypt-tokens encrypt node bearer tokens with the configured active key
     setting        set settings
 `
+}
+
+func runProxyAgent() {
+	if runtime.GOOS != "linux" || os.Getenv("MINIRAY_SEPARATE_CORE") != "1" {
+		log.Fatal("proxy agent requires Linux systemd with MINIRAY_SEPARATE_CORE=1")
+	}
+	logger.InitLogger(logging.INFO)
+	if err := initNodeTokenCrypto(); err != nil {
+		log.Fatal(err)
+	}
+	if err := database.InitDB(config.GetDBPath()); err != nil {
+		log.Fatal(err)
+	}
+
+	service.StartTrafficWriter()
+	var xrayService service.XrayService
+	if err := xrayService.RestartXray(true); err != nil {
+		logger.Warning("proxy agent: initial Xray reconcile failed:", err)
+	}
+
+	mtprotoJob := job.NewMtprotoJob()
+	amneziawgJob := job.NewAmneziaWGJob()
+	tuicJob := job.NewTuicJob()
+	xrayTrafficJob := job.NewXrayTrafficJob()
+	ipLimitJob := job.NewCheckClientIpJob()
+	xrayWatchdog := job.NewCheckXrayRunningJob()
+
+	mtprotoJob.Run()
+	amneziawgJob.Run()
+	tuicJob.Run()
+	xrayService.ApplyPendingRestart()
+
+	reconcileTicker := time.NewTicker(10 * time.Second)
+	trafficTicker := time.NewTicker(5 * time.Second)
+	defer reconcileTicker.Stop()
+	defer trafficTicker.Stop()
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGTERM, os.Interrupt)
+	defer signal.Stop(signals)
+	logger.Info("Miniray proxy agent started; panel startup is independent")
+	for {
+		select {
+		case <-reconcileTicker.C:
+			mtprotoJob.Run()
+			amneziawgJob.Run()
+			tuicJob.Run()
+			xrayService.ApplyPendingRestart()
+		case <-trafficTicker.C:
+			xrayWatchdog.Run()
+			if exec.Command("systemctl", "is-active", "--quiet", "miniray.service").Run() != nil {
+				xrayTrafficJob.Run()
+				ipLimitJob.Run()
+			}
+		case <-signals:
+			tuic.GetManager().StopAll()
+			if err := tuicJob.FlushStoppedTraffic(); err != nil {
+				logger.Warning("proxy agent: flush TUIC counters:", err)
+			}
+			mtproto.GetManager().StopAll()
+			amneziawgnet.GetManager().StopAll()
+			amneziawgnet.GetOutboundManager().StopAll()
+			service.StopTrafficWriter()
+			return
+		}
+	}
 }

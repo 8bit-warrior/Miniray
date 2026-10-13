@@ -1,7 +1,7 @@
 [Unit]
 Description=Miniray web panel
 Wants=network-online.target
-After=network-online.target miniray-core.service
+After=network-online.target miniray-core.service miniray-agent.service
 StartLimitIntervalSec=180
 StartLimitBurst=10
 

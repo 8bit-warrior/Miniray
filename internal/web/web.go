@@ -336,19 +336,20 @@ func (s *Server) startTask(restartXray bool, loc *time.Location) {
 		_, _ = s.cron.AddJob(cadenceXrayTraffic, job.NewXrayTrafficJob())
 	}()
 
-	// Reconcile mtproto (mtg) sidecars and scrape their traffic
-	mtJob := job.NewMtprotoJob()
-	_, _ = s.cron.AddJob(cadenceMtproto, mtJob)
-	go mtJob.Run()
+	// The independent agent owns embedded and sidecar listeners on Linux.
+	if os.Getenv("MINIRAY_SEPARATE_CORE") != "1" {
+		mtJob := job.NewMtprotoJob()
+		_, _ = s.cron.AddJob(cadenceMtproto, mtJob)
+		go mtJob.Run()
 
-	// Reconcile embedded AmneziaWG interfaces; traffic rides Xray's own stats
-	awgJob := job.NewAmneziaWGJob()
-	_, _ = s.cron.AddJob(cadenceAmneziaWG, awgJob)
-	go awgJob.Run()
+		awgJob := job.NewAmneziaWGJob()
+		_, _ = s.cron.AddJob(cadenceAmneziaWG, awgJob)
+		go awgJob.Run()
 
-	tuicJob := job.NewTuicJob()
-	_, _ = s.cron.AddJob(cadenceTuic, tuicJob)
-	go tuicJob.Run()
+		tuicJob := job.NewTuicJob()
+		_, _ = s.cron.AddJob(cadenceTuic, tuicJob)
+		go tuicJob.Run()
+	}
 
 	// check client ips from log file every 10 sec
 	_, _ = s.cron.AddJob(cadenceClientIPScan, job.NewCheckClientIpJob())
@@ -540,7 +541,11 @@ func (s *Server) start(restartXray bool, startTgBot bool) (err error) {
 	// This is an anonymous function, no function name
 	defer func() {
 		if err != nil {
-			_ = s.Stop()
+			if os.Getenv("MINIRAY_SEPARATE_CORE") == "1" {
+				_ = s.StopPanelOnly()
+			} else {
+				_ = s.Stop()
+			}
 		}
 	}()
 

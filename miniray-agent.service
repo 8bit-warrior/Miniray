@@ -1,0 +1,18 @@
+[Unit]
+Description=Miniray independent proxy protocol supervisor
+Wants=network-online.target miniray-core.service
+After=network-online.target miniray-core.service
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/miniray
+EnvironmentFile=-/etc/default/miniray
+Environment=MINIRAY_SEPARATE_CORE=1
+ExecStart=/usr/local/miniray/miniray agent
+Restart=on-failure
+RestartSec=5s
+LimitNOFILE=1048576
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
