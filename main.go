@@ -60,9 +60,9 @@ func (offlineSignal) String() string { return "panel-offline" }
 
 func stopPanelThroughService(sigCh chan os.Signal) {
 	if runtime.GOOS == "linux" && os.Getenv("MINIRAY_SEPARATE_CORE") == "1" {
-		cmd := exec.Command("systemctl", "stop", "miniray.service")
+		cmd := exec.CommandContext(context.Background(), "systemctl", "stop", "miniray.service")
 		if os.Getenv("MINIRAY_SERVICE_MANAGER") == "openrc" {
-			cmd = exec.Command("rc-service", "miniray", "stop")
+			cmd = exec.CommandContext(context.Background(), "rc-service", "miniray", "stop")
 		}
 		if output, err := cmd.CombinedOutput(); err == nil {
 			return
