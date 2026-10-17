@@ -214,4 +214,25 @@ for language in ("zh", "en"):
     assert rendered.count("\x1b[5G") == 3, (language, rendered)
     assert rendered.count("┐") == 3 and rendered.count("┘") == 3, (language, rendered)
 PY
-printf 'Menu acceptance: systemd, OpenRC, aligned TTY frames, bilingual labels, credentials, port, path and address passed\n'
+cat > "$work/bin/curl" <<'MOCK'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$MINIRAY_TEST_STATE/curl-calls"
+printf '{"tag_name":"v%s"}\n' "$MINIRAY_TEST_VERSION"
+MOCK
+cat > "$work/root/install.sh" <<'MOCK'
+#!/usr/bin/env bash
+printf 'Installed mock tag: %s\n' "$MINIRAY_UPDATE_TAG"
+MOCK
+chmod +x "$work/bin/curl" "$work/root/install.sh"
+unset MINIRAY_UPDATE_TAG
+bash "$(dirname "$SCRIPT")/update.sh" > "$work/update-output"
+head -n 2 "$work/update-output" | grep -Fx "Current Miniray version: $MINIRAY_TEST_VERSION"
+sed -n '2p' "$work/update-output" | grep -Fx "Latest Miniray version: v$MINIRAY_TEST_VERSION"
+grep -Fx "Installed mock tag: v$MINIRAY_TEST_VERSION" "$work/update-output"
+grep -Fx "Updated Miniray version: $MINIRAY_TEST_VERSION" "$work/update-output"
+test "$(wc -l < "$work/state/curl-calls")" -eq 1
+MINIRAY_UPDATE_TAG="v$MINIRAY_TEST_VERSION" bash "$(dirname "$SCRIPT")/update.sh" > "$work/pinned-output"
+sed -n '2p' "$work/pinned-output" | grep -Fx "Target Miniray version: v$MINIRAY_TEST_VERSION"
+test "$(wc -l < "$work/state/curl-calls")" -eq 1
+
+printf 'Menu and updater acceptance: systemd, OpenRC, terminal layout, version output passed\n'

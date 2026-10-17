@@ -397,10 +397,6 @@ try:
     )
     assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
     expected_version = (repo / "internal/config/version").read_text().strip()
-    assert upgraded.stdout.splitlines()[:2] == [
-        "Current Miniray version: 0.0.1",
-        f"Latest Miniray version: v{expected_version}",
-    ], upgraded.stdout
     actual_version = command("/usr/local/miniray/miniray", "-v").stdout.strip()
     assert actual_version == expected_version, (actual_version, expected_version, upgraded.stdout)
     with sqlite3.connect("/etc/miniray/miniray.db") as db:
