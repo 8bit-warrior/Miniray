@@ -235,6 +235,7 @@ done
 systemctl daemon-reload
 
 if [[ ! -f "$DB_PATH" ]]; then
+  CREATED_DB=1
   if (( IMPORT_LEGACY == 1 )); then
     args=(import-legacy --source "$TMP/legacy.db")
     if [[ -n "$LEGACY_ASSETS" ]]; then args+=(--assets "$LEGACY_ASSETS"); fi
@@ -242,7 +243,6 @@ if [[ ! -f "$DB_PATH" ]]; then
   else
     MINIRAY_DB_FOLDER="$DB_FOLDER" "$ROOT/miniray" init-db
   fi
-  CREATED_DB=1
 fi
 
 if (( COEXIST == 1 && EXISTING_MINIRAY == 0 )); then
