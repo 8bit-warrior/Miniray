@@ -1,5 +1,6 @@
 """Choose isolated Miniray listeners when installing alongside an existing legacy panel."""
 
+import errno
 import json
 import socket
 import sqlite3
@@ -44,11 +45,12 @@ def is_free(port):
         sock4.bind(("0.0.0.0", port))
         try:
             sock6 = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        except OSError:
-            return True
-        sockets.append(sock6)
-        sock6.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
-        sock6.bind(("::", port))
+            sockets.append(sock6)
+            sock6.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+            sock6.bind(("::", port))
+        except OSError as exc:
+            if exc.errno not in (errno.EAFNOSUPPORT, errno.EPROTONOSUPPORT, errno.EADDRNOTAVAIL):
+                return False
         return True
     except OSError:
         return False
