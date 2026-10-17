@@ -390,24 +390,48 @@ func (p *process) refreshAPIPort() {
 	p.mu.Unlock()
 }
 
-// refreshVersion updates the version string by running the Xray binary with -version.
-func (p *process) refreshVersion() {
+var installedVersionCache struct {
+	sync.Mutex
+	path     string
+	size     int64
+	modified time.Time
+	value    string
+}
+
+func InstalledVersion() string {
+	path := GetBinaryPath()
+	info, err := os.Stat(path)
+	if err != nil { return "Unknown" }
+	installedVersionCache.Lock()
+	defer installedVersionCache.Unlock()
+	if installedVersionCache.path == path && installedVersionCache.size == info.Size() &&
+		installedVersionCache.modified.Equal(info.ModTime()) {
+		return installedVersionCache.value
+	}
 	version := "Unknown"
 	ctx, cancel := context.WithTimeout(context.Background(), xrayVersionTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, GetBinaryPath(), "-version")
-	if data, err := cmd.Output(); err == nil {
-		if datas := bytes.Split(data, []byte(" ")); len(datas) > 1 {
-			version = string(datas[1])
+	if data, err := exec.CommandContext(ctx, path, "-version").Output(); err == nil {
+		if fields := bytes.Fields(data); len(fields) > 1 && string(fields[0]) == "Xray" {
+			version = string(fields[1])
 		}
 	}
+	installedVersionCache.path = path
+	installedVersionCache.size = info.Size()
+	installedVersionCache.modified = info.ModTime()
+	installedVersionCache.value = version
+	return version
+}
+
+func (p *process) refreshVersion() {
+	version := InstalledVersion()
 	p.mu.Lock()
 	p.version = version
 	p.mu.Unlock()
 }
 
 // Start launches the Xray process with the current configuration.
-func (p *process) Start() (err error) {
+func (p *process) Start(forceRestart ...bool) (err error) {
 	if p.IsRunning() {
 		return errors.New("xray is already running")
 	}
@@ -435,7 +459,7 @@ func (p *process) Start() (err error) {
 	}
 	if p.configPath == "" && independentCoreEnabled() {
 		existing, _ := os.ReadFile(configPath)
-		return p.startIndependentCore(configPath, existing, data)
+		return p.startIndependentCore(configPath, existing, data, len(forceRestart) > 0 && forceRestart[0])
 	}
 	err = writeFileAtomic(configPath, data, 0o600)
 	if err != nil {
