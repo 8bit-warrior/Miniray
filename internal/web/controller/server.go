@@ -52,6 +52,7 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/xrayObservatoryHistory/:tag/:bucket", a.getXrayObservatoryHistoryBucket)
 	g.GET("/getXrayVersion", a.getXrayVersion)
 	g.GET("/getPanelUpdateInfo", a.getPanelUpdateInfo)
+	g.GET("/getActionBuilds", a.getActionBuilds)
 	g.GET("/getUpdateStatus", a.getUpdateStatus)
 	g.GET("/getConfigJson", a.getConfigJson)
 	g.GET("/getDb", a.getDb)
@@ -69,7 +70,6 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.POST("/restartXrayService", a.restartXrayService)
 	g.POST("/installXray/:version", a.installXray)
 	g.POST("/updatePanel", a.updatePanel)
-	g.POST("/setUpdateChannel", a.setUpdateChannel)
 	g.POST("/updateGeofile", a.updateGeofile)
 	g.POST("/updateGeofile/:fileName", a.updateGeofile)
 	g.POST("/logs/:count", a.getLogs)
@@ -208,19 +208,19 @@ func (a *ServerController) installXray(c *gin.Context) {
 	jsonMsg(c, I18nWeb(c, "pages.index.xraySwitchVersionPopover"), err)
 }
 
+func (a *ServerController) getActionBuilds(c *gin.Context) {
+	builds, err := a.panelService.ListActionBuilds()
+	jsonObj(c, builds, err)
+}
+
 func (a *ServerController) updatePanel(c *gin.Context) {
-	devParam := c.PostForm("dev")
+	actionRunID := c.PostForm("actionRunId")
 	var runID int64
 	var err error
-	if devParam == "" {
-		runID, err = a.panelService.StartUpdate()
+	if actionRunID != "" {
+		runID, err = a.panelService.StartUpdateBuild(actionRunID)
 	} else {
-		dev, perr := strconv.ParseBool(devParam)
-		if perr != nil {
-			jsonMsg(c, "invalid data", perr)
-			return
-		}
-		runID, err = a.panelService.StartUpdateChannel(dev)
+		runID, err = a.panelService.StartUpdate()
 	}
 	var obj any
 	if err == nil {
@@ -234,17 +234,6 @@ func (a *ServerController) updatePanel(c *gin.Context) {
 // updatePanel returned to tell this run's result apart from a stale one.
 func (a *ServerController) getUpdateStatus(c *gin.Context) {
 	jsonObj(c, a.panelService.GetUpdateStatus(), nil)
-}
-
-// setUpdateChannel toggles whether self-update tracks the rolling dev release.
-func (a *ServerController) setUpdateChannel(c *gin.Context) {
-	dev, err := strconv.ParseBool(c.PostForm("dev"))
-	if err != nil {
-		jsonMsg(c, "invalid data", err)
-		return
-	}
-	err = a.settingService.SetDevChannelEnable(dev)
-	jsonMsg(c, I18nWeb(c, "pages.index.updateChannelChanged"), err)
 }
 
 // updateGeofile updates the specified geo file for Xray.

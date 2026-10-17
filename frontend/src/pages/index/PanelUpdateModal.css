@@ -22,3 +22,37 @@
   justify-content: flex-end;
   margin-top: 12px;
 }
+
+.actions-build-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.actions-build-info {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.actions-build-meta {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+}
+
+.actions-build-title {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ant-color-text-tertiary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions-build-empty {
+  padding: 24px;
+  color: var(--ant-color-text-secondary);
+  text-align: center;
+}

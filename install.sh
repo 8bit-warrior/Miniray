@@ -205,17 +205,75 @@ finish_install() {
   rm -rf "$TMP"
 }
 trap finish_install EXIT
-if [[ "$VERSION" == latest ]]; then
-  curl -fsSL --retry 4 -o "$TMP/release.json" "https://api.github.com/repos/8bit-warrior/Miniray/releases/latest"
-  VERSION=$(sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' "$TMP/release.json" | head -n 1)
-  [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Invalid latest stable Release tag' >&2; exit 1; }
+ASSET="miniray-linux-$ARCH.tar.gz"
+ACTION_RUN_ID="${MINIRAY_ACTION_RUN_ID:-}"
+if [[ -n "$ACTION_RUN_ID" ]]; then
+  [[ "$ACTION_RUN_ID" =~ ^[1-9][0-9]*$ ]] || { echo 'Invalid Actions run ID' >&2; exit 1; }
+  for cmd in python3 unzip; do command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 1; }; done
+  API="https://api.github.com/repos/8bit-warrior/Miniray"
+  curl -fsSL --retry 4 -o "$TMP/action-run.json" "$API/actions/runs/$ACTION_RUN_ID"
+  curl -fsSL --retry 4 -o "$TMP/action-artifacts.json" "$API/actions/runs/$ACTION_RUN_ID/artifacts?per_page=100"
+  ACTION_META=$(python3 - "$TMP/action-run.json" "$TMP/action-artifacts.json" "$ARCH" "$ACTION_RUN_ID" <<'PY'
+import json
+import re
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as stream:
+    run = json.load(stream)
+with open(sys.argv[2], encoding="utf-8") as stream:
+    artifacts = json.load(stream)["artifacts"]
+arch, run_id = sys.argv[3:]
+sha = run.get("head_sha", "")
+if (
+    str(run.get("id")) != run_id
+    or run.get("head_branch") != "main"
+    or run.get("status") != "completed"
+    or run.get("conclusion") != "success"
+    or run.get("path", "").split("@")[0] != ".github/workflows/release.yml"
+    or not re.fullmatch(r"[0-9a-fA-F]{40}", sha)
+):
+    sys.exit("Selected Actions run is not a successful Miniray main build")
+version = "dev+" + sha[:8].lower()
+release = re.fullmatch(r"chore\(release\): (v[0-9]+\.[0-9]+\.[0-9]+)", run.get("display_title", ""))
+if release:
+    version = release.group(1)[1:]
+for artifact in artifacts:
+    digest = artifact.get("digest", "")
+    workflow = artifact.get("workflow_run") or {}
+    if (
+        artifact.get("name") == f"miniray-linux-{arch}"
+        and not artifact.get("expired")
+        and re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
+        and workflow.get("id") == run["id"]
+        and workflow.get("head_sha", "").lower() == sha.lower()
+    ):
+        print(artifact["id"], digest.split(":", 1)[1], version, sha.lower())
+        break
+else:
+    sys.exit("Selected Actions build has no valid, unexpired artifact for this architecture")
+PY
+  ) || exit 1
+  read -r ARTIFACT_ID EXPECTED_SHA EXPECTED_VERSION ACTION_COMMIT <<< "$ACTION_META"
+  printf 'Downloading Actions run %s, artifact %s...\n' "$ACTION_RUN_ID" "$ARTIFACT_ID"
+  curl -fL --retry 4 --connect-timeout 15 --max-filesize 268435456 \
+    -o "$TMP/action.zip" \
+    "https://nightly.link/8bit-warrior/Miniray/actions/artifacts/$ARTIFACT_ID.zip"
+  printf '%s  %s\n' "$EXPECTED_SHA" "$TMP/action.zip" | sha256sum -c -
+  unzip -p "$TMP/action.zip" "$ASSET" > "$TMP/$ASSET"
+  test -s "$TMP/$ASSET"
+  VERSION="$EXPECTED_VERSION"
+else
+  if [[ "$VERSION" == latest ]]; then
+    curl -fsSL --retry 4 -o "$TMP/release.json" "https://api.github.com/repos/8bit-warrior/Miniray/releases/latest"
+    VERSION=$(sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' "$TMP/release.json" | head -n 1)
+    [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Invalid latest stable Release tag' >&2; exit 1; }
+  fi
+  BASE="$REPO/releases/download/$VERSION"
+  printf "Downloading %s from %s...\n" "$ASSET" "$VERSION"
+  curl -fsSL --retry 4 -o "$TMP/$ASSET" "$BASE/$ASSET"
+  curl -fsSL --retry 4 -o "$TMP/SHA256SUMS" "$BASE/SHA256SUMS"
+  (cd "$TMP" && grep -F "  $ASSET" SHA256SUMS | sha256sum -c -)
 fi
-ASSET="miniray-linux-${ARCH}.tar.gz"
-BASE="$REPO/releases/download/$VERSION"
-printf "Downloading %s from %s...\n" "$ASSET" "$VERSION"
-curl -fsSL --retry 4 -o "$TMP/$ASSET" "$BASE/$ASSET"
-curl -fsSL --retry 4 -o "$TMP/SHA256SUMS" "$BASE/SHA256SUMS"
-(cd "$TMP" && grep -F "  $ASSET" SHA256SUMS | sha256sum -c -)
 tar -tzf "$TMP/$ASSET" | grep -vE '(^miniray/|^miniray$)' && {
   echo 'Unexpected archive paths' >&2
   exit 1
@@ -301,6 +359,12 @@ for script in install.sh update.sh miniray.sh; do
   rm -f "$TMP/miniray/$script"
 done
 cp -a "$TMP/miniray/." "$ROOT/"
+if [[ -n "$ACTION_RUN_ID" ]]; then
+  printf '%s\n' "$ACTION_COMMIT" > "$ROOT/.action-commit"
+  chmod 0644 "$ROOT/.action-commit"
+else
+  rm -f "$ROOT/.action-commit"
+fi
 ln -sfn "xray-linux-$ARCH" "$ROOT/bin/xray"
 chmod 755 "$ROOT/miniray" "$ROOT/miniray.sh" "$ROOT/install.sh" "$ROOT/update.sh"
 chmod 700 "$DB_FOLDER"
@@ -422,8 +486,10 @@ if (( LEGACY_FOUND == 1 )); then
 fi
 
 INSTALLED_VERSION=$("$ROOT/miniray" -v)
-if [[ "$INSTALLED_VERSION" != "$PACKAGE_VERSION" ]]; then
-  echo "Installed Miniray version mismatch: expected $PACKAGE_VERSION, got $INSTALLED_VERSION" >&2
+EXPECTED_INSTALLED="$PACKAGE_VERSION"
+if [[ -n "$ACTION_RUN_ID" ]]; then EXPECTED_INSTALLED="$EXPECTED_VERSION"; fi
+if [[ "$INSTALLED_VERSION" != "$EXPECTED_INSTALLED" ]]; then
+  echo "Installed Miniray version mismatch: expected $EXPECTED_INSTALLED, got $INSTALLED_VERSION" >&2
   exit 1
 fi
 echo "Miniray $INSTALLED_VERSION installed."

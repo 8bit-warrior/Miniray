@@ -126,13 +126,9 @@ func (s *PanelService) RestartPanel(delay time.Duration) error {
 	return nil
 }
 
-// GetUpdateInfo checks GitHub for the latest miniray release. When the dev channel
-// is enabled on a dev build it compares commits against the rolling dev release;
-// otherwise it compares versions against the latest stable tag.
+// GetUpdateInfo reports the latest stable release. Actions builds are selected
+// explicitly, so the installed update-channel setting never changes the target.
 func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
-	if devChannelActive() {
-		return getDevUpdateInfo()
-	}
 	latest, err := fetchLatestPanelVersion()
 	if err != nil {
 		return nil, err
@@ -140,20 +136,11 @@ func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
 	current := config.GetBaseVersion()
 	return &PanelUpdateInfo{
 		Channel:         "stable",
-		CurrentVersion:  current,
+		CurrentVersion:  config.GetPanelVersion(),
 		LatestVersion:   latest,
-		UpdateAvailable: isNewerVersion(latest, current),
+		CurrentCommit:   shortCommit(config.GetBuildCommit()),
+		UpdateAvailable: config.IsDevBuild() || isNewerVersion(latest, current),
 	}, nil
-}
-
-// devChannelActive reports whether self-update should track the rolling dev
-// release. It is driven solely by the opt-in setting so the panel can
-// cross-grade a stable build onto the dev channel once the user enables it;
-// nothing updates without an explicit user action, so an unattended stable
-// binary with the toggle off stays on the stable channel.
-func devChannelActive() bool {
-	enabled, err := (&service.SettingService{}).GetDevChannelEnable()
-	return err == nil && enabled
 }
 
 // getDevUpdateInfo compares the running commit against the commit recorded in the
@@ -178,18 +165,16 @@ func getDevUpdateInfo() (*PanelUpdateInfo, error) {
 	}, nil
 }
 
-// StartUpdate starts the official updater using this panel's own channel
-// setting. Returns the run ID to pass to GetUpdateStatus so the caller can
-// tell this run's result apart from a stale one.
+// StartUpdate starts an update to the latest stable release.
 func (s *PanelService) StartUpdate() (int64, error) {
-	return s.startUpdate(devChannelActive())
+	return s.startUpdate(false, "")
 }
 
 // StartUpdateChannel runs the updater against an explicitly chosen channel,
 // overriding the local dev-channel setting. Used by the master node updater so
 // a node can be moved to the dev channel from the central panel.
 func (s *PanelService) StartUpdateChannel(dev bool) (int64, error) {
-	return s.startUpdate(dev)
+	return s.startUpdate(dev, "")
 }
 
 // GetUpdateStatus reports the outcome of the most recently launched panel
@@ -213,7 +198,7 @@ func (s *PanelService) GetUpdateStatus() *PanelUpdateStatus {
 	return &status
 }
 
-func (s *PanelService) startUpdate(useDev bool) (int64, error) {
+func (s *PanelService) startUpdate(useDev bool, actionRunID string) (int64, error) {
 	runID := time.Now().UnixNano()
 	if !acquireUpdateSlot(runID) {
 		return 0, fmt.Errorf("a panel update is already in progress")
@@ -258,6 +243,7 @@ func (s *PanelService) startUpdate(useDev bool) (int64, error) {
 			"--setenv", "MINIRAY_MAIN_FOLDER=" + mainFolder,
 			"--setenv", "MINIRAY_SERVICE=" + serviceFolder,
 			"--setenv", "MINIRAY_UPDATE_TAG=" + updateTag,
+			"--setenv", "MINIRAY_ACTION_RUN_ID=" + actionRunID,
 			"--setenv", runIDEnv,
 			"--setenv", statusFileEnv,
 		}
@@ -287,6 +273,7 @@ func (s *PanelService) startUpdate(useDev bool) (int64, error) {
 		"MINIRAY_MAIN_FOLDER="+mainFolder,
 		"MINIRAY_SERVICE="+serviceFolder,
 		"MINIRAY_UPDATE_TAG="+updateTag,
+		"MINIRAY_ACTION_RUN_ID="+actionRunID,
 		runIDEnv,
 		statusFileEnv,
 	)

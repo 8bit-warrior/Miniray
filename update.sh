@@ -21,6 +21,24 @@ if [[ -x "$ROOT/miniray" ]]; then
   CURRENT_VERSION=$("$ROOT/miniray" -v)
   printf 'Current Miniray version: %s\n' "$CURRENT_VERSION"
 fi
+if [[ -n "${MINIRAY_ACTION_RUN_ID:-}" ]]; then
+  [[ "$MINIRAY_ACTION_RUN_ID" =~ ^[1-9][0-9]*$ ]] || { echo 'Invalid Actions run ID' >&2; exit 1; }
+  printf 'Target Actions run: %s\n' "$MINIRAY_ACTION_RUN_ID"
+  installer=$(mktemp)
+  if ! curl -fsSL --retry 4 -o "$installer" "https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh"; then
+    rm -f "$installer"
+    exit 1
+  fi
+  if bash "$installer" "$@"; then
+    rm -f "$installer"
+  else
+    code=$?
+    rm -f "$installer"
+    exit "$code"
+  fi
+  printf 'Updated Miniray version: %s\n' "$("$ROOT/miniray" -v)"
+  exit 0
+fi
 TARGET_VERSION="${MINIRAY_UPDATE_TAG:-latest}"
 if [[ "$TARGET_VERSION" == latest ]]; then
   RELEASE_JSON=$(curl -fsSL --retry 4 "https://api.github.com/repos/8bit-warrior/Miniray/releases/latest")

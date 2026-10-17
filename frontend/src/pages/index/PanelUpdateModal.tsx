@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Modal, Switch, Tag } from 'antd';
+import { Alert, Button, Collapse, Modal, Radio, Spin, Tag } from 'antd';
 import { CloudDownloadOutlined } from '@ant-design/icons';
 
 import { HttpUtil, PromiseUtil } from '@/utils';
@@ -19,6 +19,14 @@ export interface PanelUpdateInfo {
   updateAvailable: boolean;
 }
 
+interface ActionBuild {
+  runId: string;
+  commit: string;
+  version: string;
+  createdAt: string;
+  title: string;
+}
+
 interface BusyEvent {
   busy: boolean;
   tip?: string;
@@ -27,8 +35,6 @@ interface BusyEvent {
 interface PanelUpdateModalProps {
   open: boolean;
   info: PanelUpdateInfo;
-  devChannelEnable?: boolean;
-  onChannelChange?: (dev: boolean) => void | Promise<void>;
   onClose: () => void;
   onBusy: (e: BusyEvent) => void;
 }
@@ -36,16 +42,32 @@ interface PanelUpdateModalProps {
 export default function PanelUpdateModal({
   open,
   info,
-  devChannelEnable,
-  onChannelChange,
   onClose,
   onBusy,
 }: PanelUpdateModalProps) {
   const { t } = useTranslation();
   const [modal, contextHolder] = Modal.useModal();
-  const [channelBusy, setChannelBusy] = useState(false);
+  const [builds, setBuilds] = useState<ActionBuild[]>([]);
+  const [buildsLoading, setBuildsLoading] = useState(false);
+  const [buildsError, setBuildsError] = useState(false);
 
-  const isDev = info.channel === 'dev';
+  useEffect(() => {
+    if (!open) return;
+    setBuildsLoading(true);
+    setBuildsError(false);
+    void HttpUtil.get<ActionBuild[]>('/panel/api/server/getActionBuilds', undefined, {
+      silent: true,
+    })
+      .then((result) => {
+        if (!result?.success) {
+          setBuildsError(true);
+          return;
+        }
+        setBuilds(result.obj || []);
+      })
+      .catch(() => setBuildsError(true))
+      .finally(() => setBuildsLoading(false));
+  }, [open]);
 
   async function pollUpdateStatus(expectedRunId: string): Promise<UpdateOutcome> {
     await PromiseUtil.sleep(5000);
@@ -70,31 +92,25 @@ export default function PanelUpdateModal({
     return 'timeout';
   }
 
-  async function handleChannel(checked: boolean) {
-    if (!onChannelChange) return;
-    setChannelBusy(true);
-    try {
-      await onChannelChange(checked);
-    } finally {
-      setChannelBusy(false);
-    }
-  }
-
-  function updatePanel() {
+  function updatePanel(build?: ActionBuild) {
     modal.confirm({
       title: t('pages.index.panelUpdateDialog'),
       content: t('pages.index.panelUpdateDialogDesc').replace(
         '#version#',
-        info.latestVersion || '',
+        build?.version || info.latestVersion || '',
       ),
       okText: t('confirm'),
       cancelText: t('cancel'),
       onOk: async () => {
         const baseTip = t('pages.index.dontRefresh');
-        const tip = info.latestVersion ? `${baseTip} (${info.latestVersion})` : baseTip;
+        const target = build?.version || info.latestVersion;
+        const tip = target ? baseTip + ' (' + target + ')' : baseTip;
         onClose();
         onBusy({ busy: true, tip });
-        const result = await HttpUtil.post<{ runId: string }>('/panel/api/server/updatePanel');
+        const result = await HttpUtil.post<{ runId: string }>(
+          '/panel/api/server/updatePanel',
+          build ? { actionRunId: build.runId } : undefined,
+        );
         if (!result?.success) {
           onBusy({ busy: false });
           return;
@@ -128,69 +144,95 @@ export default function PanelUpdateModal({
     <>
       {contextHolder}
       <Modal open={open} title={t('pages.index.updatePanel')} footer={null} onCancel={onClose}>
-        {info.updateAvailable && (
-          <Alert
-            type="warning"
-            className="mb-12"
-            title={t('pages.index.panelUpdateDesc')}
-            showIcon
-          />
-        )}
-
-        <div className="version-list">
-          <div className="version-list-item">
-            <span>{t('pages.index.devChannel')}</span>
-            <Switch checked={!!devChannelEnable} loading={channelBusy} onChange={handleChannel} />
-          </div>
-        </div>
-
-        {devChannelEnable && (
-          <Alert
-            type="info"
-            className="mb-12"
-            title={t('pages.index.devChannelWarning')}
-            showIcon
-          />
-        )}
-
-        <div className="version-list">
-          <div className="version-list-item">
-            <span>
-              {isDev ? t('pages.index.currentCommit') : t('pages.index.currentPanelVersion')}
-            </span>
-            {isDev ? (
-              <Tag color="green">{info.currentCommit || '?'}</Tag>
-            ) : (
-              <Tag color="green">
-                {formatPanelVersion(window.MINIRAY_CUR_VER || info.currentVersion) || '?'}
-              </Tag>
-            )}
-          </div>
-          {info.updateAvailable ? (
-            <div className="version-list-item">
-              <span>
-                {isDev ? t('pages.index.latestCommit') : t('pages.index.latestPanelVersion')}
-              </span>
-              <Tag color="purple">{(isDev ? info.latestCommit : info.latestVersion) || '-'}</Tag>
-            </div>
-          ) : (
-            <div className="version-list-item">
-              <span>{t('pages.index.panelUpToDate')}</span>
-              <Tag color="green">{t('pages.index.panelUpToDate')}</Tag>
-            </div>
-          )}
-        </div>
-
-        <div className="actions-row">
-          <Button
-            type="primary"
-            disabled={!info.updateAvailable}
-            onClick={updatePanel}
-            icon={<CloudDownloadOutlined />}
-          >
-            {t('pages.index.updatePanel')}
-          </Button>
-        </div>
+        <Collapse
+          accordion
+          defaultActiveKey="stable"
+          items={[
+            {
+              key: 'stable',
+              label: t('pages.index.stableRelease'),
+              children: (
+                <>
+                  {info.updateAvailable && (
+                    <Alert
+                      type="warning"
+                      className="mb-12"
+                      title={t('pages.index.panelUpdateDesc')}
+                      showIcon
+                    />
+                  )}
+                  <div className="version-list">
+                    <div className="version-list-item">
+                      <span>{t('pages.index.currentPanelVersion')}</span>
+                      <Tag color="green">
+                        {formatPanelVersion(window.MINIRAY_CUR_VER || info.currentVersion) || '?'}
+                      </Tag>
+                    </div>
+                    <div className="version-list-item">
+                      <span>{t('pages.index.latestPanelVersion')}</span>
+                      <Tag color="purple">{formatPanelVersion(info.latestVersion) || '-'}</Tag>
+                    </div>
+                  </div>
+                  <div className="actions-row">
+                    <Button
+                      type="primary"
+                      disabled={!info.updateAvailable}
+                      onClick={() => updatePanel()}
+                      icon={<CloudDownloadOutlined />}
+                    >
+                      {t('pages.index.updatePanel')}
+                    </Button>
+                  </div>
+                </>
+              ),
+            },
+            {
+              key: 'actions',
+              label: t('pages.index.actionsBuilds'),
+              children: (
+                <>
+                  <Alert
+                    type="info"
+                    className="mb-12"
+                    title={t('pages.index.actionsBuildDesc')}
+                    showIcon
+                  />
+                  <Spin spinning={buildsLoading}>
+                    {buildsError ? (
+                      <Alert type="error" title={t('pages.index.actionsBuildFailed')} showIcon />
+                    ) : builds.length === 0 && !buildsLoading ? (
+                      <div className="actions-build-empty">{t('pages.index.actionsBuildEmpty')}</div>
+                    ) : (
+                      <div className="version-list actions-build-list">
+                        {builds.map((build) => (
+                          <div className="version-list-item" key={build.runId}>
+                            <div className="actions-build-info">
+                              <Tag color="purple">{build.version}</Tag>
+                              <span className="actions-build-meta">
+                                #{build.runId} · {new Date(build.createdAt).toLocaleString()}
+                              </span>
+                              <span className="actions-build-title" title={build.title}>
+                                {build.title}
+                              </span>
+                            </div>
+                            <Radio
+                              aria-label={t('pages.index.installBuild') + ' ' + build.version}
+                              checked={
+                                !!info.currentCommit &&
+                                info.currentCommit.toLowerCase() === build.commit.toLowerCase()
+                              }
+                              onClick={() => updatePanel(build)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Spin>
+                </>
+              ),
+            },
+          ]}
+        />
       </Modal>
     </>
   );

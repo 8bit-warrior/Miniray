@@ -4,6 +4,7 @@ package config
 
 import (
 	_ "embed"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -57,7 +58,24 @@ func GetName() string {
 // GetBuildCommit returns the short git commit this binary was built from, or an
 // empty string for a plain/local build or a stable tagged release.
 func GetBuildCommit() string {
-	return strings.TrimSpace(buildCommit)
+	if value := strings.TrimSpace(buildCommit); value != "" {
+		return value
+	}
+	if runtime.GOOS != "linux" {
+		return ""
+	}
+	data, err := os.ReadFile(filepath.Join(getBaseDir(), ".action-commit"))
+	if err != nil {
+		return ""
+	}
+	commit := strings.TrimSpace(string(data))
+	if len(commit) != 40 {
+		return ""
+	}
+	if _, err := hex.DecodeString(commit); err != nil {
+		return ""
+	}
+	return strings.ToLower(commit)
 }
 
 // GetBuildDate returns the UTC build timestamp injected at build time, or empty.
