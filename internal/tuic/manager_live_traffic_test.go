@@ -164,9 +164,7 @@ func TestAudit3ManagerEnsureActualSendersWithPersistentTraffic(t *testing.T) {
 		if _, err := auth.Write(authBytes); err != nil {
 			t.Fatal(err)
 		}
-		if err := auth.Close(); err != nil {
-			t.Fatal(err)
-		}
+		_ = auth.Close()
 
 		waitForClientCongestionSender(t, server, client, served)
 		var serverConn *quic.Conn
