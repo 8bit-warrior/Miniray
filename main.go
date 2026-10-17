@@ -3,10 +3,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -250,6 +252,63 @@ func resetSetting() error {
 	return nil
 }
 
+func printPanelInfo(ip string) error {
+	if err := database.InitDB(config.GetDBPath()); err != nil {
+		return err
+	}
+	settings := service.SettingService{}
+	port, err := settings.GetPort()
+	if err != nil {
+		return err
+	}
+	if override, configured, err := config.GetPortOverride(); err != nil {
+		return err
+	} else if configured {
+		port = override
+	}
+	basePath, err := settings.GetBasePath()
+	if err != nil {
+		return err
+	}
+	cert, err := settings.GetCertFile()
+	if err != nil {
+		return err
+	}
+	key, err := settings.GetKeyFile()
+	if err != nil {
+		return err
+	}
+	user, err := (&panel.UserService{}).GetFirstUser()
+	if err != nil {
+		return err
+	}
+	scheme := "http"
+	if cert != "" && key != "" {
+		scheme = "https"
+	}
+	fmt.Printf("%s://%s%s\n%s\n", scheme, net.JoinHostPort(ip, fmt.Sprint(port)), basePath, user.Username)
+	return nil
+}
+
+func resetAdminCredentials() error {
+	input := bufio.NewScanner(os.Stdin)
+	if !input.Scan() {
+		return fmt.Errorf("missing username")
+	}
+	username := input.Text()
+	if !input.Scan() {
+		return fmt.Errorf("missing password")
+	}
+	password := input.Text()
+	if username == "" || password == "" {
+		return fmt.Errorf("username and password cannot be empty")
+	}
+	if err := database.InitDB(config.GetDBPath()); err != nil {
+		return err
+	}
+	return (&panel.UserService{}).UpdateFirstUser(username, password)
+}
+
 // showSetting displays the current panel settings if show is true.
 func showSetting(show bool) {
 	if show {
@@ -372,7 +431,7 @@ func updateSetting(port int, username string, password string, webBasePath strin
 	if port > 0 {
 		err := settingService.SetPort(port)
 		if err != nil {
-			fmt.Println("Failed to set port:", err)
+			return fmt.Errorf("set panel port: %w", err)
 		} else {
 			fmt.Printf("Port set successfully: %v\n", port)
 		}
@@ -381,7 +440,7 @@ func updateSetting(port int, username string, password string, webBasePath strin
 	if username != "" || password != "" {
 		err := userService.UpdateFirstUser(username, password)
 		if err != nil {
-			fmt.Println("Failed to update username and password:", err)
+			return fmt.Errorf("update credentials: %w", err)
 		} else {
 			fmt.Println("Username and password updated successfully")
 		}
@@ -701,6 +760,18 @@ func main() {
 		fmt.Print(string(password))
 	case "agent":
 		runProxyAgent()
+	case "panel-info":
+		ip := "127.0.0.1"
+		if len(os.Args) > 2 {
+			ip = os.Args[2]
+		}
+		if err := printPanelInfo(ip); err != nil {
+			log.Fatal(err)
+		}
+	case "reset-credentials":
+		if err := resetAdminCredentials(); err != nil {
+			log.Fatal(err)
+		}
 	case "snapshot-legacy":
 		if err := legacySnapshotCmd.Parse(os.Args[2:]); err != nil {
 			log.Fatal(err)

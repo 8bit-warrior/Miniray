@@ -26,6 +26,8 @@ jobs:
           if git grep -niE '3x[-_]?ui|(^|[^[:alnum:]])x[-_]ui([^[:alnum:]]|$)' -- ':!LICENSE' ':!install.sh' ':!internal/database/import_legacy.go' ':!internal/database/import_legacy_test.go' ':!README.md' ':!tests/systemd_acceptance.py'; then exit 1; fi
       - name: Check installation scripts
         run: bash -n install.sh update.sh miniray.sh
+      - name: Verify bilingual terminal menu
+        run: sudo bash tests/menu_acceptance.sh
       - name: Frontend package install
         working-directory: frontend
         run: npm ci

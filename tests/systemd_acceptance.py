@@ -36,7 +36,7 @@ def clean():
         Path(f"/etc/systemd/system/{unit}.service").unlink(missing_ok=True)
     for path in ["/usr/local/miniray", "/etc/miniray", "/usr/local/x-ui", "/etc/x-ui", "/var/backups/miniray"]:
         shutil.rmtree(path, ignore_errors=True)
-    for path in ["/usr/local/bin/miniray", "/usr/bin/x-ui", "/etc/default/miniray", "/etc/default/x-ui"]:
+    for path in ["/usr/local/bin/miniray", "/usr/local/bin/mr", "/usr/bin/x-ui", "/etc/default/miniray", "/etc/default/x-ui"]:
         Path(path).unlink(missing_ok=True)
     command("systemctl", "daemon-reload")
     command("systemctl", "reset-failed", check=False)
@@ -202,6 +202,41 @@ try:
             command("systemctl", "stop", "x-ui")
         install(answers)
         assert_schema(imported)
+        assert Path("/usr/local/bin/mr").is_symlink()
+        assert command("/usr/local/bin/mr", "--help").returncode == 0
+        panel_info = command("/usr/local/miniray/miniray", "panel-info", "127.0.0.1").stdout.splitlines()
+        assert len(panel_info) == 2, panel_info
+        assert panel_info[0].startswith("http://127.0.0.1:"), panel_info
+        assert panel_info[1], panel_info
+        if name == "fresh":
+            with sqlite3.connect("/etc/miniray/miniray.db") as db:
+                previous = db.execute("SELECT password, login_epoch FROM users LIMIT 1").fetchone()
+            updated = subprocess.run(
+                ["/usr/local/miniray/miniray", "reset-credentials"],
+                input="menu-admin\nnew-secret-002\n", text=True, capture_output=True, check=True,
+            )
+            with sqlite3.connect("/etc/miniray/miniray.db") as db:
+                credentials = db.execute("SELECT username, password, login_epoch FROM users LIMIT 1").fetchone()
+            assert credentials[0] == "menu-admin", credentials
+            assert credentials[1] != previous[0] and credentials[1].startswith("$2"), credentials
+            assert credentials[2] > previous[1], credentials
+            assert command("/usr/local/miniray/miniray", "panel-info", "127.0.0.1").stdout.splitlines()[1] == "menu-admin"
+            with socket.socket() as probe:
+                probe.bind(("127.0.0.1", 0))
+                new_port = probe.getsockname()[1]
+            subprocess.run(
+                ["/usr/local/bin/mr", "change-port"],
+                input=str(new_port) + "\n", text=True, capture_output=True, check=True,
+            )
+            assert command("/usr/local/miniray/miniray", "panel-info", "127.0.0.1").stdout.splitlines()[0].startswith(f"http://127.0.0.1:{new_port}/")
+            for _ in range(30):
+                try:
+                    if urllib.request.urlopen(f"http://127.0.0.1:{new_port}/", timeout=1).status == 200:
+                        break
+                except OSError:
+                    time.sleep(0.5)
+            else:
+                raise AssertionError("Web panel did not restart on the new port")
         wait_active("miniray")
         wait_active("miniray-agent")
         wait_active("miniray-core")

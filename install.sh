@@ -161,7 +161,7 @@ finish_install() {
         systemctl daemon-reload || :
       fi
     fi
-    if (( WRAPPER_STAGED == 1 )); then rm -f /usr/local/bin/miniray; fi
+    if (( WRAPPER_STAGED == 1 )); then rm -f /usr/local/bin/miniray /usr/local/bin/mr; fi
     if (( STAGED_INSTALL == 1 )); then
       if (( ROOT_WAS_ABSENT == 1 )); then
         rm -rf "$ROOT"
@@ -268,6 +268,7 @@ if [[ "$ROOT" != /usr/local/miniray ]]; then
   sed -i "s|/usr/local/miniray|${escaped_root//|/\\|}|g" "$ROOT/miniray.sh" "$ROOT/update.sh"
 fi
 install -m 0755 "$ROOT/miniray.sh" /usr/local/bin/miniray
+ln -sfn miniray /usr/local/bin/mr
 WRAPPER_STAGED=1
 case "$(. /etc/os-release; echo "${ID:-}")" in
   arch|manjaro) UNIT=arch;;
