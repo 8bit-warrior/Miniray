@@ -217,7 +217,7 @@ jobs:
           set -euo pipefail
           expected="v$(cat internal/config/version)"
           for attempt in 1 2 3 4 5 6; do
-            latest=$(curl -fsSL --retry 3 https://api.github.com/repos/8bit-warrior/Miniray/releases/latest | sed -n 's/.*"tag_name":[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -n 1)
+            latest=$(curl -fsSL --retry 3 https://api.github.com/repos/8bit-warrior/Miniray/releases/latest | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
             if [[ "$latest" == "$expected" ]]; then break; fi
             sleep 10
           done
