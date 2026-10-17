@@ -137,6 +137,10 @@ jobs:
           cp README.md LICENSE staging/miniray/
           cp -r openrc staging/miniray/
           cp miniray.sh install.sh update.sh miniray-core.service miniray-agent.service miniray.service.* tools/coexist_ports.py staging/miniray/
+          for script in install.sh update.sh miniray.sh; do
+            mv "staging/miniray/$script" "staging/miniray/${script%.sh}.real.sh"
+            ln -s "${script%.sh}.real.sh" "staging/miniray/$script"
+          done
           cp internal/web/service/config.json staging/miniray/bin/template.json
           chmod +x staging/miniray/miniray staging/miniray/*.sh staging/miniray/bin/xray-linux-${GOARCH} staging/miniray/bin/mtg-linux-${GOARCH}
           (cd staging && tar -czf "../miniray-linux-${GOARCH}.tar.gz" miniray)
