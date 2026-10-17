@@ -19,12 +19,14 @@ import (
 const maxActionsJSONBytes = 4 << 20
 
 var (
-	actionsAPIBase = "https://api.github.com/repos/8bit-warrior/Miniray"
-	actionsClient = func() *http.Client {
-		return (&service.SettingService{}).NewProxiedHTTPClient(12 * time.Second)
-	}
+	actionsAPIBase       = "https://api.github.com/repos/8bit-warrior/Miniray"
+	actionsClient        = defaultActionsClient
 	actionsDigestPattern = regexp.MustCompile("^sha256:[0-9a-f]{64}$")
 )
+
+func defaultActionsClient() *http.Client {
+	return (&service.SettingService{}).NewProxiedHTTPClient(12 * time.Second)
+}
 
 type ActionBuild struct {
 	RunID     string `json:"runId"`
