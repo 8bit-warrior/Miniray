@@ -86,6 +86,8 @@ grep -q 'Xray 核心' "$work/default"
 grep -q '系统工具' "$work/default"
 grep -q 'Xray v26.6.27' "$work/default"
 grep -q "M I N I R A Y   v${MINIRAY_TEST_VERSION}" "$work/default"
+head -n 1 "$work/default" | grep -q "M I N I R A Y   v${MINIRAY_TEST_VERSION}"
+grep -q '完整卸载 Miniray' "$work/default"
 grep -q '启动面板' "$work/default"
 ! grep -q '查看状态' "$work/default"
 

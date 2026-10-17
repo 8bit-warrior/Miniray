@@ -297,6 +297,57 @@ try:
             assert_proxy()
             wait_active("miniray-core")
         print(name + ": passed", flush=True)
+
+    # Reinstall with an existing database, then verify the destructive install path.
+    clean()
+    install()
+    db_path = Path("/etc/miniray/miniray.db")
+    with sqlite3.connect(db_path) as db:
+        db.execute("UPDATE users SET username='retained-admin'")
+    removed = subprocess.run(
+        ["/usr/local/bin/miniray", "uninstall"],
+        input="y\nn\n", text=True, capture_output=True, check=True,
+    )
+    assert db_path.exists(), removed.stdout
+    assert not Path("/usr/local/miniray").exists()
+    assert not Path("/usr/local/bin/miniray").exists()
+    assert not Path("/usr/local/bin/mr").exists()
+    for unit in ("miniray", "miniray-agent", "miniray-core"):
+        assert command("systemctl", "is-active", "--quiet", unit, check=False).returncode != 0
+        assert command("systemctl", "is-enabled", "--quiet", unit, check=False).returncode != 0
+    print("uninstall-preserve-data: passed", flush=True)
+
+    install("3\n")
+    assert db_path.exists() and not Path("/usr/local/miniray").exists()
+    print("existing-database-cancel: passed", flush=True)
+
+    install("1\n")
+    with sqlite3.connect(db_path) as db:
+        assert db.execute("SELECT username FROM users LIMIT 1").fetchone()[0] == "retained-admin"
+    wait_active("miniray")
+    wait_active("miniray-core")
+    print("existing-database-reuse: passed", flush=True)
+
+    removed = subprocess.run(
+        ["/usr/local/bin/miniray", "uninstall"],
+        input="y\nn\n", text=True, capture_output=True, check=True,
+    )
+    assert db_path.exists(), removed.stdout
+    install("2\n")
+    with sqlite3.connect(db_path) as db:
+        assert db.execute("SELECT username FROM users LIMIT 1").fetchone()[0] != "retained-admin"
+    print("existing-database-recreate: passed", flush=True)
+
+    removed = subprocess.run(
+        ["/usr/local/bin/miniray", "uninstall"],
+        input="y\ny\n", text=True, capture_output=True, check=True,
+    )
+    assert removed.returncode == 0
+    assert not db_path.exists()
+    assert not Path("/etc/miniray").exists()
+    assert not Path("/usr/local/miniray").exists()
+    print("uninstall-delete-data: passed", flush=True)
+
     clean()
     fixture(corrupt=True)
     install("2\n", succeeds=False)
