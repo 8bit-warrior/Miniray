@@ -16,8 +16,10 @@ import (
 	"time"
 )
 
-const coreUnit = "miniray-core.service"
-const coreOpenRCPIDFile = "/run/miniray-core.pid"
+const (
+	coreUnit          = "miniray-core.service"
+	coreOpenRCPIDFile = "/run/miniray-core.pid"
+)
 
 func openRCEnabled() bool { return os.Getenv("MINIRAY_SERVICE_MANAGER") == "openrc" }
 
@@ -33,7 +35,6 @@ func coreServiceAction(action string) error {
 	}
 	return nil
 }
-
 
 func independentCoreEnabled() bool { return os.Getenv("MINIRAY_SEPARATE_CORE") == "1" }
 func corePID() (int, error) {
