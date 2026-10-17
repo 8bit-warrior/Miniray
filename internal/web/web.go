@@ -515,7 +515,7 @@ func (s *Server) memoryAlarmWanted() bool {
 
 // Start initializes and starts the web server with configured settings, routes, and background jobs.
 func (s *Server) Start() (err error) {
-	return s.start(true, true)
+	return s.start(os.Getenv("MINIRAY_SEPARATE_CORE") != "1", true)
 }
 
 func (s *Server) StartPanelOnly() (err error) {
