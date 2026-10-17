@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, Collapse, Modal, Radio, Spin, Tag } from 'antd';
 import { CloudDownloadOutlined } from '@ant-design/icons';
@@ -51,23 +51,26 @@ export default function PanelUpdateModal({
   const [buildsLoading, setBuildsLoading] = useState(false);
   const [buildsError, setBuildsError] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
+  async function fetchBuilds() {
     setBuildsLoading(true);
     setBuildsError(false);
-    void HttpUtil.get<ActionBuild[]>('/panel/api/server/getActionBuilds', undefined, {
-      silent: true,
-    })
-      .then((result) => {
-        if (!result?.success) {
-          setBuildsError(true);
-          return;
-        }
-        setBuilds(result.obj || []);
-      })
-      .catch(() => setBuildsError(true))
-      .finally(() => setBuildsLoading(false));
-  }, [open]);
+    try {
+      const result = await HttpUtil.get<ActionBuild[]>(
+        '/panel/api/server/getActionBuilds',
+        undefined,
+        { silent: true },
+      );
+      if (!result?.success) {
+        setBuildsError(true);
+        return;
+      }
+      setBuilds(result.obj || []);
+    } catch {
+      setBuildsError(true);
+    } finally {
+      setBuildsLoading(false);
+    }
+  }
 
   async function pollUpdateStatus(expectedRunId: string): Promise<UpdateOutcome> {
     await PromiseUtil.sleep(5000);
@@ -147,6 +150,9 @@ export default function PanelUpdateModal({
         <Collapse
           accordion
           defaultActiveKey="stable"
+          onChange={(value) => {
+            if (value === 'actions') void fetchBuilds();
+          }}
           items={[
             {
               key: 'stable',
@@ -201,7 +207,9 @@ export default function PanelUpdateModal({
                     {buildsError ? (
                       <Alert type="error" title={t('pages.index.actionsBuildFailed')} showIcon />
                     ) : builds.length === 0 && !buildsLoading ? (
-                      <div className="actions-build-empty">{t('pages.index.actionsBuildEmpty')}</div>
+                      <div className="actions-build-empty">
+                        {t('pages.index.actionsBuildEmpty')}
+                      </div>
                     ) : (
                       <div className="version-list actions-build-list">
                         {builds.map((build) => (
