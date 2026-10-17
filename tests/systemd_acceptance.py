@@ -189,18 +189,24 @@ try:
     for name, answers, imported in [
         ("fresh", "", False),
         ("coexist", "9\n1\n", False),
+        ("coexist-inactive", "1\n", False),
         ("migrate", "2\n", True),
     ]:
         clean()
         if name != "fresh":
             fixture()
+        if name == "coexist-inactive":
+            command("systemctl", "stop", "x-ui")
         install(answers)
         assert_schema(imported)
         wait_active("miniray")
         wait_active("miniray-agent")
         wait_active("miniray-core")
-        if name == "coexist":
-            wait_active("x-ui")
+        if name in ("coexist", "coexist-inactive"):
+            if name == "coexist":
+                wait_active("x-ui")
+            else:
+                assert command("systemctl", "is-active", "--quiet", "x-ui", check=False).returncode != 0
             assert Path("/etc/x-ui/x-ui.db").exists()
             with sqlite3.connect("/etc/miniray/miniray.db") as db:
                 settings = dict(db.execute("SELECT key,value FROM settings"))
@@ -211,7 +217,10 @@ try:
             assert urllib.request.urlopen(f"http://127.0.0.1:{ports[0]}/", timeout=5).status == 200
             assert socket.create_connection(("127.0.0.1", ports[1]), timeout=5)
             install("2\n", succeeds=False)
-            wait_active("x-ui")
+            if name == "coexist":
+                wait_active("x-ui")
+            else:
+                assert command("systemctl", "is-active", "--quiet", "x-ui", check=False).returncode != 0
             assert Path("/etc/x-ui/x-ui.db").exists()
         else:
             if name == "migrate":
