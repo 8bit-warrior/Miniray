@@ -170,6 +170,7 @@ from pathlib import Path
 args=sys.argv[1:]
 url=args[-1]
 if '/releases/' in url and url.rsplit('/',1)[-1] in {'miniray-linux-amd64.tar.gz','SHA256SUMS'}:
+    assert '-fsSL' in args, f'Installer curl must suppress redirect progress output: {args}'
     shutil.copyfile(Path(os.environ['MINIRAY_TEST_PACKAGES']) / url.rsplit('/',1)[-1], args[args.index('-o')+1])
 else:
     os.execv('/usr/bin/curl',['/usr/bin/curl',*args])

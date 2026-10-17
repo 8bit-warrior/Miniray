@@ -182,8 +182,9 @@ if [[ "$VERSION" == latest ]]; then
 else
   BASE="$REPO/releases/download/$VERSION"
 fi
-curl -fL --retry 4 -o "$TMP/$ASSET" "$BASE/$ASSET"
-curl -fL --retry 4 -o "$TMP/SHA256SUMS" "$BASE/SHA256SUMS"
+printf "Downloading %s...\n" "$ASSET"
+curl -fsSL --retry 4 -o "$TMP/$ASSET" "$BASE/$ASSET"
+curl -fsSL --retry 4 -o "$TMP/SHA256SUMS" "$BASE/SHA256SUMS"
 (cd "$TMP" && grep -F "  $ASSET" SHA256SUMS | sha256sum -c -)
 tar -tzf "$TMP/$ASSET" | grep -vE '(^miniray/|^miniray$)' && {
   echo 'Unexpected archive paths' >&2
