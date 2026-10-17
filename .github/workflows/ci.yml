@@ -37,13 +37,7 @@ jobs:
           git diff --exit-code -- frontend/src/generated frontend/public/openapi.json
       - name: Frontend lint and formatting
         working-directory: frontend
-        run: |
-          npm run lint
-          if ! npm run format:check; then
-            npx oxfmt src/pages/index/PanelUpdateModal.tsx
-            git diff -- src/pages/index/PanelUpdateModal.tsx
-            exit 1
-          fi
+        run: npm run lint && npm run format:check
       - name: Frontend type check
         working-directory: frontend
         run: npm run typecheck

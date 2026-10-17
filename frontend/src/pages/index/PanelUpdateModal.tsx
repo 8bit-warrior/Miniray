@@ -39,12 +39,7 @@ interface PanelUpdateModalProps {
   onBusy: (e: BusyEvent) => void;
 }
 
-export default function PanelUpdateModal({
-  open,
-  info,
-  onClose,
-  onBusy,
-}: PanelUpdateModalProps) {
+export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelUpdateModalProps) {
   const { t } = useTranslation();
   const [modal, contextHolder] = Modal.useModal();
   const [builds, setBuilds] = useState<ActionBuild[]>([]);
