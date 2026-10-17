@@ -205,13 +205,14 @@ finish_install() {
   rm -rf "$TMP"
 }
 trap finish_install EXIT
-ASSET="miniray-linux-${ARCH}.tar.gz"
 if [[ "$VERSION" == latest ]]; then
-  BASE="$REPO/releases/latest/download"
-else
-  BASE="$REPO/releases/download/$VERSION"
+  curl -fsSL --retry 4 -o "$TMP/release.json" "https://api.github.com/repos/8bit-warrior/Miniray/releases/latest"
+  VERSION=$(sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' "$TMP/release.json" | head -n 1)
+  [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Invalid latest stable Release tag' >&2; exit 1; }
 fi
-printf "Downloading %s...\n" "$ASSET"
+ASSET="miniray-linux-${ARCH}.tar.gz"
+BASE="$REPO/releases/download/$VERSION"
+printf "Downloading %s from %s...\n" "$ASSET" "$VERSION"
 curl -fsSL --retry 4 -o "$TMP/$ASSET" "$BASE/$ASSET"
 curl -fsSL --retry 4 -o "$TMP/SHA256SUMS" "$BASE/SHA256SUMS"
 (cd "$TMP" && grep -F "  $ASSET" SHA256SUMS | sha256sum -c -)
@@ -222,6 +223,11 @@ tar -tzf "$TMP/$ASSET" | grep -vE '(^miniray/|^miniray$)' && {
 tar -xzf "$TMP/$ASSET" -C "$TMP"
 test -x "$TMP/miniray/miniray"
 test -x "$TMP/miniray/bin/xray-linux-$ARCH"
+PACKAGE_VERSION=$("$TMP/miniray/miniray" -v)
+if [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ && "$PACKAGE_VERSION" != "${VERSION#v}" ]]; then
+  echo "Release $VERSION contains Miniray $PACKAGE_VERSION; installation aborted" >&2
+  exit 1
+fi
 if (( COEXIST == 1 && EXISTING_MINIRAY == 0 )); then
   test -s "$TMP/miniray/bin/template.json"
   test -s "$TMP/miniray/coexist_ports.py"
@@ -289,6 +295,11 @@ done
 install -m 0755 "$TMP/miniray/miniray" "$ROOT/.miniray.next"
 mv -f "$ROOT/.miniray.next" "$ROOT/miniray"
 rm -f "$TMP/miniray/miniray"
+for script in install.sh update.sh miniray.sh; do
+  install -m 0755 "$TMP/miniray/$script" "$ROOT/.$script.next"
+  mv -f "$ROOT/.$script.next" "$ROOT/$script"
+  rm -f "$TMP/miniray/$script"
+done
 cp -a "$TMP/miniray/." "$ROOT/"
 ln -sfn "xray-linux-$ARCH" "$ROOT/bin/xray"
 chmod 755 "$ROOT/miniray" "$ROOT/miniray.sh" "$ROOT/install.sh" "$ROOT/update.sh"
@@ -410,7 +421,12 @@ if (( LEGACY_FOUND == 1 )); then
   fi
 fi
 
-echo "Miniray $VERSION installed."
+INSTALLED_VERSION=$("$ROOT/miniray" -v)
+if [[ "$INSTALLED_VERSION" != "$PACKAGE_VERSION" ]]; then
+  echo "Installed Miniray version mismatch: expected $PACKAGE_VERSION, got $INSTALLED_VERSION" >&2
+  exit 1
+fi
+echo "Miniray $INSTALLED_VERSION installed."
 if [[ -f "$DB_FOLDER/initial-admin-password" ]]; then
   echo 'First-login administrator password: run sudo miniray initial-password'
 fi

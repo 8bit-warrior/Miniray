@@ -160,6 +160,12 @@ jobs:
           merge-multiple: true
       - name: Prepare installer checksums
         run: cd packages && sha256sum miniray-* > SHA256SUMS
+      - name: Download historical v0.0.1 package for upgrade regression
+        run: |
+          mkdir -p packages/v0.0.1
+          curl -fsSL --retry 4 -o packages/v0.0.1/miniray-linux-amd64.tar.gz https://github.com/8bit-warrior/Miniray/releases/download/v0.0.1/miniray-linux-amd64.tar.gz
+          curl -fsSL --retry 4 -o packages/v0.0.1/SHA256SUMS https://github.com/8bit-warrior/Miniray/releases/download/v0.0.1/SHA256SUMS
+          (cd packages/v0.0.1 && grep -F '  miniray-linux-amd64.tar.gz' SHA256SUMS | sha256sum -c -)
       - name: Install, migrate, update and recover on native systemd
         run: sudo python3 tests/systemd_acceptance.py "$GITHUB_WORKSPACE/packages" "$GITHUB_WORKSPACE"
   publish:

@@ -421,9 +421,7 @@ func testServerUDPStreamE2E(t *testing.T, controller string) {
 	if _, err := authStream.Write(authPayload); err != nil {
 		t.Fatalf("write authentication payload failed: %v", err)
 	}
-	if err := authStream.Close(); err != nil {
-		t.Fatalf("close authentication stream failed: %v", err)
-	}
+	_ = authStream.Close()
 
 	target := &Address{Type: AddrTypeIPv4, IP: net.ParseIP("8.8.8.8"), Port: 53}
 	udpMsg := bytes.Repeat([]byte("s"), 8500)

@@ -75,11 +75,15 @@ def fixture(corrupt=False):
     command("systemctl", "enable", "--now", "x-ui")
 
 
-def install(answers="", succeeds=True):
+def install(answers="", succeeds=True, version=None):
     pid, fd = pty.fork()
     if pid == 0:
         env = os.environ.copy()
         env["PATH"] = str(work / "bin") + ":" + env["PATH"]
+        if version is None:
+            env.pop("MINIRAY_UPDATE_TAG", None)
+        else:
+            env["MINIRAY_UPDATE_TAG"] = version
         os.execvpe("bash", ["bash", str(repo / "install.sh")], env)
     os.write(fd, answers.encode())
     output = bytearray()
@@ -169,14 +173,23 @@ import os, shutil, sys
 from pathlib import Path
 args=sys.argv[1:]
 url=args[-1]
-if '/releases/' in url and url.rsplit('/',1)[-1] in {'miniray-linux-amd64.tar.gz','SHA256SUMS'}:
-    assert '-fsSL' in args, f'Installer curl must suppress redirect progress output: {args}'
-    shutil.copyfile(Path(os.environ['MINIRAY_TEST_PACKAGES']) / url.rsplit('/',1)[-1], args[args.index('-o')+1])
+target=Path(args[args.index('-o')+1]) if '-o' in args else None
+if url == 'https://api.github.com/repos/8bit-warrior/Miniray/releases/latest':
+    version=(Path(os.environ['MINIRAY_TEST_REPO']) / 'internal/config/version').read_text().strip()
+    target.write_text('{"tag_name": "v' + version + '"}')
+elif '/releases/' in url and url.rsplit('/',1)[-1] in {'miniray-linux-amd64.tar.gz','SHA256SUMS'}:
+    legacy='/releases/download/v0.0.1/' in url
+    assert '-fsSL' in args or ('-fL' in args and legacy) or ('-fL' in args and os.environ.get('MINIRAY_TEST_LEGACY_UPDATE')), f'Unexpected installer curl options: {args}'
+    source=Path(os.environ['MINIRAY_TEST_PACKAGES'])
+    if legacy:
+        source=source / 'v0.0.1'
+    shutil.copyfile(source / url.rsplit('/',1)[-1], target)
 else:
     os.execv('/usr/bin/curl',['/usr/bin/curl',*args])
 """)
 curl.chmod(0o755)
 os.environ["MINIRAY_TEST_PACKAGES"] = str(packages)
+os.environ["MINIRAY_TEST_REPO"] = str(repo)
 httpd = socketserver.TCPServer(("127.0.0.1", 0), Handler)
 threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
@@ -361,6 +374,29 @@ try:
     assert not Path("/etc/miniray").exists()
     assert not Path("/usr/local/miniray").exists()
     print("uninstall-delete-data: passed", flush=True)
+
+    clean()
+    install(version="v0.0.1")
+    assert command("/usr/local/miniray/miniray", "-v").stdout.strip() == "0.0.1"
+    with sqlite3.connect("/etc/miniray/miniray.db") as db:
+        db.execute("UPDATE users SET username='upgrade-retained'")
+    upgrade_env = os.environ.copy()
+    upgrade_env["PATH"] = str(work / "bin") + ":" + upgrade_env["PATH"]
+    upgrade_env["MINIRAY_TEST_LEGACY_UPDATE"] = "1"
+    upgrade_env.pop("MINIRAY_UPDATE_TAG", None)
+    upgraded = subprocess.run(
+        ["/usr/local/bin/miniray", "update"],
+        env=upgrade_env, text=True, capture_output=True, timeout=150,
+    )
+    assert upgraded.returncode == 0, upgraded.stdout + upgraded.stderr
+    expected_version = (repo / "internal/config/version").read_text().strip()
+    actual_version = command("/usr/local/miniray/miniray", "-v").stdout.strip()
+    assert actual_version == expected_version, (actual_version, expected_version, upgraded.stdout)
+    with sqlite3.connect("/etc/miniray/miniray.db") as db:
+        assert db.execute("SELECT username FROM users LIMIT 1").fetchone()[0] == "upgrade-retained"
+    wait_active("miniray")
+    wait_active("miniray-core")
+    print("upgrade-v0.0.1-to-current-preserves-data: passed", flush=True)
 
     clean()
     fixture(corrupt=True)

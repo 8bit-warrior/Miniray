@@ -22,3 +22,4 @@ if [[ -x "$ROOT/miniray" ]]; then
   printf 'Current Miniray version: %s\n' "$CURRENT_VERSION"
 fi
 bash "$ROOT/install.sh" "$@"
+printf 'Updated Miniray version: %s\n' "$("$ROOT/miniray" -v)"
