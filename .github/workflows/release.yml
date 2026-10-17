@@ -206,6 +206,8 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then test "$GITHUB_REF_NAME" = "$TAG"; fi
           NOTES="SQLite-only Miniray with independent panel and proxy services, Xray-core v26.6.27, and three-way legacy panel installation strategy. Includes Linux amd64/arm64 and Windows amd64/arm64 packages. Installation and service lifecycle checks run before publication."
           if gh release view "$TAG" >/dev/null 2>&1; then
+            git tag -f "$TAG" "$GITHUB_SHA"
+            git push origin "refs/tags/$TAG" --force
             gh release upload "$TAG" dist/* --clobber
             gh release edit "$TAG" --notes "$NOTES"
           else
