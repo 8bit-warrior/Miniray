@@ -153,6 +153,7 @@ test -f "$work/state/miniray-agent.service.running"
 test ! -e "$MINIRAY_CORE_STOP_FILE"
 
 export MINIRAY_SERVICE_MANAGER=openrc
+rm -f "$work/state/miniray-core.service.running" "$work/state/miniray-agent.service.running"
 printf '1\n\n2\n\n8\n\n9\n\n0\n' | bash "$SCRIPT" > "$work/openrc"
 test ! -e "$work/state/miniray.service.running"
 test ! -e "$work/state/miniray.service.enabled"
