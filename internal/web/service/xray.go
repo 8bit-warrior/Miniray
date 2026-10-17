@@ -1270,10 +1270,9 @@ func (s *XrayService) RestartXray(isForce bool) error {
 	lock.Lock()
 	defer lock.Unlock()
 	logger.Debug("restart Xray, force:", isForce)
-	if !isForce && isManuallyStopped.Load() {
+	if !isForce && (isManuallyStopped.Load() || xray.IndependentCoreManuallyStopped()) {
 		return nil
 	}
-	isManuallyStopped.Store(false)
 
 	xrayConfig, err := s.GetXrayConfig()
 	if err != nil {
@@ -1315,11 +1314,18 @@ func (s *XrayService) RestartXray(isForce bool) error {
 	process = xray.NewProcess(xrayConfig)
 	xrayState.replace(process)
 	s.xrayAPI.StatsLastValues = nil
-	err = process.StartWithRestart(isForce)
-	if err != nil {
+	if err := process.StartWithRestart(isForce); err != nil {
 		return err
 	}
-
+	if isForce {
+		if err := xray.SetIndependentCoreManuallyStopped(false); err != nil {
+			return err
+		}
+		if err := xray.StartIndependentAgent(); err != nil {
+			return err
+		}
+	}
+	isManuallyStopped.Store(false)
 	return nil
 }
 
@@ -1488,16 +1494,26 @@ func addOutboundReconciling(api *xray.XrayAPI, outbound []byte) error {
 func (s *XrayService) StopXray() error {
 	lock.Lock()
 	defer lock.Unlock()
-	isManuallyStopped.Store(true)
 	logger.Debug("Attempting to stop Xray...")
 	process := currentXrayProcess()
+	if (process == nil || !process.IsRunning()) && !xray.IndependentCoreRunning() {
+		return errors.New("xray is not running")
+	}
+	if err := xray.SetIndependentCoreManuallyStopped(true); err != nil {
+		return err
+	}
+	var err error
 	if process != nil && process.IsRunning() {
-		return process.Stop()
+		err = process.Stop()
+	} else {
+		err = xray.StopIndependentCore()
 	}
-	if xray.IndependentCoreRunning() {
-		return xray.StopIndependentCore()
+	if err != nil {
+		_ = xray.SetIndependentCoreManuallyStopped(false)
+		return err
 	}
-	return errors.New("xray is not running")
+	isManuallyStopped.Store(true)
+	return nil
 }
 
 // SetToNeedRestart marks that Xray needs to be restarted.
@@ -1538,7 +1554,7 @@ func (s *XrayService) ApplyPendingRestart() {
 
 // DidXrayCrash checks if Xray crashed by verifying it's not running and wasn't manually stopped.
 func (s *XrayService) DidXrayCrash() bool {
-	return !s.IsXrayRunning() && !isManuallyStopped.Load()
+	return !s.IsXrayRunning() && !isManuallyStopped.Load() && !xray.IndependentCoreManuallyStopped()
 }
 
 // liftXhttpSessionIDKeys renames the legacy XHTTP session keys

@@ -6,6 +6,7 @@ CORE=miniray-core.service
 AGENT=miniray-agent.service
 ROOT="${MINIRAY_MAIN_FOLDER:-/usr/local/miniray}"
 LANG_FILE="${MINIRAY_LANGUAGE_FILE:-/etc/miniray/menu-language}"
+CORE_STOP_FILE="${MINIRAY_CORE_STOP_FILE:-/run/miniray-core.manual-stop}"
 
 if [[ "${MINIRAY_SERVICE_MANAGER:-}" == systemd || "${MINIRAY_SERVICE_MANAGER:-}" == openrc ]]; then
   MANAGER="$MINIRAY_SERVICE_MANAGER"
@@ -299,7 +300,7 @@ uninstall_miniray() {
 
   rm -f /usr/local/bin/miniray /usr/local/bin/mr
   rm -rf -- "$ROOT" /var/log/miniray
-  rm -f /run/miniray.pid /run/miniray-agent.pid /run/miniray-core.pid
+  rm -f /run/miniray.pid /run/miniray-agent.pid /run/miniray-core.pid "$CORE_STOP_FILE"
   rm -f /etc/conf.d/miniray /etc/default/miniray
 
   if (( remove_data == 1 )); then
@@ -329,12 +330,23 @@ action() {
     start-panel) svc start "$PANEL";;
     stop-panel) svc stop "$PANEL";;
     restart-panel) svc restart "$PANEL";;
-    start-core) svc start "$CORE" && svc start "$AGENT";;
-    stop-core) svc stop "$AGENT" && svc stop "$CORE";;
-    restart-core) svc restart "$CORE" && svc restart "$AGENT";;
-    start) svc start "$CORE"; svc start "$AGENT"; svc start "$PANEL";;
-    stop) svc stop "$PANEL"; svc stop "$AGENT"; svc stop "$CORE";;
-    restart) svc restart "$CORE"; svc restart "$AGENT"; svc restart "$PANEL";;
+    start-core)
+      rm -f "$CORE_STOP_FILE"
+      if ! running "$CORE"; then svc start "$CORE" || return; fi
+      if ! running "$AGENT"; then svc start "$AGENT" || return; fi;;
+    stop-core)
+      printf '1\n' > "$CORE_STOP_FILE"
+      local failed=0
+      if running "$AGENT"; then svc stop "$AGENT" || failed=1; fi
+      if running "$CORE"; then svc stop "$CORE" || failed=1; fi
+      (( failed == 0 ));;
+    restart-core)
+      rm -f "$CORE_STOP_FILE"
+      if running "$CORE"; then svc restart "$CORE" || return; else svc start "$CORE" || return; fi
+      if running "$AGENT"; then svc restart "$AGENT"; else svc start "$AGENT"; fi;;
+    start) action start-core || return; if ! running "$PANEL"; then svc start "$PANEL"; fi;;
+    stop) if running "$PANEL"; then svc stop "$PANEL" || return; fi; action stop-core;;
+    restart) action restart-core || return; if running "$PANEL"; then svc restart "$PANEL"; else svc start "$PANEL"; fi;;
     status) printf 'Panel: '; svc status "$PANEL"; printf 'Xray: '; svc status "$CORE";;
     enable-panel|enable) toggle add "$PANEL";;
     disable-panel|disable) toggle del "$PANEL";;

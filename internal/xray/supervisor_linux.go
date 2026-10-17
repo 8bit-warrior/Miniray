@@ -37,6 +37,55 @@ func coreServiceAction(action string) error {
 }
 
 func independentCoreEnabled() bool { return os.Getenv("MINIRAY_SEPARATE_CORE") == "1" }
+
+func coreManualStopPath() string {
+	if path := os.Getenv("MINIRAY_CORE_STOP_FILE"); path != "" {
+		return path
+	}
+	return "/run/miniray-core.manual-stop"
+}
+
+func IndependentCoreManuallyStopped() bool {
+	if !independentCoreEnabled() {
+		return false
+	}
+	_, err := os.Stat(coreManualStopPath())
+	return err == nil
+}
+
+func SetIndependentCoreManuallyStopped(stopped bool) error {
+	if !independentCoreEnabled() {
+		return nil
+	}
+	if stopped {
+		return os.WriteFile(coreManualStopPath(), []byte("1\n"), 0o600)
+	}
+	err := os.Remove(coreManualStopPath())
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
+}
+
+func StartIndependentAgent() error {
+	if !independentCoreEnabled() {
+		return nil
+	}
+	var cmd *exec.Cmd
+	if openRCEnabled() {
+		if exec.Command("rc-service", "miniray-agent", "status").Run() == nil {
+			return nil
+		}
+		cmd = exec.Command("rc-service", "miniray-agent", "start")
+	} else {
+		cmd = exec.Command("systemctl", "start", "miniray-agent.service")
+	}
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("start independent agent: %w: %s", err, out)
+	}
+	return nil
+}
+
 func corePID() (int, error) {
 	if openRCEnabled() {
 		if err := exec.CommandContext(context.Background(), "rc-service", "miniray-core", "status").Run(); err != nil {
@@ -63,7 +112,11 @@ func verifyCorePID(pid int) error {
 	if err != nil {
 		return err
 	}
-	expected, err := filepath.EvalSymlinks(GetBinaryPath())
+	expectedPath, err := filepath.Abs(GetBinaryPath())
+	if err != nil {
+		return err
+	}
+	expected, err := filepath.EvalSymlinks(expectedPath)
 	if err != nil {
 		return err
 	}

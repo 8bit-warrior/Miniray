@@ -1074,13 +1074,8 @@ func (s *ServerService) UpdateXray(version string) error {
 		return fmt.Errorf("xray version %q is not in the fetched release list", version)
 	}
 
-	// 1. Stop xray before doing anything
-	if err := s.StopXrayService(); err != nil {
-		logger.Warning("failed to stop xray before update:", err)
-	}
-
-	// 2. Download the zip
-	zipFileName, err := s.downloadXRay(version)
+	// Download the new core before interrupting the running service.
+		zipFileName, err := s.downloadXRay(version)
 	if err != nil {
 		return err
 	}
@@ -1099,6 +1094,12 @@ func (s *ServerService) UpdateXray(version string) error {
 	reader, err := zip.NewReader(zipFile, stat.Size())
 	if err != nil {
 		return err
+	}
+
+	if s.xrayService.IsXrayRunning() {
+		if err := s.StopXrayService(); err != nil {
+			return fmt.Errorf("stop xray before installing version %s: %w", version, err)
+		}
 	}
 
 	// 3. Helper to extract files

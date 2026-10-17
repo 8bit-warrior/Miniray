@@ -84,6 +84,10 @@ func (p *process) adoptCore(pid int) error {
 	return nil
 }
 
+func IndependentCoreManuallyStopped() bool { return false }
+func SetIndependentCoreManuallyStopped(bool) error { return nil }
+func StartIndependentAgent() error { return nil }
+
 func IndependentCoreRunning() bool {
 	pid, err := corePID()
 	return err == nil && pid > 0 && verifyCorePID(pid) == nil

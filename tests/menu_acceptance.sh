@@ -18,7 +18,7 @@ case "$1" in
     if [[ "$action" == is-active ]]; then test -f "$state/$1.running"; else test -f "$state/$1.enabled"; fi;;
   status) test -f "$state/$2.running";;
   start|restart) touch "$state/$2.running"; printf '%s %s\n' "$1" "$2" >> "$state/services";;
-  stop) rm -f "$state/$2.running";;
+  stop) rm -f "$state/$2.running"; printf 'stop %s\n' "$2" >> "$state/services";;
   enable) touch "$state/$2.enabled";;
   disable) rm -f "$state/$2.enabled";;
   *) exit 1;;
@@ -31,7 +31,12 @@ state="$MINIRAY_TEST_STATE"
 case "$2" in
   status) test -f "$state/$1.service.running";;
   start|restart) touch "$state/$1.service.running";;
-  stop) rm -f "$state/$1.service.running";;
+  stop)
+    if [[ ! -f "$state/$1.service.running" ]]; then
+      printf '* WARNING: %s is already stopped\n' "$1" >&2
+      exit 1
+    fi
+    rm -f "$state/$1.service.running";;
   *) exit 1;;
 esac
 MOCK
@@ -88,6 +93,7 @@ MOCK
 chmod +x "$work/bin/"* "$work/root/miniray" "$work/root/bin/xray"
 export MINIRAY_TEST_STATE="$work/state" MINIRAY_SERVICE_MANAGER=systemd
 export MINIRAY_MAIN_FOLDER="$work/root" MINIRAY_LANGUAGE_FILE="$work/state/lang"
+export MINIRAY_CORE_STOP_FILE="$work/state/manual-core-stop"
 export PATH="$work/bin:$PATH" TERM=dumb
 
 printf '0\n' | bash "$SCRIPT" > "$work/default"
@@ -135,6 +141,17 @@ grep -q 'Port must be between' "$work/credentials"
 grep -q 'Port set successfully' "$work/credentials"
 grep -q 'reset=tester;secret-key' "$work/state/commands"
 
+touch "$work/state/miniray-core.service.running"
+rm -f "$work/state/miniray-agent.service.running"
+bash "$SCRIPT" stop-core > "$work/systemd-core-stop"
+test ! -e "$work/state/miniray-core.service.running"
+test -f "$MINIRAY_CORE_STOP_FILE"
+grep -q 'stop miniray-core.service' "$work/state/services"
+bash "$SCRIPT" start-core > "$work/systemd-core-start"
+test -f "$work/state/miniray-core.service.running"
+test -f "$work/state/miniray-agent.service.running"
+test ! -e "$MINIRAY_CORE_STOP_FILE"
+
 export MINIRAY_SERVICE_MANAGER=openrc
 printf '1\n\n2\n\n8\n\n9\n\n0\n' | bash "$SCRIPT" > "$work/openrc"
 test ! -e "$work/state/miniray.service.running"
@@ -144,6 +161,14 @@ test -f "$work/state/miniray-agent.service.running"
 test -f "$work/state/miniray-core.service.enabled"
 test -f "$work/state/miniray-agent.service.enabled"
 grep -q 'Start panel' "$work/openrc"
+rm -f "$work/state/miniray-agent.service.running"
+bash "$SCRIPT" stop-core > "$work/openrc-core-stop"
+test ! -e "$work/state/miniray-core.service.running"
+test -f "$MINIRAY_CORE_STOP_FILE"
+bash "$SCRIPT" restart-core > "$work/openrc-core-restart"
+test -f "$work/state/miniray-core.service.running"
+test -f "$work/state/miniray-agent.service.running"
+test ! -e "$MINIRAY_CORE_STOP_FILE"
 
 python3 - "$work/default" "$work/english" <<'PY'
 from pathlib import Path
