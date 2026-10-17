@@ -73,12 +73,12 @@ func StartIndependentAgent() error {
 	}
 	var cmd *exec.Cmd
 	if openRCEnabled() {
-		if exec.Command("rc-service", "miniray-agent", "status").Run() == nil {
+		if exec.CommandContext(context.Background(), "rc-service", "miniray-agent", "status").Run() == nil {
 			return nil
 		}
-		cmd = exec.Command("rc-service", "miniray-agent", "start")
+		cmd = exec.CommandContext(context.Background(), "rc-service", "miniray-agent", "start")
 	} else {
-		cmd = exec.Command("systemctl", "start", "miniray-agent.service")
+		cmd = exec.CommandContext(context.Background(), "systemctl", "start", "miniray-agent.service")
 	}
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("start independent agent: %w: %s", err, out)
