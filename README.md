@@ -15,7 +15,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/in
 安装脚本会下载最新发布版本、验证 SHA-256 校验和、安装 Miniray 并注册系统服务。如需安装指定版本：
 
 ```bash
-MINIRAY_UPDATE_TAG=v0.0.4 bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh)
+MINIRAY_UPDATE_TAG=v0.0.5 bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh)
 ```
 
 执行 `miniray` 或 `mr` 均可打开中文管理菜单。菜单采用单页分块布局：顶部首行显示当前 Miniray 版本号，随后两行显示 Web 面板和 Xray 核心的实时状态、核心版本及各自的开机自启状态；下方分为面板管理、Xray 核心和系统工具三块，每行一个功能。分组使用等宽、左右闭合的边框。Web 管理界面的桌面侧边栏和移动端抽屉也会在顶部显示当前版本号。语言切换固定为菜单 12，中文界面显示 `English`，英文界面显示 `中文`；语言选择会保存，更新后仍然保留。
