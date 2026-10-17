@@ -15,6 +15,7 @@ import socketserver
 import sqlite3
 import subprocess
 import sys
+import tarfile
 import tempfile
 import threading
 import time
@@ -194,6 +195,12 @@ httpd = socketserver.TCPServer(("127.0.0.1", 0), Handler)
 threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
 try:
+    with tarfile.open(packages / "miniray-linux-amd64.tar.gz") as archive:
+        for script in ("install.sh", "update.sh", "miniray.sh"):
+            entry = archive.getmember(f"miniray/{script}")
+            assert entry.issym() and entry.linkname == script.removesuffix(".sh") + ".real.sh", script
+    print("legacy-updater-safe-package: passed", flush=True)
+
     clean()
     fixture()
     install("3\n")
