@@ -269,10 +269,11 @@ if (( PANEL_ACTIVE == 1 )); then
   systemctl is-active --quiet miniray.service
 fi
 if (( LEGACY_FOUND == 1 )); then
-  systemctl is-active --quiet miniray-core.service
+  if (( EXISTING_MINIRAY == 0 )); then
+    systemctl is-active --quiet miniray-core.service
+  fi
   if (( COEXIST == 1 )); then
-    systemctl is-active --quiet x-ui.service
-    echo 'Miniray and 3x-ui are running independently.'
+    echo 'Miniray installed alongside 3x-ui; the legacy service state was preserved.'
   elif (( REMOVE_LEGACY == 1 )); then
     systemctl is-active --quiet miniray-agent.service
     systemctl is-active --quiet miniray.service
