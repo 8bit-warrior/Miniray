@@ -4,7 +4,7 @@ Miniray 是一款基于 SQLite 的代理管理面板，支持本地入站、客�
 
 ## Linux 安装
 
-支持 **amd64/x86_64** 和 **arm64/aarch64** 架构，适用于采用 systemd 的 Linux 系统及采用 OpenRC 的 Alpine Linux。
+支持 **amd64/x86_64** 和 **arm64/aarch64** 架构，适用于采用 systemd 的 Linux 系统及采用 OpenRC 的 Alpine Linux。后续 Release 仅提供这两种 Linux 架构的 `.tar.gz` 安装包。
 
 以 root 用户执行安装命令。系统需要提供 `bash`、`curl`、`tar`、`sha256sum` 和 `install`。Alpine Linux 可先执行 `apk add bash curl tar coreutils` 安装依赖。
 
@@ -63,9 +63,7 @@ Select [1/2/3]:
 
 升级早期版本的 Miniray 数据库时，程序会先在数据库同目录下创建 `miniray-before-simplification-*.db` 备份，再清理已移除的数据表。原有本地入站配置、客户端用量及兼容的订阅端点覆盖设置会被保留。
 
-## Windows 与 Docker
-
-从 [Releases](https://github.com/8bit-warrior/Miniray/releases) 下载对应 amd64 或 arm64 架构的 ZIP 压缩包，解压后运行其中的 `miniray.exe`。Linux 安装脚本支持 systemd 和 OpenRC。
+## Docker
 
 Docker 部署为可选方式，参见 [deploy/README.md](deploy/README.md)。
 
