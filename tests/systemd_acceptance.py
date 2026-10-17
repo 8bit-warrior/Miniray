@@ -103,7 +103,10 @@ def install(answers="", succeeds=True):
             raise AssertionError("installer timed out")
         _, status = os.waitpid(pid, 0)
         passed = os.waitstatus_to_exitcode(status) == 0
-        assert passed == succeeds, output.decode(errors="replace")[-6000:]
+        if passed != succeeds:
+            logs = command("journalctl", "-u", "miniray", "-u", "miniray-core", "-u", "miniray-agent", "-n", "120", "--no-pager", check=False).stdout
+            status = command("systemctl", "status", "miniray", "miniray-core", "miniray-agent", "--no-pager", check=False).stdout
+            raise AssertionError(output.decode(errors="replace")[-6000:] + "\\nSYSTEMD STATUS\\n" + status[-6000:] + "\\nJOURNAL\\n" + logs[-9000:])
     finally:
         os.close(fd)
 
