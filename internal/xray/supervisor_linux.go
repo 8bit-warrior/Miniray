@@ -67,7 +67,7 @@ func verifyCorePID(pid int) error {
 	if err != nil {
 		return err
 	}
-	actual, err := filepath.EvalSymlinks(exe)
+	actual, err := filepath.EvalSymlinks(strings.TrimSuffix(exe, " (deleted)"))
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,21 @@ func (p *process) adoptCore(pid int) error {
 	return nil
 }
 
-func (p *process) startIndependentCore(configPath string, oldData, newData []byte) error {
+func IndependentCoreRunning() bool {
+	if !independentCoreEnabled() { return false }
+	pid, err := corePID()
+	return err == nil && pid > 0 && verifyCorePID(pid) == nil
+}
+
+func StopIndependentCore() error {
+	pid, err := corePID()
+	if err != nil { return err }
+	if pid <= 0 { return errors.New("xray is not running") }
+	if err := verifyCorePID(pid); err != nil { return err }
+	return stopIndependentCore()
+}
+
+func (p *process) startIndependentCore(configPath string, oldData, newData []byte, forceRestart bool) error {
 	pid, err := corePID()
 	if err != nil {
 		return err
@@ -117,7 +131,7 @@ func (p *process) startIndependentCore(configPath string, oldData, newData []byt
 		if err := verifyCorePID(pid); err != nil {
 			return err
 		}
-		if bytes.Equal(oldData, newData) {
+		if !forceRestart && bytes.Equal(oldData, newData) {
 			return p.adoptCore(pid)
 		}
 	}
