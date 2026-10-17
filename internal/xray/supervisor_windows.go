@@ -84,14 +84,21 @@ func (p *process) adoptCore(pid int) error {
 	return nil
 }
 
-func (p *process) startIndependentCore(path string, oldConfig, newConfig []byte) error {
+func IndependentCoreRunning() bool {
+	pid, err := corePID()
+	return err == nil && pid > 0 && verifyCorePID(pid) == nil
+}
+
+func StopIndependentCore() error { return stopIndependentCore() }
+
+func (p *process) startIndependentCore(path string, oldConfig, newConfig []byte, forceRestart bool) error {
 	pid, err := corePID()
 	if err != nil {
 		return err
 	}
 	if pid > 0 {
 		if err := verifyCorePID(pid); err == nil {
-			if bytes.Equal(oldConfig, newConfig) {
+			if !forceRestart && bytes.Equal(oldConfig, newConfig) {
 				return p.adoptCore(pid)
 			}
 			proc, err := os.FindProcess(pid)
