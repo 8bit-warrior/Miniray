@@ -152,17 +152,13 @@ export default function OverviewActionBar({
   ];
 
   const statePill = (
-    <span className="ov-state" data-state={status.xray.state}>
-      <span className="ov-state-dot" style={{ color: status.xray.color }} />
-      <span>{`${t('pages.index.xrayStatus')} · ${stateText}`}</span>
-      {hasVersion && (
-        <Tooltip title={t('pages.index.xraySwitch')}>
-          <button type="button" className="ov-state-version" onClick={onOpenVersionSwitch}>
-            {`v${status.xray.version}`}
-          </button>
-        </Tooltip>
-      )}
-    </span>
+    <Tooltip title={t('pages.index.xraySwitch')}>
+      <button type="button" className="ov-state" data-state={status.xray.state} onClick={onOpenVersionSwitch}>
+        <span className="ov-state-dot" style={{ color: status.xray.color }} />
+        <span>{`${t('pages.index.xrayStatus')} · ${stateText}`}</span>
+        {hasVersion && <span className="ov-state-version">{`v${status.xray.version}`}</span>}
+      </button>
+    </Tooltip>
   );
 
   return (
