@@ -90,7 +90,7 @@ type XrayService struct {
 // IsXrayRunning checks if the Xray process is currently running.
 func (s *XrayService) IsXrayRunning() bool {
 	process := currentXrayProcess()
-	return process != nil && process.IsRunning()
+	return (process != nil && process.IsRunning()) || xray.IndependentCoreRunning()
 }
 
 // XrayProcess returns the current Xray process instance (may be nil when Xray
@@ -152,10 +152,9 @@ func (s *XrayService) GetXrayResult() string {
 // GetXrayVersion returns the version of the running Xray process.
 func (s *XrayService) GetXrayVersion() string {
 	process := currentXrayProcess()
-	if process == nil {
-		return "Unknown"
-	}
-	return process.GetXrayVersion()
+	if process != nil && process.IsRunning() { return process.GetXrayVersion() }
+	if xray.IndependentCoreRunning() { return xray.InstalledVersion() }
+	return "Unknown"
 }
 
 // RemoveIndex removes an element at the specified index from a slice.
@@ -1300,7 +1299,7 @@ func (s *XrayService) RestartXray(isForce bool) error {
 			logger.Info("Xray config changes applied through the core API, no restart needed")
 			return nil
 		}
-		_ = process.Stop()
+		if err := process.Stop(); err != nil { return err }
 	} else if conflicts := bindConflicts(xrayConfig, nil); len(conflicts) > 0 {
 		// Nothing is running to protect and the core is the authority on what it
 		// can bind: start it and let its own error name the port it lost.
@@ -1310,7 +1309,7 @@ func (s *XrayService) RestartXray(isForce bool) error {
 	process = xray.NewProcess(xrayConfig)
 	xrayState.replace(process)
 	s.xrayAPI.StatsLastValues = nil
-	err = process.Start()
+	err = process.Start(isForce)
 	if err != nil {
 		return err
 	}
@@ -1486,9 +1485,8 @@ func (s *XrayService) StopXray() error {
 	isManuallyStopped.Store(true)
 	logger.Debug("Attempting to stop Xray...")
 	process := currentXrayProcess()
-	if process != nil && process.IsRunning() {
-		return process.Stop()
-	}
+	if process != nil && process.IsRunning() { return process.Stop() }
+	if xray.IndependentCoreRunning() { return xray.StopIndependentCore() }
 	return errors.New("xray is not running")
 }
 
