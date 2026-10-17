@@ -228,7 +228,7 @@ suite = run.get("check_suite_id")
 if (
     not isinstance(suite, int)
     or suite <= 0
-    str(run.get("id")) != run_id
+    or str(run.get("id")) != run_id
     or run.get("head_branch") != "main"
     or run.get("status") != "completed"
     or run.get("conclusion") != "success"
