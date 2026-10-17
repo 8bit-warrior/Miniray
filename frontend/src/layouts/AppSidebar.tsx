@@ -85,7 +85,7 @@ function DocsButton({ ariaLabel }: { ariaLabel: string }) {
   );
 }
 
-function VersionBadge({ version, collapsed }: { version: string; collapsed?: boolean }) {
+function VersionBadge({ version }: { version: string }) {
   if (!version) return null;
   const label = formatPanelVersion(version);
   return (
@@ -98,7 +98,7 @@ function VersionBadge({ version, collapsed }: { version: string; collapsed?: boo
       title={label}
     >
       <GithubOutlined />
-      {!collapsed && <span className="sider-version-text">{label}</span>}
+      <span className="sider-version-text">{label}</span>
     </a>
   );
 }
@@ -296,8 +296,9 @@ export default function AppSidebar() {
         collapsed={railCollapsed}
       >
         <div className="sider-brand">
-          <div className="brand-block">
-            <span className="brand-text">{'miniray'}</span>
+          <div className="brand-block brand-identity">
+            <span className="brand-text">miniray</span>
+            <VersionBadge version={panelVersion} />
           </div>
           {!railCollapsed && (
             <div className="brand-actions">
@@ -354,9 +355,6 @@ export default function AppSidebar() {
           items={toMenuItems(utilItems)}
           onClick={onMenuClick}
         />
-        <div className="sider-footer">
-          <VersionBadge version={panelVersion} collapsed={railCollapsed} />
-        </div>
       </Layout.Sider>
 
       <Drawer
@@ -373,8 +371,9 @@ export default function AppSidebar() {
         onClose={() => setDrawerOpen(false)}
       >
         <div className="drawer-header">
-          <div className="brand-block">
+          <div className="brand-block brand-identity">
             <span className="drawer-brand">miniray</span>
+            <VersionBadge version={panelVersion} />
           </div>
           <div className="drawer-header-actions">
             <DocsButton ariaLabel={t('menu.docs') || 'Documentation'} />
@@ -438,9 +437,6 @@ export default function AppSidebar() {
             setDrawerOpen(false);
           }}
         />
-        <div className="drawer-footer">
-          <VersionBadge version={panelVersion} />
-        </div>
       </Drawer>
 
       {!drawerOpen && (

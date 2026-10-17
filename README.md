@@ -15,10 +15,10 @@ bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/in
 安装脚本会下载最新发布版本、验证 SHA-256 校验和、安装 Miniray 并注册系统服务。如需安装指定版本：
 
 ```bash
-MINIRAY_UPDATE_TAG=v0.0.2 bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh)
+MINIRAY_UPDATE_TAG=v0.0.3 bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh)
 ```
 
-执行 `miniray` 或 `mr` 均可打开中文管理菜单。菜单采用单页分块布局：顶部两行显示面板和 Xray 核心的实时状态、核心版本及各自的开机自启状态；下方分为面板管理、Xray 核心和系统工具三块，每行一个功能。可在菜单中切换至 English，语言选择会保存，更新后仍然保留。
+执行 `miniray` 或 `mr` 均可打开中文管理菜单。菜单采用单页分块布局：顶部标题显示当前 Miniray 版本号，随后两行显示面板和 Xray 核心的实时状态、核心版本及各自的开机自启状态；下方分为面板管理、Xray 核心和系统工具三块，每行一个功能。Web 管理界面的桌面侧边栏和移动端抽屉也会在顶部显示当前版本号。可在菜单中切换至 English，语言选择会保存，更新后仍然保留。
 
 面板管理提供按状态切换的启动/停止和开机自启开关、重启面板、修改 Web 端口、重置管理员用户名和密码，以及查看面板地址与用户名。输入新密码时不会显示输入内容，密码通过标准输入交给后台处理，不会出现在进程命令行中。修改端口后，只有面板正在运行时才会重启面板，不会停止代理核心。
 
@@ -62,6 +62,12 @@ Select [1/2/3]:
 停止面板会关闭面板监听端口，但代理服务继续运行。执行 `miniray start-panel` 即可重新启动面板。面板与代理服务的开机自启相互独立，首次安装时默认均为启用状态。
 
 升级早期版本的 Miniray 数据库时，程序会先在数据库同目录下创建 `miniray-before-simplification-*.db` 备份，再清理已移除的数据表。原有本地入站配置、客户端用量及兼容的订阅端点覆盖设置会被保留。
+
+## 版本发布
+
+项目版本统一维护在 `internal/config/version`，管理界面显示的是当前安装的程序版本，与 Xray 核心版本分开。
+
+每次发版时，在 `docs/releases/vX.Y.Z.md` 创建该版本的中文更新说明，每项改动单独列为一条。将版本号更新为 `X.Y.Z` 后，以 `chore(release): vX.Y.Z` 为提交标题推送至 `main`，GitHub Actions 会依次执行前端检查、后端测试、Linux 双架构构建及安装验收。全部通过后，使用对应的中文说明文件创建 GitHub Release，并上传 `miniray-linux-amd64.tar.gz`、`miniray-linux-arm64.tar.gz` 和 `SHA256SUMS`，不再构建 Windows 安装包。
 
 ## Docker
 

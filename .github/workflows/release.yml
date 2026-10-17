@@ -190,12 +190,13 @@ jobs:
           VERSION=$(tr -d '\r\n' < internal/config/version)
           TAG="v$VERSION"
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then test "$GITHUB_REF_NAME" = "$TAG"; fi
-          NOTES="Miniray v${VERSION}: bilingual, single-page grouped terminal menu with live panel/Xray states, conditional controls, web port and administrator credential management, panel URL information, and miniray/mr aliases. SQLite-only with independent panel and proxy services, Xray-core v26.6.27, and the three-way legacy installation strategy. Includes Linux amd64/arm64 packages; installer and service acceptance checks gate publication."
+          NOTES_FILE="docs/releases/${TAG}.md"
+          test -s "$NOTES_FILE"
           if gh release view "$TAG" >/dev/null 2>&1; then
             git tag -f "$TAG" "$GITHUB_SHA"
             git push origin "refs/tags/$TAG" --force
             gh release upload "$TAG" dist/* --clobber
-            gh release edit "$TAG" --notes "$NOTES"
+            gh release edit "$TAG" --notes-file "$NOTES_FILE"
           else
-            gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "Miniray $TAG" --notes "$NOTES"
+            gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "Miniray $TAG" --notes-file "$NOTES_FILE"
           fi

@@ -2,6 +2,8 @@
 set -euo pipefail
 
 SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/miniray.sh"
+export MINIRAY_TEST_VERSION
+MINIRAY_TEST_VERSION=$(cat "$(dirname "$SCRIPT")/internal/config/version")
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/bin" "$work/root/bin" "$work/state"
@@ -58,7 +60,7 @@ cat > "$work/root/miniray" <<'MOCK'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$MINIRAY_TEST_STATE/commands"
 case "$1" in
-  -v) echo 0.0.2;;
+  -v) echo "$MINIRAY_TEST_VERSION";;
   panel-info) printf 'http://%s:2053/panel/\nadmin\n' "$2";;
   reset-credentials)
     read -r username
@@ -83,11 +85,13 @@ grep -q '面板管理' "$work/default"
 grep -q 'Xray 核心' "$work/default"
 grep -q '系统工具' "$work/default"
 grep -q 'Xray v26.6.27' "$work/default"
+grep -q "M I N I R A Y   v${MINIRAY_TEST_VERSION}" "$work/default"
 grep -q '启动面板' "$work/default"
 ! grep -q '查看状态' "$work/default"
 
 printf '1\n\n2\n\n12\n6\n\n0\n' | bash "$SCRIPT" > "$work/english"
 grep -q 'Switch to 中文' "$work/english"
+grep -q "M I N I R A Y   v${MINIRAY_TEST_VERSION}" "$work/english"
 grep -q 'http://192.0.2.42:2053/panel/' "$work/english"
 grep -q 'Username: admin' "$work/english"
 test -f "$work/state/miniray.service.running"

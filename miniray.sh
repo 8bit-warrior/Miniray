@@ -101,10 +101,15 @@ core_version() {
 }
 
 status_header() {
+  local version title left
+  version=$("$ROOT/miniray" -v)
+  if [[ "$version" != v* && "$version" != dev+* ]]; then version="v$version"; fi
+  title="M I N I R A Y   $version"
+  left=$(( (50 - ${#title}) / 2 ))
   printf '\n'
   color '1;36' '  ╭──────────────────────────────────────────────────╮'
   printf '\n'
-  color '1;36' '  │                 M I N I R A Y                   │'
+  color '1;36' "$(printf '  │%*s%s%*s│' "$left" '' "$title" "$((50 - ${#title} - left))" '')"
   printf '\n'
   color '1;36' '  ╰──────────────────────────────────────────────────╯'
   printf '\n'
