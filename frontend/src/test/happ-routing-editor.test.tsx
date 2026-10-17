@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { EditorView } from 'codemirror';
+import { message } from 'antd';
 
 import { AllSetting } from '@/models/setting';
 import HappSettingsContent from '@/pages/settings/HappSettingsContent';
@@ -99,6 +100,14 @@ function changeJson(value: string) {
 }
 
 describe('Happ routing editor', () => {
+  beforeEach(() => {
+    vi.spyOn(message, 'success').mockReturnValue((() => {}) as ReturnType<typeof message.success>);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('loads the current unsaved routing draft when opened', () => {
     const updateSetting = renderSettings();
     const latest = { ...profile, DirectSites: ['domain:latest-draft.example'] };
