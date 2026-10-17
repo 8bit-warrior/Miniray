@@ -58,6 +58,24 @@ type offlineSignal struct{}
 func (offlineSignal) Signal()        {}
 func (offlineSignal) String() string { return "panel-offline" }
 
+func stopPanelThroughService(sigCh chan os.Signal) {
+	if runtime.GOOS == "linux" && os.Getenv("MINIRAY_SEPARATE_CORE") == "1" {
+		cmd := exec.Command("systemctl", "stop", "miniray.service")
+		if os.Getenv("MINIRAY_SERVICE_MANAGER") == "openrc" {
+			cmd = exec.Command("rc-service", "miniray", "stop")
+		}
+		if output, err := cmd.CombinedOutput(); err == nil {
+			return
+		} else {
+			logger.Warningf("stop panel through service manager failed: %v: %s", err, output)
+		}
+	}
+	select {
+	case sigCh <- offlineSignal{}:
+	default:
+	}
+}
+
 func runWebServer() {
 	log.Printf("Starting %v %v", config.GetName(), config.GetPanelVersion())
 
@@ -116,10 +134,7 @@ func runWebServer() {
 	// Trap shutdown signals
 	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGTERM, sys.SIGUSR1, os.Interrupt)
 	global.SetPanelOfflineHook(func() {
-		select {
-		case sigCh <- offlineSignal{}:
-		default:
-		}
+		go stopPanelThroughService(sigCh)
 	})
 	global.SetRestartHook(func() {
 		select {
@@ -929,7 +944,7 @@ func runProxyAgent() {
 
 	service.StartTrafficWriter()
 	var xrayService service.XrayService
-	if err := xrayService.RestartXray(true); err != nil {
+	if err := xrayService.RestartXray(false); err != nil {
 		logger.Warning("proxy agent: initial Xray reconcile failed:", err)
 	}
 
