@@ -224,7 +224,10 @@ with open(sys.argv[2], encoding="utf-8") as stream:
     artifacts = json.load(stream)["artifacts"]
 arch, run_id = sys.argv[3:]
 sha = run.get("head_sha", "")
+suite = run.get("check_suite_id")
 if (
+    not isinstance(suite, int)
+    or suite <= 0
     str(run.get("id")) != run_id
     or run.get("head_branch") != "main"
     or run.get("status") != "completed"
@@ -247,17 +250,17 @@ for artifact in artifacts:
         and workflow.get("id") == run["id"]
         and workflow.get("head_sha", "").lower() == sha.lower()
     ):
-        print(artifact["id"], digest.split(":", 1)[1], version, sha.lower())
+        print(artifact["id"], digest.split(":", 1)[1], version, sha.lower(), suite)
         break
 else:
     sys.exit("Selected Actions build has no valid, unexpired artifact for this architecture")
 PY
   ) || exit 1
-  read -r ARTIFACT_ID EXPECTED_SHA EXPECTED_VERSION ACTION_COMMIT <<< "$ACTION_META"
+  read -r ARTIFACT_ID EXPECTED_SHA EXPECTED_VERSION ACTION_COMMIT CHECK_SUITE_ID <<< "$ACTION_META"
   printf 'Downloading Actions run %s, artifact %s...\n' "$ACTION_RUN_ID" "$ARTIFACT_ID"
   curl -fL --retry 4 --connect-timeout 15 --max-filesize 268435456 \
     -o "$TMP/action.zip" \
-    "https://nightly.link/8bit-warrior/Miniray/actions/artifacts/$ARTIFACT_ID.zip"
+    "https://nightly.link/8bit-warrior/Miniray/suites/$CHECK_SUITE_ID/artifacts/$ARTIFACT_ID"
   printf '%s  %s\n' "$EXPECTED_SHA" "$TMP/action.zip" | sha256sum -c -
   unzip -p "$TMP/action.zip" "$ASSET" > "$TMP/$ASSET"
   test -s "$TMP/$ASSET"
