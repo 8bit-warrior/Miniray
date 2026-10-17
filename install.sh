@@ -91,7 +91,24 @@ REMOVE_LEGACY=0
 IMPORT_LEGACY=0
 COEXIST=0
 EXISTING_MINIRAY=0
-if [[ -f "$ROOT/miniray" || -f "$DB_PATH" ]]; then EXISTING_MINIRAY=1; fi
+if [[ -f "$ROOT/miniray" ]]; then EXISTING_MINIRAY=1; fi
+if (( EXISTING_MINIRAY == 0 )) && [[ -f "$DB_PATH" ]]; then
+  [[ -r /dev/tty ]] || { echo 'An existing Miniray database requires an interactive terminal.' >&2; exit 1; }
+  printf 'Existing Miniray database: %s\n' "$DB_PATH"
+  echo '1) Import and reuse existing database'
+  echo '2) Clear old database and install fresh'
+  echo '3) Cancel installation'
+  while true; do
+    read -r -p 'Select [1/2/3]: ' choice </dev/tty || exit 1
+    case "$choice" in
+      1) break;;
+      2) CLEAR_EXISTING_DB=1; break;;
+      3) echo 'Installation cancelled.'; exit 0;;
+      *) echo 'Invalid selection.';;
+    esac
+  done
+fi
+CLEAR_EXISTING_DB="${CLEAR_EXISTING_DB:-0}"
 if legacy_service_exists ||
    [[ -e /usr/local/x-ui/x-ui || -e "$LEGACY_DB" || -e /usr/bin/x-ui || -e /usr/local/bin/x-ui ]]; then
   LEGACY_FOUND=1
@@ -110,7 +127,7 @@ if legacy_service_exists ||
     esac
   done
   if (( IMPORT_LEGACY == 1 )); then
-    if (( EXISTING_MINIRAY == 1 )); then
+    if (( EXISTING_MINIRAY == 1 )) || { (( CLEAR_EXISTING_DB == 0 )) && [[ -f "$DB_PATH" ]]; }; then
       echo 'Migration requires a fresh Miniray database. Existing Miniray data was not changed.' >&2
       exit 1
     fi
@@ -172,6 +189,18 @@ finish_install() {
   fi
   if (( status != 0 && LEGACY_REMOVED == 1 )); then
     echo "Installation failed after legacy removal; restore data from $BACKUP_DIR if needed." >&2
+  fi
+  if [[ -n "${DB_BACKUP_DIR:-}" ]]; then
+    if (( status != 0 )); then
+      for suffix in '' -wal -shm -journal; do
+        rm -f "$DB_PATH$suffix"
+        if [[ -f "$DB_BACKUP_DIR/miniray.db$suffix" ]]; then mv "$DB_BACKUP_DIR/miniray.db$suffix" "$DB_PATH$suffix"; fi
+      done
+      if [[ -f "$DB_BACKUP_DIR/initial-admin-password" ]]; then
+        mv "$DB_BACKUP_DIR/initial-admin-password" "$DB_FOLDER/initial-admin-password"
+      fi
+    fi
+    rm -rf "$DB_BACKUP_DIR"
   fi
   rm -rf "$TMP"
 }
@@ -300,6 +329,15 @@ done
 systemctl daemon-reload
 fi
 
+if (( CLEAR_EXISTING_DB == 1 )); then
+  DB_BACKUP_DIR=$(mktemp -d)
+  for suffix in '' -wal -shm -journal; do
+    if [[ -f "$DB_PATH$suffix" ]]; then mv "$DB_PATH$suffix" "$DB_BACKUP_DIR/miniray.db$suffix"; fi
+  done
+  if [[ -f "$DB_FOLDER/initial-admin-password" ]]; then
+    mv "$DB_FOLDER/initial-admin-password" "$DB_BACKUP_DIR/initial-admin-password"
+  fi
+fi
 if [[ ! -f "$DB_PATH" ]]; then
   CREATED_DB=1
   if (( IMPORT_LEGACY == 1 )); then

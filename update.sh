@@ -16,4 +16,9 @@ record_status() {
   fi
 }
 trap 'record_status "$?"' EXIT
-bash "${MINIRAY_MAIN_FOLDER:-/usr/local/miniray}/install.sh" "$@"
+ROOT="${MINIRAY_MAIN_FOLDER:-/usr/local/miniray}"
+if [[ -x "$ROOT/miniray" ]]; then
+  CURRENT_VERSION=$("$ROOT/miniray" -v)
+  printf 'Current Miniray version: %s\n' "$CURRENT_VERSION"
+fi
+bash "$ROOT/install.sh" "$@"

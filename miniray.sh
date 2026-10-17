@@ -101,17 +101,12 @@ core_version() {
 }
 
 status_header() {
-  local version title left
+  local version
   version=$("$ROOT/miniray" -v)
   if [[ "$version" != v* && "$version" != dev+* ]]; then version="v$version"; fi
-  title="M I N I R A Y   $version"
-  left=$(( (50 - ${#title}) / 2 ))
+  color '1;36' "  M I N I R A Y   $version"
   printf '\n'
-  color '1;36' '  ╭──────────────────────────────────────────────────╮'
-  printf '\n'
-  color '1;36' "$(printf '  │%*s%s%*s│' "$left" '' "$title" "$((50 - ${#title} - left))" '')"
-  printf '\n'
-  color '1;36' '  ╰──────────────────────────────────────────────────╯'
+  color '36' '  ──────────────────────────────────────────────────'
   printf '\n'
   printf '  %s  %s   %s %s\n' "$(tr_text '面板' 'Panel')" "$(state_text "$PANEL")" "$(tr_text '开机自启:' 'Autostart:')" "$(boot_text "$PANEL")"
   printf '  Xray v%s  %s   %s %s\n' "$(core_version)" "$(state_text "$CORE")" "$(tr_text '开机自启:' 'Autostart:')" "$(boot_text "$CORE")"
@@ -155,6 +150,7 @@ render_menu() {
   menu_item 10 "$(tr_text '查看日志' 'View logs')"
   menu_item 11 "$(tr_text '更新 Miniray' 'Update Miniray')"
   if [[ "$MENU_LANG" == zh ]]; then menu_item 12 '切换至 English'; else menu_item 12 'Switch to 中文'; fi
+  menu_item 13 "$(tr_text '完整卸载 Miniray' 'Uninstall Miniray')"
   menu_item 0 "$(tr_text '退出' 'Exit')"
   menu_end_group
   printf '\n'
@@ -205,6 +201,77 @@ reset_credentials() {
   printf '%s\n%s\n' "$username" "$password" | "$ROOT/miniray" reset-credentials || return
 }
 
+database_folder() {
+  local folder="${MINIRAY_DB_FOLDER:-}"
+  local saved
+  if [[ -z "$folder" && -f /etc/default/miniray ]]; then
+    saved=$(sed -n 's/^MINIRAY_DB_FOLDER=//p' /etc/default/miniray | tail -n 1)
+    folder="${saved%\"}"
+    folder="${folder#\"}"
+  fi
+  if [[ -z "$folder" && -f /etc/conf.d/miniray ]]; then
+    saved=$(sed -n 's/^MINIRAY_DB_FOLDER=//p' /etc/conf.d/miniray | tail -n 1)
+    folder="${saved%\"}"
+    folder="${folder#\"}"
+  fi
+  printf '%s' "${folder:-/etc/miniray}"
+}
+
+UNINSTALLED=0
+uninstall_miniray() {
+  local reply remove_data=0 folder unit suffix
+  read -r -p "$(tr_text '确定卸载 Miniray？[y/N]: ' 'Uninstall Miniray? [y/N]: ')" reply || return 1
+  if [[ "${reply,,}" != y && "${reply,,}" != yes ]]; then
+    printf '%s\n' "$(tr_text '已取消卸载。' 'Uninstallation cancelled.')"
+    return 0
+  fi
+  read -r -p "$(tr_text '同时清除 Miniray 数据库？[y/N]: ' 'Delete the Miniray database too? [y/N]: ')" reply || return 1
+  if [[ "${reply,,}" == y || "${reply,,}" == yes ]]; then remove_data=1; fi
+  folder=$(database_folder)
+  if [[ "$ROOT" != /* || "$ROOT" == / || ! -f "$ROOT/miniray.sh" || "$folder" != /* || "$folder" == / ]]; then
+    printf '%s\n' "$(tr_text '安装目录或数据库目录无效，已取消卸载。' 'Invalid installation or database directory; uninstallation aborted.')" >&2
+    return 1
+  fi
+
+  for unit in "$PANEL" "$AGENT" "$CORE"; do
+    if running "$unit"; then svc stop "$unit" || return 1; fi
+    if enabled "$unit"; then toggle del "$unit" || return 1; fi
+  done
+  if [[ "$MANAGER" == openrc ]]; then
+    rm -f /etc/init.d/miniray /etc/init.d/miniray-agent /etc/init.d/miniray-core
+  else
+    rm -f /etc/systemd/system/miniray.service /etc/systemd/system/miniray-agent.service /etc/systemd/system/miniray-core.service
+    systemctl daemon-reload
+    systemctl reset-failed miniray.service miniray-agent.service miniray-core.service >/dev/null 2>&1 || :
+  fi
+
+  rm -f /usr/local/bin/miniray /usr/local/bin/mr
+  rm -rf -- "$ROOT" /var/log/miniray
+  rm -f /run/miniray.pid /run/miniray-agent.pid /run/miniray-core.pid
+  rm -f /etc/conf.d/miniray /etc/default/miniray
+
+  if (( remove_data == 1 )); then
+    if [[ "$folder" == /etc/miniray ]]; then
+      rm -rf -- "$folder"
+    else
+      for suffix in '' -wal -shm -journal; do rm -f -- "$folder/miniray.db$suffix"; done
+      rm -f -- "$folder/initial-admin-password" "$folder/menu-language" "$folder/update-status.json"
+      rm -rf -- "$folder/imported-legacy-files"
+      rmdir "$folder" 2>/dev/null || :
+    fi
+    printf '%s\n' "$(tr_text 'Miniray 已卸载，数据库已清除。' 'Miniray uninstalled; database deleted.')"
+  else
+    rm -f -- "$folder/menu-language" "$folder/update-status.json"
+    if [[ "$folder" != /etc/miniray ]]; then
+      install -d -m 0755 /etc/default
+      printf 'MINIRAY_DB_FOLDER="%s"\n' "$folder" > /etc/default/miniray
+      chmod 0600 /etc/default/miniray
+    fi
+    printf '%s\n' "$(tr_text 'Miniray 已卸载，数据库保留在：' 'Miniray uninstalled; database kept at:') $folder/miniray.db"
+  fi
+  UNINSTALLED=1
+}
+
 action() {
   case "$1" in
     start-panel) svc start "$PANEL";;
@@ -243,6 +310,7 @@ action() {
     reset-settings) "$ROOT/miniray" setting -reset;;
     version) "$ROOT/miniray" -v;;
     update|install) bash "$ROOT/update.sh";;
+    uninstall) MENU_LANG=$(language); uninstall_miniray;;
     *) return 2;;
   esac
 }
@@ -258,6 +326,7 @@ Miniray / mr
   miniray web-info|change-port|reset-credentials
   miniray logs|panel-logs|core-logs
   miniray update
+  miniray uninstall
 HELP
 }
 
@@ -274,7 +343,7 @@ esac
 MENU_LANG=$(language)
 while true; do
   render_menu
-  read -r -p "$(tr_text '选择功能 [0-12]: ' 'Select an option [0-12]: ')" choice || break
+  read -r -p "$(tr_text '选择功能 [0-13]: ' 'Select an option [0-13]: ')" choice || break
   if ! case "$choice" in
     1) if running "$PANEL"; then action stop-panel; else action start-panel; fi;;
     2) if enabled "$PANEL"; then action disable-panel; else action enable-panel; fi;;
@@ -288,6 +357,7 @@ while true; do
     10) action logs;;
     11) action update;;
     12) if [[ "$MENU_LANG" == zh ]]; then set_language en; else set_language zh; fi;;
+    13) uninstall_miniray; if (( UNINSTALLED == 1 )); then exit 0; fi;;
     0) exit 0;;
     *) printf '%s\n' "$(tr_text '无效选项。' 'Invalid option.')";;
   esac; then
