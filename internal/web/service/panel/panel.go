@@ -143,28 +143,6 @@ func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
 	}, nil
 }
 
-// getDevUpdateInfo compares the running commit against the commit recorded in the
-// rolling dev release.
-func getDevUpdateInfo() (*PanelUpdateInfo, error) {
-	release, err := fetchPanelRelease(devReleaseTag)
-	if err != nil {
-		return nil, err
-	}
-	latestCommit := extractReleaseCommit(release)
-	if latestCommit == "" {
-		return nil, fmt.Errorf("dev release commit is unknown")
-	}
-	currentCommit := config.GetBuildCommit()
-	return &PanelUpdateInfo{
-		Channel:         "dev",
-		CurrentVersion:  config.GetPanelVersion(),
-		CurrentCommit:   shortCommit(currentCommit),
-		LatestCommit:    shortCommit(latestCommit),
-		LatestVersion:   "dev+" + shortCommit(latestCommit),
-		UpdateAvailable: !commitsEqual(currentCommit, latestCommit),
-	}, nil
-}
-
 // StartUpdate starts an update to the latest stable release.
 func (s *PanelService) StartUpdate() (int64, error) {
 	return s.startUpdate(false, "")
