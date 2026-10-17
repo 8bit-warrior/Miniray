@@ -147,7 +147,8 @@ jobs:
           cp "$MTG_BINARY" "staging/miniray/bin/mtg-${GOOS}-${GOARCH}${SUFFIX}"
           cp README.md LICENSE staging/miniray/
           if [ "$GOOS" = linux ]; then
-            cp -r openrc staging/miniray/\n            cp miniray.sh install.sh update.sh miniray-core.service miniray-agent.service miniray.service.* tools/coexist_ports.py staging/miniray/
+            cp -r openrc staging/miniray/
+            cp miniray.sh install.sh update.sh miniray-core.service miniray-agent.service miniray.service.* tools/coexist_ports.py staging/miniray/
             cp internal/web/service/config.json staging/miniray/bin/template.json
             chmod +x staging/miniray/miniray staging/miniray/*.sh staging/miniray/bin/xray-${GOOS}-${GOARCH} staging/miniray/bin/mtg-${GOOS}-${GOARCH}
             (cd staging && tar -czf "../miniray-${GOOS}-${GOARCH}.tar.gz" miniray)
