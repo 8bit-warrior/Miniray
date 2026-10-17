@@ -1,4 +1,4 @@
-"""Choose isolated Miniray listeners when installing alongside an existing 3x-ui."""
+"""Choose isolated Miniray listeners when installing alongside an existing legacy panel."""
 
 import json
 import socket
