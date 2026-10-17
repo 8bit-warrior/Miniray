@@ -277,6 +277,7 @@ if (( LEGACY_FOUND == 1 )); then
   elif (( REMOVE_LEGACY == 1 )); then
     systemctl is-active --quiet miniray-agent.service
     systemctl is-active --quiet miniray.service
+    "$ROOT/bin/xray" -test -c "$ROOT/bin/config.json"
     systemctl disable x-ui.service 2>/dev/null || :
     rm -f /etc/systemd/system/x-ui.service /usr/lib/systemd/system/x-ui.service /lib/systemd/system/x-ui.service
     rm -rf /usr/local/x-ui /etc/x-ui
