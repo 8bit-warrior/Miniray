@@ -308,121 +308,6 @@ func TestInjectPanelEgress_BadOutboundsSkips(t *testing.T) {
 	}
 }
 
-func TestInjectNodeEgresses_MissingTargetSkips(t *testing.T) {
-	cfg := egressTestConfig()
-	injectNodeEgresses(cfg, []*model.Node{
-		{Id: 1, Enable: true, OutboundTag: "removed-subscription-outbound"},
-		{Id: 2, Enable: true, OutboundTag: "warp"},
-	})
-
-	if len(cfg.InboundConfigs) != 2 {
-		t.Fatalf("only the node with a valid target should get a bridge, got %+v", cfg.InboundConfigs)
-	}
-	bridge := cfg.InboundConfigs[1]
-	if bridge.Tag != NodeEgressInboundTag(2) || bridge.Port != nodeEgressBasePort+2 {
-		t.Fatalf("unexpected node egress bridge: %+v", bridge)
-	}
-
-	var routing egressRouting
-	if err := json.Unmarshal(cfg.RouterConfig, &routing); err != nil {
-		t.Fatal(err)
-	}
-	if len(routing.Rules) != 2 || routing.Rules[0].OutboundTag != "warp" ||
-		len(routing.Rules[0].InboundTag) != 1 || routing.Rules[0].InboundTag[0] != NodeEgressInboundTag(2) {
-		t.Fatalf("only the valid node egress rule should be prepended, got %+v", routing.Rules)
-	}
-}
-
-func TestInjectNodeEgresses_BadOutboundsSkips(t *testing.T) {
-	cfg := egressTestConfig()
-	cfg.OutboundConfigs = json_util.RawMessage(`{not json`)
-	before := string(cfg.RouterConfig)
-	injectNodeEgresses(cfg, []*model.Node{{Id: 1, Enable: true, OutboundTag: "direct"}})
-
-	if len(cfg.InboundConfigs) != 1 {
-		t.Fatalf("unparsable outbounds must not expose a node bridge, got %+v", cfg.InboundConfigs)
-	}
-	if string(cfg.RouterConfig) != before {
-		t.Fatalf("unparsable outbounds must leave routing untouched, got %s", cfg.RouterConfig)
-	}
-}
-
-func TestInjectNodeEgresses_BalancerTarget(t *testing.T) {
-	cfg := egressTestConfig()
-	cfg.RouterConfig = json_util.RawMessage(`{"rules":[],"balancers":[{"tag":"lb","selector":["warp"]}]}`)
-	injectNodeEgresses(cfg, []*model.Node{{Id: 1, Enable: true, OutboundTag: "lb"}})
-
-	var routing struct {
-		Rules []struct {
-			OutboundTag string `json:"outboundTag"`
-			BalancerTag string `json:"balancerTag"`
-		} `json:"rules"`
-	}
-	if err := json.Unmarshal(cfg.RouterConfig, &routing); err != nil {
-		t.Fatal(err)
-	}
-	if len(cfg.InboundConfigs) != 2 || len(routing.Rules) != 1 ||
-		routing.Rules[0].BalancerTag != "lb" || routing.Rules[0].OutboundTag != "" {
-		t.Fatalf("a valid balancer target must create the node bridge and rule, got %+v", routing.Rules)
-	}
-}
-
-func TestInjectNodeEgresses_TagCollisionSkips(t *testing.T) {
-	cfg := egressTestConfig()
-	cfg.InboundConfigs = append(cfg.InboundConfigs,
-		xray.InboundConfig{Port: 1234, Protocol: "socks", Tag: NodeEgressInboundTag(1)},
-	)
-	before := string(cfg.RouterConfig)
-	injectNodeEgresses(cfg, []*model.Node{{Id: 1, Enable: true, OutboundTag: "direct"}})
-
-	if len(cfg.InboundConfigs) != 2 || string(cfg.RouterConfig) != before {
-		t.Fatal("an existing node egress tag must make that node injection a no-op")
-	}
-}
-
-func TestInjectNodeEgresses_PortCollision(t *testing.T) {
-	cfg := egressTestConfig()
-	cfg.InboundConfigs = append(cfg.InboundConfigs,
-		xray.InboundConfig{Port: nodeEgressBasePort + 1, Protocol: "vless", Tag: "in-1"},
-		xray.InboundConfig{Port: nodeEgressBasePort + 2, Protocol: "vless", Tag: "in-2"},
-	)
-	injectNodeEgresses(cfg, []*model.Node{{Id: 1, Enable: true, OutboundTag: "direct"}})
-
-	bridge := cfg.InboundConfigs[len(cfg.InboundConfigs)-1]
-	if bridge.Tag != NodeEgressInboundTag(1) || bridge.Port != nodeEgressBasePort+3 {
-		t.Fatalf("node egress must skip taken ports, got %+v", bridge)
-	}
-}
-
-func TestInjectNodeEgresses_NoRoutingSection(t *testing.T) {
-	cfg := egressTestConfig()
-	cfg.RouterConfig = nil
-	injectNodeEgresses(cfg, []*model.Node{{Id: 1, Enable: true, OutboundTag: "direct"}})
-
-	var routing egressRouting
-	if err := json.Unmarshal(cfg.RouterConfig, &routing); err != nil {
-		t.Fatal(err)
-	}
-	if len(cfg.InboundConfigs) != 2 || len(routing.Rules) != 1 ||
-		routing.Rules[0].OutboundTag != "direct" ||
-		len(routing.Rules[0].InboundTag) != 1 || routing.Rules[0].InboundTag[0] != NodeEgressInboundTag(1) {
-		t.Fatalf("a routing section must be created with the node egress rule, got %+v", routing.Rules)
-	}
-}
-
-func TestInjectNodeEgresses_BadRoutingSkips(t *testing.T) {
-	cfg := egressTestConfig()
-	cfg.RouterConfig = json_util.RawMessage(`{not json`)
-	injectNodeEgresses(cfg, []*model.Node{{Id: 1, Enable: true, OutboundTag: "direct"}})
-
-	if len(cfg.InboundConfigs) != 1 {
-		t.Fatalf("unparsable routing must not expose a node bridge, got %+v", cfg.InboundConfigs)
-	}
-	if string(cfg.RouterConfig) != `{not json` {
-		t.Fatalf("unparsable routing must be left untouched, got %s", cfg.RouterConfig)
-	}
-}
-
 func mtprotoInbound(tag string, settings string) *model.Inbound {
 	return &model.Inbound{Tag: tag, Protocol: model.MTProto, Enable: true, Settings: settings}
 }
@@ -692,20 +577,6 @@ func TestInjectAmneziawgnetSocks_AlwaysOnRegardlessOfLegacyRouteThroughXrayField
 	}
 }
 
-func TestInjectAmneziawgnetSocks_WrongProtocolOrNodeSkipped(t *testing.T) {
-	cfg := egressTestConfig()
-	vless := &model.Inbound{Id: 1, Tag: "in-1", Protocol: model.VLESS, Enable: true}
-	nodeID := 5
-	nodeHosted := amneziawgInbound(2, "awg-2", []model.Client{
-		{Email: "a@x", Enable: true, PublicKey: "pub-a", AllowedIPs: []string{"10.8.1.2/32"}},
-	})
-	nodeHosted.NodeID = &nodeID
-	injectAmneziawgnetSocks(cfg, []*model.Inbound{vless, nodeHosted})
-	if len(cfg.InboundConfigs) != 1 {
-		t.Fatalf("a non-AmneziaWG or node-hosted inbound must never get a relay inbound, got %+v", cfg.InboundConfigs)
-	}
-}
-
 func TestInjectAmneziawgnetSocks_TagCollisionSkipsThatInboundOnly(t *testing.T) {
 	cfg := egressTestConfig()
 	cfg.InboundConfigs = append(cfg.InboundConfigs,
@@ -916,25 +787,6 @@ func TestInjectAmneziawgV6Egress_StableTagAcrossRegenerations(t *testing.T) {
 	json.Unmarshal(cfg2.OutboundConfigs, &out2)
 	if len(out1) != len(out2) || out1[len(out1)-1].Tag != out2[len(out2)-1].Tag {
 		t.Fatalf("tag must be stable across independent regenerations, got %+v vs %+v", out1, out2)
-	}
-}
-
-func TestInjectAmneziawgV6Egress_SkipsWrongProtocolOrNodeHostedOrDisabled(t *testing.T) {
-	cfg := egressTestConfig()
-	before := string(cfg.OutboundConfigs)
-	vless := &model.Inbound{Id: 1, Tag: "in-1", Protocol: model.VLESS, Enable: true}
-	nodeID := 5
-	nodeHosted := amneziawgV6Inbound(2, "awg-2", "eth0", []model.Client{
-		{Email: "a@x", Enable: true, PublicKey: "pub-a", AllowedIPs: []string{"fd86:ea04:1115::2/128"}},
-	})
-	nodeHosted.NodeID = &nodeID
-	disabled := amneziawgV6Inbound(3, "awg-3", "eth0", []model.Client{
-		{Email: "b@x", Enable: true, PublicKey: "pub-b", AllowedIPs: []string{"fd86:ea04:1115::3/128"}},
-	})
-	disabled.Enable = false
-	injectAmneziawgSocksThenV6(cfg, []*model.Inbound{vless, nodeHosted, disabled})
-	if string(cfg.OutboundConfigs) != before {
-		t.Fatalf("wrong-protocol, node-hosted, and disabled inbounds must never get a v6 outbound, got %s", cfg.OutboundConfigs)
 	}
 }
 

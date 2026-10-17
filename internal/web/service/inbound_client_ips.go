@@ -2,15 +2,14 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"sort"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
-
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 func (s *InboundService) GetAllInboundClientIps() ([]model.InboundClientIps, error) {
@@ -20,37 +19,6 @@ func (s *InboundService) GetAllInboundClientIps() ([]model.InboundClientIps, err
 	return ips, err
 }
 
-// nodeHostedEmails is every client one node serves, its descendants' included.
-// Per-node pushes are scoped to it so their cost tracks the node, not the fleet.
-func nodeHostedEmails(db *gorm.DB, nodeID int) ([]string, error) {
-	var emails []string
-	err := db.Model(&model.NodeClientTraffic{}).Where("node_id = ?", nodeID).Pluck("email", &emails).Error
-	return emails, err
-}
-
-// GetNodeInboundClientIps returns the IP rows of the clients nodeID hosts: a node's
-// IP-limit job reads no other row, so pushing the rest only made it echo them back.
-func (s *InboundService) GetNodeInboundClientIps(nodeID int) ([]model.InboundClientIps, error) {
-	db := database.GetDB()
-	emails, err := nodeHostedEmails(db, nodeID)
-	if err != nil || len(emails) == 0 {
-		return nil, err
-	}
-	var ips []model.InboundClientIps
-	for _, batch := range chunkStrings(emails, sqlInChunk) {
-		var page []model.InboundClientIps
-		if err := db.Where("client_email IN ?", batch).Find(&page).Error; err != nil {
-			return nil, err
-		}
-		ips = append(ips, page...)
-	}
-	return ips, nil
-}
-
-// clientIpStaleAfterSeconds mirrors job.ipStaleAfterSeconds: client IPs older than
-// 30 minutes are evicted. Applying the same cutoff inside the cross-node merge keeps
-// the synced blob bounded and stops the master's push-back from resurrecting IPs that
-// a node has already pruned (otherwise the merge defeats the eviction cluster-wide).
 const clientIpStaleAfterSeconds = int64(30 * 60)
 
 // clientIpEntry is the on-disk shape of each element of InboundClientIps.Ips. Tags
@@ -87,86 +55,6 @@ func mergeClientIpEntries(old, incoming []clientIpEntry, cutoff int64) []clientI
 	return out
 }
 
-// MergeInboundClientIps folds client IPs synced from another node into the local
-// inbound_client_ips table without double-counting an IP seen on multiple nodes and
-// without resurrecting stale entries. Existing rows are updated in place; brand-new
-// clients (typically node-only clients with no local row) are created with a fresh
-// local id.
-func (s *InboundService) MergeInboundClientIps(incomingIps []model.InboundClientIps) error {
-	db := database.GetDB()
-	var currentIps []model.InboundClientIps
-	if err := db.Model(&model.InboundClientIps{}).Find(&currentIps).Error; err != nil {
-		return err
-	}
-
-	currentMap := make(map[string]*model.InboundClientIps, len(currentIps))
-	for i := range currentIps {
-		currentMap[currentIps[i].ClientEmail] = &currentIps[i]
-	}
-
-	now := time.Now().Unix()
-	cutoff := now - clientIpStaleAfterSeconds
-
-	// Node syncs run concurrently (one goroutine per node) and shared clients
-	// appear in several nodes' reports. Locking rows in each node's arbitrary
-	// report order lets two merges grab the same rows in opposite order, which
-	// Postgres aborts as a deadlock (40P01) — take them in one global order.
-	sort.Slice(incomingIps, func(i, j int) bool {
-		return incomingIps[i].ClientEmail < incomingIps[j].ClientEmail
-	})
-
-	tx := db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	for _, incoming := range incomingIps {
-		if incoming.ClientEmail == "" || incoming.Ips == "" {
-			continue
-		}
-
-		var incomingEntries []clientIpEntry
-		_ = json.Unmarshal([]byte(incoming.Ips), &incomingEntries)
-
-		current, exists := currentMap[incoming.ClientEmail]
-		if !exists {
-			// New client we've never seen locally. Drop stale entries up front and
-			// skip the row entirely if nothing is fresh, so we don't persist a row
-			// that is dead on arrival.
-			fresh := mergeClientIpEntries(nil, incomingEntries, cutoff)
-			if len(fresh) == 0 {
-				continue
-			}
-			b, _ := json.Marshal(fresh)
-			incoming.Ips = string(b)
-			// Never carry the remote node's primary key into the local table: id
-			// spaces are independent across nodes and the remote id would collide
-			// with an unrelated local row. OnConflict guards the race where
-			// check_client_ip_job creates the same brand-new email between the
-			// snapshot above and this insert.
-			incoming.Id = 0
-			if err := tx.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "client_email"}},
-				DoNothing: true,
-			}).Create(&incoming).Error; err != nil {
-				tx.Rollback()
-				return err
-			}
-			continue
-		}
-
-		// check_client_ip_job rewrites this blob too; an unconditional Update loses
-		// whichever writer commits second and its remote IPs with it (#6587).
-		if err := mergeExistingClientIps(tx, current.Id, incomingEntries, cutoff); err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-	return tx.Commit().Error
-}
-
 // ClientIpCasRetries bounds the re-reads after losing a compare-and-set. Running
 // out is an error, so the caller retries on its next schedule instead of dropping IPs.
 const ClientIpCasRetries = 8
@@ -181,35 +69,6 @@ func CasUpdateInboundClientIps(tx *gorm.DB, id int, expectedIps, newIps string) 
 		return false, res.Error
 	}
 	return res.RowsAffected == 1, nil
-}
-
-// mergeExistingClientIps folds incoming into the row at id under a CAS loop so
-// a concurrent check_client_ip_job write cannot erase the merge (#6587).
-func mergeExistingClientIps(tx *gorm.DB, id int, incoming []clientIpEntry, cutoff int64) error {
-	for attempt := 0; attempt < ClientIpCasRetries; attempt++ {
-		var row model.InboundClientIps
-		if err := tx.Where("id = ?", id).First(&row).Error; err != nil {
-			return err
-		}
-		var oldEntries []clientIpEntry
-		if row.Ips != "" {
-			_ = json.Unmarshal([]byte(row.Ips), &oldEntries)
-		}
-		merged := mergeClientIpEntries(oldEntries, incoming, cutoff)
-		b, _ := json.Marshal(merged)
-		mergedStr := string(b)
-		if row.Ips == mergedStr {
-			return nil
-		}
-		ok, err := CasUpdateInboundClientIps(tx, id, row.Ips, mergedStr)
-		if err != nil {
-			return err
-		}
-		if ok {
-			return nil
-		}
-	}
-	return fmt.Errorf("inbound_client_ips id=%d: exhausted CAS retries merging client IPs", id)
 }
 
 func (s *InboundService) UpdateClientIPs(tx *gorm.DB, oldEmail string, newEmail string) error {
@@ -331,5 +190,33 @@ func (s *InboundService) PruneStaleClientIps() error {
 			return err
 		}
 	}
-	return pruneStaleNodeClientIps(cutoff)
+	return nil
+}
+
+type ClientIpInfo struct {
+	IP   string `json:"ip"`
+	Time string `json:"time"`
+}
+
+func (s *InboundService) GetClientIpLog(email string) ([]ClientIpInfo, error) {
+	raw, err := s.GetInboundClientIps(email)
+	if errors.Is(err, gorm.ErrRecordNotFound) || raw == "" {
+		return []ClientIpInfo{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var entries []clientIpEntry
+	if err := json.Unmarshal([]byte(raw), &entries); err != nil {
+		return nil, err
+	}
+	result := make([]ClientIpInfo, 0, len(entries))
+	for _, e := range entries {
+		entry := ClientIpInfo{IP: e.IP}
+		if e.Timestamp > 0 {
+			entry.Time = time.Unix(e.Timestamp, 0).Local().Format("2006-01-02 15:04:05")
+		}
+		result = append(result, entry)
+	}
+	return result, nil
 }

@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/xray"
-
-	"gorm.io/gorm"
 )
 
 func (s *InboundService) MigrationRemoveOrphanedTraffics() {
@@ -42,7 +42,7 @@ func (s *InboundService) MigrationRequirements() (err error) {
 				err = commitErr
 				return
 			}
-			if !database.IsPostgres() {
+			{
 				if dbErr := db.Exec(`VACUUM "main"`).Error; dbErr != nil {
 					logger.Warningf("VACUUM failed: %v", dbErr)
 				}
@@ -64,39 +64,6 @@ func (s *InboundService) MigrationRequirements() (err error) {
 	}
 	if err = normalizeInboundShareAddressColumns(tx); err != nil {
 		return
-	}
-
-	// Normalize "enable" columns to boolean on Postgres. Legacy SQLite data
-	// (0/1 integers), partial migrations, or mixed write paths (public API
-	// inbound updates that flow through UpdateClientStat + client syncs, plus
-	// node traffic merge deltas) can leave the column as integer or with mixed
-	// interpretation. This (combined with the dialect-aware
-	// ClientTrafficEnableMergeExpr) prevents type problems in the node traffic
-	// sync merge (SetRemoteTraffic) and makes the sync robust even when
-	// inbounds are updated via the public API (incl. ones carrying
-	// externalProxy in streamSettings). The same expression is also safe on
-	// SQLite (no PG :: casts).
-	if database.IsPostgres() {
-		// Use DO block so it is idempotent and doesn't fail if already boolean.
-		normalizeBool := func(table, col string) error {
-			return tx.Exec(fmt.Sprintf(`
-				DO $$
-				BEGIN
-					IF EXISTS (
-						SELECT 1 FROM information_schema.columns
-						WHERE table_name = '%s' AND column_name = '%s'
-						  AND data_type <> 'boolean'
-					) THEN
-						ALTER TABLE %s ALTER COLUMN %s
-							TYPE boolean USING (CASE WHEN %s::text IN ('1','true','t','yes') THEN true ELSE false END);
-					END IF;
-				END $$;`, table, col, table, col, col)).Error
-		}
-		for _, column := range [][2]string{{"inbounds", "enable"}, {"client_traffics", "enable"}, {"nodes", "enable"}, {"clients", "enable"}, {"api_tokens", "enabled"}, {"outbound_subscriptions", "enabled"}} {
-			if err = normalizeBool(column[0], column[1]); err != nil {
-				return
-			}
-		}
 	}
 
 	// Fix inbounds based problems
@@ -216,13 +183,7 @@ func (s *InboundService) MigrationRequirements() (err error) {
 	WHERE protocol in ('vmess','vless','trojan')
 	  AND json_extract(stream_settings, '$.security') = 'tls'
 	  AND json_extract(stream_settings, '$.tlsSettings.settings.domains') IS NOT NULL`
-	if database.IsPostgres() {
-		externalProxyQuery = `select id, port, stream_settings
-	from inbounds
-	WHERE protocol in ('vmess','vless','trojan')
-	  AND NULLIF(stream_settings, '')::jsonb #>> '{security}' = 'tls'
-	  AND NULLIF(stream_settings, '')::jsonb #> '{tlsSettings,settings,domains}' IS NOT NULL`
-	}
+
 	err = tx.Raw(externalProxyQuery).Scan(&externalProxy).Error
 	if err != nil || len(externalProxy) == 0 {
 		return
@@ -259,8 +220,6 @@ func (s *InboundService) MigrationRequirements() (err error) {
 		}
 	}
 
-	// Legacy tag cleanup for old auto-generated tags (e.g. "0.0.0.0:443-...").
-	// Must be cross-DB: INSTR/REPLACE work on SQLite; Postgres needs position().
 	tagCleanup := `UPDATE inbounds
 		SET tag = REPLACE(tag, '0.0.0.0:', '')
 		WHERE INSTR(tag, '0.0.0.0:') > 0
@@ -269,16 +228,7 @@ func (s *InboundService) MigrationRequirements() (err error) {
 			WHERE other.id <> inbounds.id
 			  AND other.tag = REPLACE(inbounds.tag, '0.0.0.0:', '')
 		  );`
-	if database.IsPostgres() {
-		tagCleanup = `UPDATE inbounds AS i
-			SET tag = REPLACE(tag, '0.0.0.0:', '')
-			WHERE position('0.0.0.0:' in tag) > 0
-			  AND NOT EXISTS (
-				SELECT 1 FROM inbounds AS other
-				WHERE other.id <> i.id
-				  AND other.tag = REPLACE(i.tag, '0.0.0.0:', '')
-			  );`
-	}
+
 	err = tx.Exec(tagCleanup).Error
 	if err != nil {
 		return

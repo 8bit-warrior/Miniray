@@ -54,14 +54,13 @@ func TestDropLegacyInboundPortUnique(t *testing.T) {
 		t.Fatalf("preexisting inbound corrupted: remark=%q port=%d", preexisting.Remark, preexisting.Port)
 	}
 
-	nodeA, nodeB := 1, 2
-	samePortA := &model.Inbound{UserId: 1, Tag: "node-a-80", Enable: true, Port: 80, Protocol: model.VLESS, Remark: "a", Settings: `{"clients":[]}`, NodeID: &nodeA}
-	samePortB := &model.Inbound{UserId: 1, Tag: "node-b-80", Enable: true, Port: 80, Protocol: model.VLESS, Remark: "b", Settings: `{"clients":[]}`, NodeID: &nodeB}
+	samePortA := &model.Inbound{UserId: 1, Tag: "second-bind-80", Enable: true, Port: 80, Protocol: model.VLESS, Remark: "a", Settings: `{"clients":[]}`}
+	samePortB := &model.Inbound{UserId: 1, Tag: "third-bind-80", Enable: true, Port: 80, Protocol: model.VLESS, Remark: "b", Settings: `{"clients":[]}`}
 	if err := GetDB().Create(samePortA).Error; err != nil {
-		t.Fatalf("create node-a inbound on port 80: %v", err)
+		t.Fatalf("create second-bind inbound on port 80: %v", err)
 	}
 	if err := GetDB().Create(samePortB).Error; err != nil {
-		t.Fatalf("create node-b inbound on port 80: %v", err)
+		t.Fatalf("create third-bind inbound on port 80: %v", err)
 	}
 
 	var dupTag model.Inbound

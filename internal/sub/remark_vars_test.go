@@ -213,38 +213,6 @@ func hostRemarkService(template string) (*SubService, *model.Inbound, model.Clie
 	return s, inbound, client
 }
 
-// With no template configured, genHostRemark falls back to the inbound remark,
-// host and email joined by "-".
-func TestGenHostRemark_NoTemplate_Fallback(t *testing.T) {
-	s, inbound, client := hostRemarkService("")
-	if got := s.genHostRemark(inbound, client, "Relay", ""); got != "DE-Relay-john@example.com" {
-		t.Fatalf("genHostRemark = %q, want %q", got, "DE-Relay-john@example.com")
-	}
-	if got := s.genHostRemark(inbound, client, "", ""); got != "DE-john@example.com" {
-		t.Fatalf("genHostRemark (no host remark) = %q, want %q", got, "DE-john@example.com")
-	}
-}
-
-// In the body the template applies: {{INBOUND}} is always the inbound's remark
-// and {{HOST}} the host's own remark, so the two can be shown side by side.
-func TestGenHostRemark_GlobalTemplate(t *testing.T) {
-	// {{INBOUND}} resolves to the inbound remark regardless of the host remark.
-	s, inbound, client := hostRemarkService("{{INBOUND}} | {{TRAFFIC_LEFT}} | {{DAYS_LEFT}}d")
-	if got := s.genHostRemark(inbound, client, "CDN", ""); got != "DE | 80.00GB | 10d" {
-		t.Fatalf("global template ({{INBOUND}} = inbound) = %q", got)
-	}
-	// {{INBOUND}} and {{HOST}} side by side show both, distinctly (#5443).
-	s2, inbound2, client2 := hostRemarkService("{{INBOUND}}|{{HOST}}|{{TRAFFIC_LEFT}}")
-	if got := s2.genHostRemark(inbound2, client2, "CDN", ""); got != "DE|CDN|80.00GB" {
-		t.Fatalf("global template (inbound + host) = %q, want %q", got, "DE|CDN|80.00GB")
-	}
-	// {{HOST}} is the host's own remark even when the inbound has one of its own.
-	s3, inbound3, client3 := hostRemarkService("{{HOST}}")
-	if got := s3.genHostRemark(inbound3, client3, "CDN", ""); got != "CDN" {
-		t.Fatalf("{{HOST}} token = %q, want CDN", got)
-	}
-}
-
 // A global template also drives non-host links via genRemark; {{HOST}} = the
 // legacy externalProxy remark passed as extra.
 func TestGenRemark_GlobalTemplate(t *testing.T) {
@@ -260,43 +228,6 @@ func TestGenRemark_NoTemplate_AppendsEmail(t *testing.T) {
 	got := s.genRemark(inbound, "john@example.com", "Relay", "")
 	if got != "DE-Relay-john@example.com" {
 		t.Fatalf("genRemark = %q, want %q", got, "DE-Relay-john@example.com")
-	}
-}
-
-// The per-client info part of the template renders only on a client's first
-// link of the request; later links show the name-only template.
-func TestUsageOnFirstLinkOnly(t *testing.T) {
-	s, inbound, client := hostRemarkService("{{INBOUND}}|📊{{TRAFFIC_LEFT}}|⏳{{DAYS_LEFT}}D")
-	first := s.genHostRemark(inbound, client, "", "")
-	second := s.genHostRemark(inbound, client, "", "")
-	if !strings.Contains(first, "📊") || !strings.Contains(first, "80.00GB") {
-		t.Fatalf("first link should carry usage: %q", first)
-	}
-	if strings.ContainsAny(second, "📊⏳") {
-		t.Fatalf("second link must not carry usage: %q", second)
-	}
-	if second != "DE" {
-		t.Fatalf("second link = %q, want name-only %q", second, "DE")
-	}
-}
-
-func TestRemarkInDisplayContext(t *testing.T) {
-	s, inbound, client := hostRemarkService("{{INBOUND}}-{{EMAIL}}|📊{{TRAFFIC_LEFT}}|⏳{{DAYS_LEFT}}D")
-	s.subscriptionBody = false
-	const want = "DE-john@example.com"
-	if got := s.genHostRemark(inbound, client, "CDN", ""); got != want {
-		t.Fatalf("display host link = %q, want %q", got, want)
-	}
-	if got := s.genHostRemark(inbound, client, "", ""); got != want {
-		t.Fatalf("display host link (no host) = %q, want %q", got, want)
-	}
-	if got := s.genRemark(inbound, client.Email, "", ""); got != want {
-		t.Fatalf("display genRemark = %q, want %q", got, want)
-	}
-	s2, inbound2, client2 := hostRemarkService("{{INBOUND}}-{{HOST}}|📊{{TRAFFIC_LEFT}}")
-	s2.subscriptionBody = false
-	if got := s2.genHostRemark(inbound2, client2, "CDN", ""); got != "DE-CDN" {
-		t.Fatalf("display host link with HOST token = %q, want %q", got, "DE-CDN")
 	}
 }
 
@@ -449,17 +380,6 @@ func TestStatsForClient_CrossInboundFallback(t *testing.T) {
 	}
 	if got := remarkVarValue("TRAFFIC_LEFT", remarkContext{stats: st}); got != "80.00GB" {
 		t.Fatalf("TRAFFIC_LEFT = %q, want 80.00GB (remaining, not total)", got)
-	}
-}
-
-// Two clients through the same global template get distinct, per-client remarks.
-func TestGenHostRemark_PerClient(t *testing.T) {
-	s := &SubService{remarkTemplate: "{{EMAIL}}", subscriptionBody: true}
-	inbound := &model.Inbound{}
-	a := s.genHostRemark(inbound, model.Client{Email: "alice@x"}, "", "")
-	b := s.genHostRemark(inbound, model.Client{Email: "bob@x"}, "", "")
-	if a != "alice@x" || b != "bob@x" {
-		t.Fatalf("per-client expansion failed: a=%q b=%q", a, b)
 	}
 }
 

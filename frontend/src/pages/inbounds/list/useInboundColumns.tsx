@@ -2,13 +2,10 @@ import { useMemo, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Popover, Switch, Tag, Tooltip, type TableColumnType } from 'antd';
 import { TeamOutlined } from '@ant-design/icons';
-
 import { SizeFormatter, IntlUtil, ColorUtils } from '@/utils';
 import { InfinityIcon } from '@/components/ui';
 import { useDatepicker } from '@/hooks/useDatepicker';
-import type { NodeRecord } from '@/api/queries/useNodesQuery';
 import { coerceInboundJsonField } from '@/models/dbinbound';
-
 import { RowActionsCell } from './RowActions';
 import {
   SPEED_COLUMN_WIDTH,
@@ -23,16 +20,11 @@ import {
   shadowsocksNetworkLabel,
   tunnelNetworkLabel,
   mixedNetworkLabel,
-  formatHostRemarksLabel,
 } from './helpers';
 import type { ClientCountEntry, DBInboundRecord, InboundSpeedEntry, RowAction } from './types';
-
 interface UseInboundColumnsParams {
   hasAnyRemark: boolean;
   hasAnySubSortIndex: boolean;
-  hasActiveNode: boolean;
-  nodesById: Map<number, NodeRecord>;
-  hostRemarksByInboundId: Map<number, string[]>;
   clientCount: Record<number, ClientCountEntry>;
   inboundSpeed: Record<number, InboundSpeedEntry>;
   subEnable: boolean;
@@ -41,13 +33,9 @@ interface UseInboundColumnsParams {
   onRowAction: (action: { key: RowAction; dbInbound: DBInboundRecord }) => void;
   onSwitchEnable: (dbInbound: DBInboundRecord, next: boolean) => void;
 }
-
 export function useInboundColumns({
   hasAnyRemark,
   hasAnySubSortIndex,
-  hasActiveNode,
-  nodesById,
-  hostRemarksByInboundId,
   clientCount,
   inboundSpeed,
   subEnable,
@@ -58,30 +46,23 @@ export function useInboundColumns({
 }: UseInboundColumnsParams): TableColumnType<DBInboundRecord>[] {
   const { t } = useTranslation();
   const { datepicker } = useDatepicker();
-
   return useMemo(() => {
     const compareText = (a: string | undefined | null, b: string | undefined | null) =>
       (a || '').localeCompare(b || '', undefined, { numeric: true, sensitivity: 'base' });
-
-    const nodeName = (record: DBInboundRecord) => {
-      if (record.nodeId == null) return t('pages.inbounds.localPanel');
-      return nodesById.get(record.nodeId)?.name || `node #${record.nodeId}`;
-    };
-
     const clientTotal = (record: DBInboundRecord) =>
       (clientCount[record.id] || fallbackClientCount(record))?.clients ?? 0;
-
     const speedTotal = (record: DBInboundRecord) => {
       const speed = inboundSpeed[record.id];
       return speed ? speed.up + speed.down : 0;
     };
-
     const expirySortValue = (record: DBInboundRecord) =>
       record.expiryTime > 0 ? record.expiryTime : Number.MAX_SAFE_INTEGER;
-
     const fallbackClientCount = (record: DBInboundRecord): ClientCountEntry | null => {
       const settings = coerceInboundJsonField(record.settings) as {
-        clients?: { email?: string; enable?: boolean }[];
+        clients?: {
+          email?: string;
+          enable?: boolean;
+        }[];
       };
       const clients = Array.isArray(settings.clients) ? settings.clients : [];
       if (clients.length === 0) return null;
@@ -100,7 +81,6 @@ export function useInboundColumns({
         online: [],
       };
     };
-
     const cols: TableColumnType<DBInboundRecord>[] = [
       {
         title: 'ID',
@@ -134,7 +114,6 @@ export function useInboundColumns({
         ),
       },
     ];
-
     if (hasAnyRemark) {
       cols.push({
         title: t('pages.inbounds.remark'),
@@ -144,43 +123,10 @@ export function useInboundColumns({
         width: 140,
         sorter: (a, b) => compareText(a.remark, b.remark),
         render: (_, record) => {
-          const hostRemarks = hostRemarksByInboundId.get(record.id) ?? [];
-          if (hostRemarks.length === 0) {
-            return record.remark || null;
-          }
-          const { display, full } = formatHostRemarksLabel(hostRemarks);
-          return (
-            <div className="inbound-remark-cell">
-              <div className="inbound-remark">{record.remark}</div>
-              <Tooltip title={full}>
-                <div className="inbound-host-remarks">({display})</div>
-              </Tooltip>
-            </div>
-          );
+          return record.remark || null;
         },
       });
     }
-
-    if (hasActiveNode) {
-      cols.push({
-        title: t('pages.inbounds.node'),
-        key: 'node',
-        align: 'center',
-        width: 130,
-        sorter: (a, b) => compareText(nodeName(a), nodeName(b)),
-        render: (_, record) => {
-          if (record.nodeId == null) {
-            return <Tag color="default">{t('pages.inbounds.localPanel')}</Tag>;
-          }
-          const node = nodesById.get(record.nodeId);
-          if (!node) {
-            return <Tag color="orange">node #{record.nodeId}</Tag>;
-          }
-          return <Tag color={node.status === 'online' ? 'blue' : 'red'}>{node.name}</Tag>;
-        },
-      });
-    }
-
     if (hasAnySubSortIndex) {
       cols.push({
         title: (
@@ -195,7 +141,6 @@ export function useInboundColumns({
         sorter: (a, b) => (a.subSortIndex ?? 1) - (b.subSortIndex ?? 1),
       });
     }
-
     cols.push(
       {
         title: t('pages.inbounds.port'),
@@ -463,15 +408,11 @@ export function useInboundColumns({
         },
       },
     );
-
     return cols;
   }, [
     t,
     hasAnyRemark,
     hasAnySubSortIndex,
-    hasActiveNode,
-    nodesById,
-    hostRemarksByInboundId,
     clientCount,
     inboundSpeed,
     subEnable,

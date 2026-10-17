@@ -1,4 +1,35 @@
 /// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -728,14 +759,14 @@ describe('resolveAddr precedence', () => {
     protocol: 'vless' as const,
   };
 
-  it('prefers hostOverride over listen and fallback', () => {
+  it('uses the local inbound listen address by default', () => {
     expect(
       resolveAddr(
         { ...baseInbound, listen: '10.0.0.1' } as never,
         'cdn.example.test',
         'fallback.test',
       ),
-    ).toBe('cdn.example.test');
+    ).toBe('10.0.0.1');
   });
 
   it('uses listen when override is empty and listen is explicit', () => {

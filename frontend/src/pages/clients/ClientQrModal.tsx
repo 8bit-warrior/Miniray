@@ -22,9 +22,6 @@ import {
   isAmneziaWGClient,
 } from './amneziawgConfig';
 import { buildTuicClientConfig, findTuicInbound, isTuicClient } from './tuicConfig';
-import { tunnelConfigEndpoints, tunnelEndpointLabel } from './tunnelEndpoints';
-import type { HostRecord } from '@/schemas/api/host';
-
 interface SubSettings {
   enable: boolean;
   happLinkEnable?: boolean;
@@ -33,40 +30,31 @@ interface SubSettings {
   subJsonEnable: boolean;
   publicHost?: string;
 }
-
 interface ClientQrModalProps {
   open: boolean;
   client: ClientRecord | null;
   inboundsById: Record<number, InboundOption>;
   tunnelAllowedIPs?: Record<number, string>;
   subSettings?: SubSettings;
-  hosts?: HostRecord[];
   onOpenChange: (open: boolean) => void;
 }
-
-const NO_HOSTS: HostRecord[] = [];
-
 interface ApiMsg<T = unknown> {
   success?: boolean;
   obj?: T;
 }
-
 type QrVariant = 'standard' | 'happ';
 type HappError = 'too_long' | 'unavailable' | null;
-
 const HAPP_CRYPT5_PREFIX = 'happ://crypt5/';
 const HAPP_SETTINGS_PATH = '/settings?subscriptionTab=happ#subscription';
 // QrPanel encodes at error level L; QR version 40 holds 2953 UTF-8 bytes at that level.
 const HAPP_QR_MAX_BYTES = 2953;
 const UTF8_ENCODER = new TextEncoder();
-
 function hasHappForbiddenCharacter(link: string) {
   return Array.from(link).some((character) => {
     const codePoint = character.codePointAt(0) ?? 0;
     return /\s/u.test(character) || codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f);
   });
 }
-
 function isValidHappCrypt5Link(link: string) {
   return (
     link.startsWith(HAPP_CRYPT5_PREFIX) &&
@@ -74,11 +62,9 @@ function isValidHappCrypt5Link(link: string) {
     !hasHappForbiddenCharacter(link)
   );
 }
-
 function canRenderHappQr(link: string) {
   return UTF8_ENCODER.encode(link).byteLength <= HAPP_QR_MAX_BYTES;
 }
-
 interface SubscriptionQrPresentationProps {
   variant: QrVariant;
   standardLink: string;
@@ -91,7 +77,6 @@ interface SubscriptionQrPresentationProps {
   onRegenerate: () => void;
   onOpenHappSettings: () => void;
 }
-
 function SubscriptionQrPresentation({
   variant,
   standardLink,
@@ -106,7 +91,6 @@ function SubscriptionQrPresentation({
 }: SubscriptionQrPresentationProps) {
   const { t } = useTranslation();
   const showHappQr = canRenderHappQr(happLink);
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <Segmented<QrVariant>
@@ -204,7 +188,6 @@ function SubscriptionQrPresentation({
     </div>
   );
 }
-
 const DEFAULT_SUB: SubSettings = {
   enable: false,
   happLinkEnable: false,
@@ -213,7 +196,6 @@ const DEFAULT_SUB: SubSettings = {
   subJsonEnable: false,
   publicHost: '',
 };
-
 export default function ClientQrModal(props: ClientQrModalProps) {
   const subSettings = props.subSettings ?? DEFAULT_SUB;
   const subId = props.client?.subId ?? '';
@@ -222,24 +204,20 @@ export default function ClientQrModal(props: ClientQrModalProps) {
   const happLinkEnabled = subSettings.happLinkEnable === true;
   // A gate or source change remounts this scope to clear Happ state and retire any in-flight response.
   const scopeKey = `${props.client?.id ?? ''}\0${subId}\0${subLink}\0${happLinkEnabled ? 1 : 0}`;
-
   return <ClientQrModalContent key={scopeKey} {...props} />;
 }
-
 function ClientQrModalContent({
   open,
   client,
   inboundsById,
   tunnelAllowedIPs,
   subSettings = DEFAULT_SUB,
-  hosts = NO_HOSTS,
   onOpenChange,
 }: ClientQrModalProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [links, setLinks] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-
   const subId = client?.subId;
   const subEnabled = !!subSettings?.enable;
   const subLink = subId && subEnabled && subSettings?.subURI ? subSettings.subURI + subId : '';
@@ -262,12 +240,9 @@ function ClientQrModalContent({
     clientId > 0 &&
     !!clientSubId &&
     !!subLink;
-
   useEffect(() => {
     if (!open || variant !== 'happ' || !canGenerateHapp) return;
-
     let cancelled = false;
-
     (async () => {
       try {
         const msg = await HttpUtil.post<HappLinkResult>(
@@ -276,7 +251,6 @@ function ClientQrModalContent({
           { silent: true },
         );
         if (cancelled) return;
-
         const result = HappLinkResultSchema.safeParse(msg?.obj);
         if (msg?.success && result.success && isValidHappCrypt5Link(result.data.encryptedLink)) {
           setHappLink(result.data.encryptedLink);
@@ -294,13 +268,11 @@ function ClientQrModalContent({
         if (!cancelled) setHappLoading(false);
       }
     })();
-
     return () => {
       // A retired generation must never replace the QR for a newer modal scope.
       cancelled = true;
     };
   }, [open, variant, clientId, clientSubId, subLink, happAttempt, canGenerateHapp]);
-
   const selectVariant = useCallback(
     (nextVariant: QrVariant) => {
       const generateHapp = nextVariant === 'happ' && happLinkEnabled;
@@ -311,7 +283,6 @@ function ClientQrModalContent({
     },
     [canGenerateHapp, happLinkEnabled],
   );
-
   const regenerateHappLink = useCallback(() => {
     setHappLink('');
     setHappLoading(canGenerateHapp);
@@ -319,13 +290,11 @@ function ClientQrModalContent({
     if (!canGenerateHapp) return;
     setHappAttempt((attempt) => attempt + 1);
   }, [canGenerateHapp]);
-
   const openHappSettings = useCallback(() => {
     // This path only exposes the operator gate; authorization and saving remain explicit in Settings.
     onOpenChange(false);
     navigate(HAPP_SETTINGS_PATH);
   }, [navigate, onOpenChange]);
-
   const wgInbounds = useMemo(
     () => findWireguardInbounds(client, inboundsById),
     [client, inboundsById],
@@ -337,15 +306,16 @@ function ClientQrModalContent({
     return wgInbounds
       .flatMap((ib) => {
         const address = tunnelAllowedIPs?.[ib.id] ?? '';
-        return tunnelConfigEndpoints(ib, hosts, host, publicHost).map((ep) => ({
-          inbound: ib,
-          endpoint: tunnelEndpointLabel(ep),
-          text: buildWireguardClientConfig(client, ib, host, publicHost, address, ep),
-        }));
+        return [
+          {
+            inbound: ib,
+            endpoint: '',
+            text: buildWireguardClientConfig(client, ib, host, publicHost, address),
+          },
+        ];
       })
       .filter((c) => !!c.text);
-  }, [client, wgInbounds, tunnelAllowedIPs, subSettings.publicHost, hosts]);
-
+  }, [client, wgInbounds, tunnelAllowedIPs, subSettings.publicHost]);
   const awgInbounds = useMemo(
     () => findAmneziaWGInbounds(client, inboundsById),
     [client, inboundsById],
@@ -357,26 +327,28 @@ function ClientQrModalContent({
     return awgInbounds
       .flatMap((ib) => {
         const address = tunnelAllowedIPs?.[ib.id] ?? '';
-        return tunnelConfigEndpoints(ib, hosts, host, publicHost).map((ep) => ({
-          inbound: ib,
-          endpoint: tunnelEndpointLabel(ep),
-          text: buildAmneziaWGClientConfig(client, ib, host, publicHost, address, ep),
-        }));
+        return [
+          {
+            inbound: ib,
+            endpoint: '',
+            text: buildAmneziaWGClientConfig(client, ib, host, publicHost, address),
+          },
+        ];
       })
       .filter((c) => !!c.text);
-  }, [client, awgInbounds, tunnelAllowedIPs, subSettings.publicHost, hosts]);
-
+  }, [client, awgInbounds, tunnelAllowedIPs, subSettings.publicHost]);
   const tuicInbound = useMemo(() => findTuicInbound(client, inboundsById), [client, inboundsById]);
   const tuicConfigs = useMemo(() => {
     if (!client || !tuicInbound || !isTuicClient(client)) return [];
     const host = window.location.hostname;
     const publicHost = subSettings.publicHost ?? '';
-    return tunnelConfigEndpoints(tuicInbound, hosts, host, publicHost, 'clash').map((ep) => ({
-      endpoint: tunnelEndpointLabel(ep),
-      text: buildTuicClientConfig(client, tuicInbound, host, publicHost, ep),
-    }));
-  }, [client, tuicInbound, subSettings.publicHost, hosts]);
-
+    return [
+      {
+        endpoint: '',
+        text: buildTuicClientConfig(client, tuicInbound, host, publicHost),
+      },
+    ];
+  }, [client, tuicInbound, subSettings.publicHost]);
   const hasAnything =
     !!subLink ||
     !!subJsonLink ||
@@ -384,7 +356,6 @@ function ClientQrModalContent({
     awgConfigs.length > 0 ||
     tuicConfigs.length > 0 ||
     links.length > 0;
-
   // The reset runs during render so the effect only carries the request.
   const openSubId = open ? (client?.subId ?? '') : '';
   const [syncedSubId, setSyncedSubId] = useState(openSubId);
@@ -397,7 +368,6 @@ function ClientQrModalContent({
     setHappLoading(false);
     setHappError(null);
   }
-
   useEffect(() => {
     if (!open || !client?.subId) return;
     let cancelled = false;
@@ -417,11 +387,13 @@ function ClientQrModalContent({
       cancelled = true;
     };
   }, [open, client?.subId]);
-
   const [activeKey, setActiveKey] = useState<string[]>([]);
-
   const items = useMemo(() => {
-    const out: { key: string; label: React.ReactNode; children: React.ReactNode }[] = [];
+    const out: {
+      key: string;
+      label: React.ReactNode;
+      children: React.ReactNode;
+    }[] = [];
     if (subLink) {
       out.push({
         key: 'sub',
@@ -545,7 +517,6 @@ function ClientQrModalContent({
     tuicConfigs,
     t,
   ]);
-
   // Expanding the first panel is a render-time adjustment, not a side effect.
   const firstKey = open && items.length > 0 ? items[0].key : null;
   const [syncedFirstKey, setSyncedFirstKey] = useState<string | null>(null);
@@ -553,7 +524,6 @@ function ClientQrModalContent({
     setSyncedFirstKey(firstKey);
     setActiveKey(firstKey ? [firstKey] : []);
   }
-
   return (
     <Modal
       open={open}

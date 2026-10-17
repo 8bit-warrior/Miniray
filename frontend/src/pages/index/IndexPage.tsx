@@ -107,17 +107,20 @@ export default function IndexPage() {
   }, [refresh]);
 
   const [offlineModal, offlineModalHolder] = Modal.useModal();
-  const panelOffline = useCallback(()=>{
+  const panelOffline = useCallback(() => {
     offlineModal.confirm({
-      title:'确认让面板离线？',
-      content:'面板网页与订阅服务将停止监听端口，代理内核继续运行。使用 miniray start-panel 重新开启。',
-      okText:'确认离线',okButtonProps:{danger:true},cancelText:'取消',
-      onOk:async()=>{
-        const result=await HttpUtil.post('/panel/api/setting/offlinePanel');
-        if(!result?.success) throw new Error('面板离线操作失败');
+      title: '确认让面板离线？',
+      content:
+        '面板网页与订阅服务将停止监听端口，代理内核继续运行。使用 miniray start-panel 重新开启。',
+      okText: '确认离线',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        const result = await HttpUtil.post('/panel/api/setting/offlinePanel');
+        if (!result?.success) throw new Error('面板离线操作失败');
       },
-    })
-  },[offlineModal]);
+    });
+  }, [offlineModal]);
   const restartXray = useCallback(async () => {
     await HttpUtil.post('/panel/api/server/restartXrayService');
     await refresh();

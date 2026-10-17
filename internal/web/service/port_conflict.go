@@ -6,14 +6,14 @@ import (
 	"net"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"github.com/8bit-warrior/Miniray/internal/amneziawg"
 	"github.com/8bit-warrior/Miniray/internal/amneziawgnet"
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	"github.com/8bit-warrior/Miniray/internal/tuic"
 	"github.com/8bit-warrior/Miniray/internal/util/common"
-
-	"gorm.io/gorm"
 )
 
 type transportBits uint8
@@ -243,11 +243,7 @@ func (s *InboundService) checkPortConflict(inbound *model.Inbound, ignoreId int)
 func checkPortConflictTx(db *gorm.DB, inbound *model.Inbound, ignoreId int) (*portConflictDetail, error) {
 	newBits := inboundTransports(inbound.Protocol, inbound.StreamSettings, inbound.Settings)
 
-	// The internal Xray API inbound (tag "api", loopback TCP) isn't a DB row,
-	// so a local user inbound reusing its port would leave Xray binding the
-	// port twice (#5304). Nodes run their own Xray, so this only applies to
-	// the local panel.
-	if inbound.NodeID == nil && inbound.Port == reservedAPIPort() &&
+	if inbound.Port == reservedAPIPort() &&
 		newBits&transportTCP != 0 && listenOverlaps(loopbackBind, inboundBindAddr(inbound)) {
 		return &portConflictDetail{
 			Tag:        "api",
@@ -259,7 +255,7 @@ func checkPortConflictTx(db *gorm.DB, inbound *model.Inbound, ignoreId int) (*po
 
 	// Egress SOCKS server holds loopback EgressPort when AWG outbounds are
 	// active; conflict check prevents inbounds from colliding with it.
-	if inbound.NodeID == nil && inbound.Port == amneziawgnet.EgressPort() &&
+	if inbound.Port == amneziawgnet.EgressPort() &&
 		newBits&transportTCP != 0 && listenOverlaps(loopbackBind, inboundBindAddr(inbound)) {
 		return &portConflictDetail{
 			Tag:        "amneziawg-egress",
@@ -277,7 +273,7 @@ func checkPortConflictTx(db *gorm.DB, inbound *model.Inbound, ignoreId int) (*po
 	// see it. Without this check, an unrelated inbound saved onto that exact
 	// port silently fails at the next Xray start, taking every other
 	// protocol down with it, not just AmneziaWG.
-	if inbound.NodeID == nil && listenOverlaps(loopbackBind, inboundBindAddr(inbound)) {
+	if listenOverlaps(loopbackBind, inboundBindAddr(inbound)) {
 		conflict, err := checkAmneziawgnetSocksConflict(db, inbound, ignoreId, newBits)
 		if err != nil {
 			return nil, err
@@ -296,7 +292,7 @@ func checkPortConflictTx(db *gorm.DB, inbound *model.Inbound, ignoreId int) (*po
 
 	// The reverse direction, only meaningful once the id is known -- AddInbound
 	// runs it after Save. Only a local row owns a relay slot (#6537 review).
-	if inbound.NodeID == nil && inbound.Protocol == model.AmneziaWG && ignoreId > 0 {
+	if inbound.Protocol == model.AmneziaWG && ignoreId > 0 {
 		if self := amneziawgnetSocksSelfConflict(inbound, ignoreId); self != "" {
 			return nil, common.NewError(self)
 		}
@@ -326,7 +322,7 @@ func checkPortConflictTx(db *gorm.DB, inbound *model.Inbound, ignoreId int) (*po
 		forwardedBy.Transports = newBits
 		return forwardedBy, nil
 	}
-	if inbound.NodeID == nil && inbound.Protocol == model.TUIC && ignoreId > 0 {
+	if inbound.Protocol == model.TUIC && ignoreId > 0 {
 		if self := tuicSocksSelfConflict(inbound, ignoreId); self != "" {
 			return nil, common.NewError(self)
 		}
@@ -356,9 +352,7 @@ func checkPortConflictTx(db *gorm.DB, inbound *model.Inbound, ignoreId int) (*po
 	}
 
 	for _, c := range candidates {
-		if !sameNode(c.NodeID, inbound.NodeID) {
-			continue
-		}
+
 		if !listenOverlaps(inboundBindAddr(c), inboundBindAddr(inbound)) {
 			continue
 		}
@@ -391,9 +385,7 @@ func amneziawgForwardedPortOwner(db *gorm.DB, inbound *model.Inbound, ignoreId i
 		return nil, err
 	}
 	for _, row := range rows {
-		if !sameNode(row.NodeID, inbound.NodeID) {
-			continue
-		}
+
 		instance, ok := amneziawg.InstanceFromInbound(row)
 		if !ok {
 			continue
@@ -422,7 +414,7 @@ func checkAmneziawgnetSocksConflict(db *gorm.DB, inbound *model.Inbound, ignoreI
 	// A disabled row still owns the slot its id derives: SetInboundEnable flips
 	// the column with no port check, so enabling it later must not collide.
 	var candidates []*model.Inbound
-	q := db.Model(model.Inbound{}).Where("protocol = ? AND node_id IS NULL", model.AmneziaWG)
+	q := db.Model(model.Inbound{}).Where("protocol = ?", model.AmneziaWG)
 	if ignoreId > 0 {
 		q = q.Where("id != ?", ignoreId)
 	}
@@ -453,7 +445,7 @@ func checkAmneziawgnetSocksRelayCollision(db *gorm.DB, id int) (*portConflictDet
 	relayPort := amneziawgnet.SOCKSPortForInbound(id)
 	var candidates []*model.Inbound
 	if err := db.Model(model.Inbound{}).
-		Where("protocol = ? AND node_id IS NULL AND id != ?", model.AmneziaWG, id).
+		Where("protocol = ? AND id != ?", model.AmneziaWG, id).
 		Find(&candidates).Error; err != nil {
 		return nil, err
 	}
@@ -477,7 +469,7 @@ func checkAmneziawgnetSocksRelayCollision(db *gorm.DB, id int) (*portConflictDet
 // amneziawgnetSocksSelfConflict: a row's own WireGuard port vs the relay port its
 // own id derives -- all three checks below exclude that id, so nothing else does.
 func amneziawgnetSocksSelfConflict(inbound *model.Inbound, id int) string {
-	if id <= 0 || inbound.NodeID != nil || !listenOverlaps(loopbackBind, inboundBindAddr(inbound)) {
+	if id <= 0 || !listenOverlaps(loopbackBind, inboundBindAddr(inbound)) {
 		return ""
 	}
 	relayPort := amneziawgnet.SOCKSPortForInbound(id)
@@ -494,7 +486,7 @@ func checkAmneziawgnetSocksReverseConflict(db *gorm.DB, id int) (*portConflictDe
 	relayPort := amneziawgnet.SOCKSPortForInbound(id)
 	var candidates []*model.Inbound
 	if err := db.Model(model.Inbound{}).
-		Where("port = ? AND node_id IS NULL AND id != ?", relayPort, id).
+		Where("port = ? AND id != ?", relayPort, id).
 		Find(&candidates).Error; err != nil {
 		return nil, err
 	}
@@ -517,7 +509,7 @@ func checkAmneziawgnetSocksReverseConflict(db *gorm.DB, id int) (*portConflictDe
 
 func checkTuicSocksConflict(db *gorm.DB, inbound *model.Inbound, ignoreId int, newBits transportBits) (*portConflictDetail, error) {
 	var candidates []*model.Inbound
-	q := db.Model(model.Inbound{}).Where("protocol = ? AND node_id IS NULL", model.TUIC)
+	q := db.Model(model.Inbound{}).Where("protocol = ?", model.TUIC)
 	if ignoreId > 0 {
 		q = q.Where("id != ?", ignoreId)
 	}
@@ -547,7 +539,7 @@ func checkTuicSocksRelayCollision(db *gorm.DB, id int) (*portConflictDetail, err
 	relayPort := tuic.SOCKSPortForInbound(id)
 	var candidates []*model.Inbound
 	if err := db.Model(model.Inbound{}).
-		Where("protocol = ? AND node_id IS NULL AND id != ?", model.TUIC, id).
+		Where("protocol = ? AND id != ?", model.TUIC, id).
 		Find(&candidates).Error; err != nil {
 		return nil, err
 	}
@@ -569,7 +561,7 @@ func checkTuicSocksRelayCollision(db *gorm.DB, id int) (*portConflictDetail, err
 }
 
 func tuicSocksSelfConflict(inbound *model.Inbound, id int) string {
-	if id <= 0 || inbound.NodeID != nil || !listenOverlaps(loopbackBind, inboundBindAddr(inbound)) {
+	if id <= 0 || !listenOverlaps(loopbackBind, inboundBindAddr(inbound)) {
 		return ""
 	}
 	relayPort := tuic.SOCKSPortForInbound(id)
@@ -584,7 +576,7 @@ func checkTuicSocksReverseConflict(db *gorm.DB, id int) (*portConflictDetail, er
 	relayPort := tuic.SOCKSPortForInbound(id)
 	var candidates []*model.Inbound
 	if err := db.Model(model.Inbound{}).
-		Where("port = ? AND node_id IS NULL AND id != ?", relayPort, id).
+		Where("port = ? AND id != ?", relayPort, id).
 		Find(&candidates).Error; err != nil {
 		return nil, err
 	}
@@ -605,16 +597,6 @@ func checkTuicSocksReverseConflict(db *gorm.DB, id int) (*portConflictDetail, er
 	return nil, nil
 }
 
-func sameNode(a, b *int) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-	return *a == *b
-}
-
 func baseInboundTag(port int) string {
 	return fmt.Sprintf("in-%v", port)
 }
@@ -631,22 +613,12 @@ func transportTagSuffix(b transportBits) string {
 	return "any"
 }
 
-// nodeTagPrefix scopes a tag to one remote node so the same listen+port
-// can live on the central panel and on a node without bumping the global
-// UNIQUE(inbounds.tag) constraint. nil → "" (local panel).
-func nodeTagPrefix(nodeID *int) string {
-	if nodeID == nil {
-		return ""
-	}
-	return fmt.Sprintf("n%d-", *nodeID)
+func composeInboundTag(port int, bits transportBits) string {
+	return baseInboundTag(port) + "-" + transportTagSuffix(bits)
 }
 
-func composeInboundTag(port int, nodeID *int, bits transportBits) string {
-	return nodeTagPrefix(nodeID) + baseInboundTag(port) + "-" + transportTagSuffix(bits)
-}
-
-func isAutoGeneratedTag(tag string, port int, nodeID *int, bits transportBits) bool {
-	base := composeInboundTag(port, nodeID, bits)
+func isAutoGeneratedTag(tag string, port int, bits transportBits) bool {
+	base := composeInboundTag(port, bits)
 	if tag == base {
 		return true
 	}
@@ -664,7 +636,7 @@ func isAutoGeneratedTag(tag string, port int, nodeID *int, bits transportBits) b
 
 func (s *InboundService) generateInboundTag(inbound *model.Inbound, ignoreId int) (string, error) {
 	bits := inboundTransports(inbound.Protocol, inbound.StreamSettings, inbound.Settings)
-	candidate := composeInboundTag(inbound.Port, inbound.NodeID, bits)
+	candidate := composeInboundTag(inbound.Port, bits)
 	exists, err := s.tagExists(candidate, ignoreId)
 	if err != nil {
 		return "", err

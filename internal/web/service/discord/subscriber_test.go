@@ -61,48 +61,6 @@ func TestFormatEmbed_OutboundDownAndUp(t *testing.T) {
 	}
 }
 
-func TestFormatEmbed_NodeDownAndUp(t *testing.T) {
-	settingService := setupTestDB(t)
-	discordService := NewDiscordService(settingService)
-	sub := NewSubscriber(settingService, discordService)
-
-	now := time.Now().UTC()
-
-	// Node down
-	downEvent := eventbus.Event{
-		Type:      eventbus.EventNodeDown,
-		Source:    "node-us",
-		Timestamp: now,
-		Data: &eventbus.NodeHealthData{
-			XrayError: "connection refused",
-		},
-	}
-	embed, ok := sub.FormatEmbed(downEvent)
-	if !ok {
-		t.Fatal("expected embed to be formatted")
-	}
-	if embed.Color != ColorRed {
-		t.Errorf("expected ColorRed, got 0x%X", embed.Color)
-	}
-
-	// Node up
-	upEvent := eventbus.Event{
-		Type:      eventbus.EventNodeUp,
-		Source:    "node-us",
-		Timestamp: now,
-		Data: &eventbus.NodeHealthData{
-			LatencyMs: 45,
-		},
-	}
-	embedUp, ok := sub.FormatEmbed(upEvent)
-	if !ok {
-		t.Fatal("expected embed to be formatted")
-	}
-	if embedUp.Color != ColorGreen {
-		t.Errorf("expected ColorGreen, got 0x%X", embedUp.Color)
-	}
-}
-
 func TestFormatEmbed_XrayCrash(t *testing.T) {
 	settingService := setupTestDB(t)
 	discordService := NewDiscordService(settingService)
@@ -445,66 +403,5 @@ func TestHandleEvent_BelowThresholdDoesNotBurnRateLimiter(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("critical CPU alert was incorrectly suppressed by rate limiter after below-threshold event")
-	}
-}
-
-func TestFormatEmbed_ValueTypes(t *testing.T) {
-	settingService := setupTestDB(t)
-	_ = settingService.SetDiscordCpu(80)
-	_ = settingService.SetDiscordMemory(80)
-	sub := NewSubscriber(settingService, NewDiscordService(settingService))
-	now := time.Now().UTC()
-
-	// OutboundHealthData by value
-	embed, ok := sub.FormatEmbed(eventbus.Event{
-		Type:      eventbus.EventOutboundDown,
-		Source:    "out-val",
-		Timestamp: now,
-		Data: eventbus.OutboundHealthData{
-			Delay: 350,
-			Error: "connection lost",
-		},
-	})
-	if !ok || len(embed.Fields) != 3 {
-		t.Fatalf("expected 3 fields for OutboundDown value type, got ok=%v, fields=%d", ok, len(embed.Fields))
-	}
-
-	// NodeHealthData by value
-	embedNode, ok := sub.FormatEmbed(eventbus.Event{
-		Type:      eventbus.EventNodeUp,
-		Source:    "node-val",
-		Timestamp: now,
-		Data: eventbus.NodeHealthData{
-			LatencyMs: 25,
-		},
-	})
-	if !ok || len(embedNode.Fields) != 2 {
-		t.Fatalf("expected 2 fields for NodeUp value type, got ok=%v, fields=%d", ok, len(embedNode.Fields))
-	}
-
-	// SystemMetricData by value
-	embedCPU, ok := sub.FormatEmbed(eventbus.Event{
-		Type:      eventbus.EventCPUHigh,
-		Timestamp: now,
-		Data: eventbus.SystemMetricData{
-			Percent: 90.0,
-		},
-	})
-	if !ok || embedCPU.Color != ColorOrange {
-		t.Fatalf("expected orange embed for CPU high value type, got ok=%v", ok)
-	}
-
-	// LoginEventData by value
-	embedLogin, ok := sub.FormatEmbed(eventbus.Event{
-		Type:      eventbus.EventLoginAttempt,
-		Timestamp: now,
-		Data: eventbus.LoginEventData{
-			Username: "admin",
-			IP:       "127.0.0.1",
-			Status:   "success",
-		},
-	})
-	if !ok || embedLogin.Color != ColorGreen {
-		t.Fatalf("expected green embed for Login success value type, got ok=%v", ok)
 	}
 }

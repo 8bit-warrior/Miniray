@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapse, Modal } from 'antd';
 import type { CollapseProps } from 'antd';
-
 import { Protocols } from '@/schemas/primitives';
 import {
   genAllLinks,
@@ -14,28 +13,26 @@ import {
   preferPublicHost,
 } from '@/lib/xray/inbound-link';
 import { inboundFromDb, type DbInboundLike } from '@/lib/xray/inbound-from-db';
-import { withHostEndpoints } from '@/lib/hosts/host-link';
-import type { HostRecord } from '@/schemas/api/host';
 import QrPanel from './QrPanel';
 import { peerConfFileName } from '../info/helpers';
 import type { SubSettings } from '../useInbounds';
-
 interface ClientSetting {
   email?: string;
   subId?: string;
   [k: string]: unknown;
 }
-
 interface QrCodeModalProps {
   open: boolean;
   onClose: () => void;
-  dbInbound: (DbInboundLike & { id: number; remark?: string }) | null;
+  dbInbound:
+    | (DbInboundLike & {
+        id: number;
+        remark?: string;
+      })
+    | null;
   client?: ClientSetting | null;
-  nodeAddress?: string;
   subSettings?: SubSettings;
-  hosts?: HostRecord[];
 }
-
 interface QrItem {
   key: string;
   header: string;
@@ -43,20 +40,20 @@ interface QrItem {
   downloadName?: string;
   showQr?: boolean;
 }
-
-const EMPTY_HOSTS: HostRecord[] = [];
-
 export default function QrCodeModal({
   open,
   onClose,
   dbInbound,
   client = null,
-  nodeAddress = '',
   subSettings,
-  hosts = EMPTY_HOSTS,
 }: QrCodeModalProps) {
   const { t } = useTranslation();
-  const [links, setLinks] = useState<{ remark?: string; link: string }[]>([]);
+  const [links, setLinks] = useState<
+    {
+      remark?: string;
+      link: string;
+    }[]
+  >([]);
   const [wireguardConfigs, setWireguardConfigs] = useState<string[][]>([]);
   const [wireguardLinks, setWireguardLinks] = useState<string[][]>([]);
   const [amneziawgConfigs, setAmneziawgConfigs] = useState<string[][]>([]);
@@ -64,15 +61,12 @@ export default function QrCodeModal({
   const [subLink, setSubLink] = useState('');
   const [subJsonLink, setSubJsonLink] = useState('');
   const [activeKey, setActiveKey] = useState<string[]>([]);
-
   // Building the links is a pure function of the props, so it runs during
   // render; an effect would paint the previous inbound's QR first.
   const [syncedProps, setSyncedProps] = useState<{
     dbInbound: typeof dbInbound;
     client: typeof client;
-    nodeAddress: typeof nodeAddress;
     subSettings: typeof subSettings;
-    hosts: typeof hosts;
   } | null>(null);
   if (
     open &&
@@ -80,22 +74,14 @@ export default function QrCodeModal({
     (syncedProps === null ||
       syncedProps.dbInbound !== dbInbound ||
       syncedProps.client !== client ||
-      syncedProps.nodeAddress !== nodeAddress ||
-      syncedProps.subSettings !== subSettings ||
-      syncedProps.hosts !== hosts)
+      syncedProps.subSettings !== subSettings)
   ) {
-    setSyncedProps({ dbInbound, client, nodeAddress, subSettings, hosts });
+    setSyncedProps({ dbInbound, client, subSettings });
     const fallbackHostname = preferPublicHost(
       window.location.hostname,
       subSettings?.publicHost ?? '',
     );
-    const inbound = withHostEndpoints(
-      inboundFromDb(dbInbound),
-      dbInbound.id,
-      hosts,
-      nodeAddress,
-      fallbackHostname,
-    );
+    const inbound = inboundFromDb(dbInbound);
     if (inbound.protocol === Protocols.WIREGUARD) {
       const peerRemark = client?.email
         ? `${dbInbound.remark}-${client.email}`
@@ -104,7 +90,7 @@ export default function QrCodeModal({
         genWireguardPeerConfigs({
           inbound,
           remark: peerRemark,
-          hostOverride: nodeAddress,
+          hostOverride: '',
           fallbackHostname,
         }),
       );
@@ -112,7 +98,7 @@ export default function QrCodeModal({
         genWireguardPeerLinks({
           inbound,
           remark: peerRemark,
-          hostOverride: nodeAddress,
+          hostOverride: '',
           fallbackHostname,
         }),
       );
@@ -127,7 +113,7 @@ export default function QrCodeModal({
         genAmneziaWGPeerConfigs({
           inbound,
           remark: peerRemark,
-          hostOverride: nodeAddress,
+          hostOverride: '',
           fallbackHostname,
         }),
       );
@@ -135,7 +121,7 @@ export default function QrCodeModal({
         genAmneziaWGPeerLinks({
           inbound,
           remark: peerRemark,
-          hostOverride: nodeAddress,
+          hostOverride: '',
           fallbackHostname,
         }),
       );
@@ -148,7 +134,7 @@ export default function QrCodeModal({
           inbound,
           remark: dbInbound.remark || '',
           client: client ?? {},
-          hostOverride: nodeAddress,
+          hostOverride: '',
           fallbackHostname,
         }),
       );
@@ -157,7 +143,6 @@ export default function QrCodeModal({
       setAmneziawgConfigs([]);
       setAmneziawgLinks([]);
     }
-
     const subId = client?.subId;
     let nextSub = '';
     let nextSubJson = '';
@@ -168,7 +153,6 @@ export default function QrCodeModal({
     setSubLink(nextSub);
     setSubJsonLink(nextSubJson);
   }
-
   const qrItems = useMemo<QrItem[]>(() => {
     const items: QrItem[] = [];
     if (subLink) {
@@ -219,7 +203,6 @@ export default function QrCodeModal({
     amneziawgLinks,
     t,
   ]);
-
   const collapseItems: CollapseProps['items'] = useMemo(
     () =>
       qrItems.map((item) => ({
@@ -236,14 +219,12 @@ export default function QrCodeModal({
       })),
     [qrItems],
   );
-
   const firstKey = open && qrItems.length > 0 ? qrItems[0].key : null;
   const [syncedFirstKey, setSyncedFirstKey] = useState<string | null>(null);
   if (firstKey !== syncedFirstKey) {
     setSyncedFirstKey(firstKey);
     setActiveKey(firstKey ? [firstKey] : []);
   }
-
   return (
     <Modal
       open={open}

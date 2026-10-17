@@ -18,7 +18,6 @@ const (
 	MessageTypeTraffic      MessageType = "traffic"
 	MessageTypeInbounds     MessageType = "inbounds"
 	MessageTypeOutbounds    MessageType = "outbounds"
-	MessageTypeNodes        MessageType = "nodes"
 	MessageTypeNotification MessageType = "notification"
 	MessageTypeXrayState    MessageType = "xray_state"
 	MessageTypeClientStats  MessageType = "client_stats"

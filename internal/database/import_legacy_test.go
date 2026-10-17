@@ -46,8 +46,10 @@ func legacyImportFixture(t *testing.T) string {
 		t.Fatal(err)
 	}
 	for _, row := range [][2]string{
-		{"webPort", "18443"}, {"webCertFile", "/etc/x-ui/certs/fullchain.pem"},
-		{"subPath", "/old-subs/"}, {"apiToken", "unwanted-secret"},
+		{"webPort", "18443"},
+		{"webCertFile", "/etc/x-ui/certs/fullchain.pem"},
+		{"subPath", "/old-subs/"},
+		{"apiToken", "unwanted-secret"},
 		{"xrayTemplateConfig", `{"log":{"loglevel":"warning"}}`},
 		{"obsoleteNodeSetting", "must-not-import"},
 	} {
@@ -95,6 +97,28 @@ func legacyImportFixture(t *testing.T) string {
 	return path
 }
 
+func TestLegacyImportRollbackOnInvalidInbound(t *testing.T) {
+	source := legacyImportFixture(t)
+	db, err := sql.Open("sqlite3", source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`UPDATE inbounds SET tag = 'local-one' WHERE id = 13`); err != nil {
+		t.Fatal(err)
+	}
+	_ = db.Close()
+	dst := filepath.Join(t.TempDir(), "miniray.db")
+	if _, err := ImportLegacySQLite(source, dst, ""); err == nil {
+		t.Fatal("duplicate tag should fail transaction")
+	}
+	if _, err := os.Stat(dst); !os.IsNotExist(err) {
+		t.Fatalf("failed migration left target database: %v", err)
+	}
+	if _, err := os.Stat(source); err != nil {
+		t.Fatalf("legacy source was modified: %v", err)
+	}
+}
+
 func TestLegacySQLiteSnapshotAndSelectiveImport(t *testing.T) {
 	sourcePath := legacyImportFixture(t)
 	snapshotPath := filepath.Join(t.TempDir(), "snapshot.db")
@@ -117,7 +141,7 @@ func TestLegacySQLiteSnapshotAndSelectiveImport(t *testing.T) {
 	if err := GetDB().Order("id").Find(&inbounds).Error; err != nil {
 		t.Fatal(err)
 	}
-	if len(inbounds) != 2 || inbounds[0].Id != 10 || inbounds[1].Id != 13 || inbounds[0].NodeID != nil {
+	if len(inbounds) != 2 || inbounds[0].Id != 10 || inbounds[1].Id != 13 {
 		t.Fatalf("inbounds: %+v", inbounds)
 	}
 	var settings map[string]any
@@ -135,7 +159,7 @@ func TestLegacySQLiteSnapshotAndSelectiveImport(t *testing.T) {
 	if err := GetDB().Where("email = ?", "alice@example.com").First(&client).Error; err != nil {
 		t.Fatal(err)
 	}
-	if client.Group != "" || client.UUID != "alice-uuid" || client.TotalGB != 4096 {
+	if client.UUID != "alice-uuid" || client.TotalGB != 4096 {
 		t.Fatalf("client not preserved correctly: %+v", client)
 	}
 	var links []model.ClientInbound
@@ -214,27 +238,5 @@ func TestLegacySQLiteSnapshotAndSelectiveImport(t *testing.T) {
 	}
 	if _, err := ImportLegacySQLite(snapshotPath, dst, ""); err == nil {
 		t.Fatal("import must refuse to overwrite an existing destination")
-	}
-}
-
-func TestLegacyImportRollbackOnInvalidInbound(t *testing.T) {
-	source := legacyImportFixture(t)
-	db, err := sql.Open("sqlite3", source)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.Exec(`UPDATE inbounds SET tag = 'local-one' WHERE id = 13`); err != nil {
-		t.Fatal(err)
-	}
-	_ = db.Close()
-	dst := filepath.Join(t.TempDir(), "miniray.db")
-	if _, err := ImportLegacySQLite(source, dst, ""); err == nil {
-		t.Fatal("duplicate tag should fail transaction")
-	}
-	if _, err := os.Stat(dst); !os.IsNotExist(err) {
-		t.Fatalf("failed migration left target database: %v", err)
-	}
-	if _, err := os.Stat(source); err != nil {
-		t.Fatalf("legacy source was modified: %v", err)
 	}
 }

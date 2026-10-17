@@ -11,15 +11,14 @@ import (
 	"time"
 
 	"github.com/op/go-logging"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/8bit-warrior/Miniray/internal/config"
-
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const (
 	maxLogBufferSize = 10240                 // Maximum log entries kept in memory
-	logFileName      = "miniray.log"            // Log file name
+	logFileName      = "miniray.log"         // Log file name
 	timeFormat       = "2006/01/02 15:04:05" // Log timestamp format
 
 	// On-disk rotation limits — single file capped, old segments pruned automatically.

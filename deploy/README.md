@@ -1,31 +1,19 @@
-# Cloud deployment (unattended install)
+# Deployment
 
-Tooling to ship the miniray panel via unattended install, with **per-instance
-credentials generated on first boot** (never `admin/admin`, never a shared
-session secret). Works on amd64 and arm64.
+The [root README](../README.md) contains the Linux installation command and service controls. The installer requires systemd and supports Linux amd64 and arm64. Storage is SQLite only.
 
-| Path | What it is | Use when |
-| --- | --- | --- |
-| [`cloud-init/`](cloud-init/) | Generic cloud-init user-data (unattended `install.sh`) | Any cloud, no image build |
-| [`marketplace/hetzner/`](marketplace/hetzner/) | Hetzner Cloud notes | Hetzner deployments |
-| [`test/`](test/) | Container smoke test | Verifying the install path |
+## Cloud-init
 
-## How it works
+Use [cloud-init/cloud-init.yaml](cloud-init/cloud-init.yaml) on a fresh Debian or Ubuntu host. The initial administrator is `admin`; read its generated password with `sudo /usr/local/miniray/miniray initial-password`. A first install with an existing legacy panel needs an interactive terminal for migration choices.
 
-`install.sh` runs unattended when `MINIRAY_NONINTERACTIVE=1` or stdin is not a TTY.
-Each instance installs and configures itself with random credentials. See
-[`cloud-init/README.md`](cloud-init/README.md).
+The installer accepts `MINIRAY_UPDATE_TAG`, `MINIRAY_MAIN_FOLDER` and `MINIRAY_DB_FOLDER`. A custom database folder is persisted in `/etc/default/miniray`.
 
-## Unattended install knobs
+## Docker
 
-`install.sh` reads these env vars in non-interactive mode (all optional; unset ⇒
-secure random / default):
+Build and start the optional Docker image with `docker compose up -d --build` from the repository root. Persistent data is mounted from `db/`; certificates and ACME state use the mounts in `docker-compose.yml`. Publish each proxy's configured TCP or UDP port in addition to the panel port.
 
-`MINIRAY_USERNAME`, `MINIRAY_PASSWORD`, `MINIRAY_PANEL_PORT`, `MINIRAY_WEB_BASE_PATH`,
-`MINIRAY_SSL_MODE` (`none`|`ip`|`domain`, default `none`), `MINIRAY_DOMAIN`,
-`MINIRAY_ACME_EMAIL`, `MINIRAY_ACME_HTTP_PORT` (ACME HTTP-01 listener port, default `80`),
-`MINIRAY_SSL_IPV6` (optional IPv6 address to add to an `ip`-mode cert),
-`MINIRAY_SERVER_IP` (fallback IP for the displayed access URL when auto-detection fails),
-`MINIRAY_DB_TYPE` (`sqlite`|`postgres`), `MINIRAY_DB_DSN`.
+The Docker image runs the panel and its proxy processes within one container. Independent systemd service management applies to the Linux host installation.
 
-The resulting credentials are written to `/etc/miniray/install-result.env` (mode 600).
+## Acceptance
+
+The release workflow tests the built Linux archive on a disposable native systemd runner. It covers fresh installation, all four legacy uninstall/import choices, corrupt-source preservation, upgrade with panel autostart disabled, proxy forwarding while the panel is stopped and core recovery after a forced process failure.

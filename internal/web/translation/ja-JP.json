@@ -112,15 +112,11 @@
     "dashboard": "ダッシュボード",
     "inbounds": "インバウンド",
     "clients": "クライアント",
-    "groups": "グループ",
-    "nodes": "ノード",
     "settings": "パネル設定",
     "xray": "Xray 設定",
     "routing": "ルーティング",
     "outbounds": "アウトバウンド",
     "apiDocs": "API ドキュメント",
-    "sponsors": "スポンサー",
-    "hosts": "ホスト",
     "docs": "ドキュメント",
     "openMenu": "メニューを開く",
     "subFormats": "Sub Formats"
@@ -292,9 +288,6 @@
       "operate": "メニュー",
       "enable": "有効化",
       "remark": "備考",
-      "node": "ノード",
-      "deployTo": "デプロイ先",
-      "localPanel": "ローカルパネル",
       "fallbacks": {
         "title": "Fallbacks",
         "empty": "フォールバックはまだありません",
@@ -330,7 +323,6 @@
       "delAllClientsConfirmTitle": "「{remark}」から {count} 件のクライアントをすべて削除しますか？",
       "delAllClientsConfirmContent": "このインバウンドからすべてのクライアントを削除し、トラフィックレコードも破棄します。インバウンド自体は保持されます。この操作は取り消せません。",
       "attachClients": "クライアントをアタッチ…",
-      "addClientsToGroup": "クライアントをグループに追加…",
       "attachClientsTitle": "「{remark}」のクライアントをアタッチ",
       "attachClientsDesc": "同じ {count} クライアント(同じ UUID/パスワードと共有トラフィック)を選択したインバウンドにアタッチします。このインバウンドにも残ります。",
       "attachClientsTargets": "ターゲットインバウンド",
@@ -438,13 +430,10 @@
         "inboundCreateSuccess": "インバウンドが正常に作成されました",
         "bulkDeleted": "{count} 件のインバウンドを削除しました",
         "bulkDeletedMixed": "{ok} 件削除、{failed} 件失敗",
-        "clonedMany": "{count} 件のインバウンドを複製しました",
-        "clonedMixed": "{ok} 件複製、{failed} 件失敗",
         "inboundDeleteSuccess": "インバウンドが正常に削除されました",
         "inboundClientAddSuccess": "インバウンドクライアントが追加されました",
         "inboundClientDeleteSuccess": "インバウンドクライアントが削除されました",
         "inboundClientUpdateSuccess": "インバウンドクライアントが更新されました",
-        "savedNodeOfflineWillSync": "ローカルに保存しました。バックエンドのノードがオフラインまたは無効になっています — 再接続後に変更が同期されます。",
         "resetAllClientTrafficSuccess": "クライアントのすべてのトラフィックがリセットされました",
         "resetAllTrafficSuccess": "すべてのトラフィックがリセットされました",
         "resetInboundClientTrafficSuccess": "トラフィックがリセットされました",
@@ -682,7 +671,6 @@
         "disableFlow": "XTLS フローを無効化",
         "disableFlowHelp": "トランスポートが flow に対応している場合でも（例: VLESS 暗号化付きのトンネル化された XHTTP インバウンド）、このインバウンドを xtls-rprx-vision の自動付与から除外します。クライアントは同じサブスクリプション内の他の対応インバウンドでは Vision を維持します。VLESS のみ。",
         "shareAddrStrategyOptions": {
-          "node": "ノードアドレス",
           "listen": "インバウンドのリッスンアドレス",
           "custom": "カスタム"
         },
@@ -742,10 +730,7 @@
       "searchPlaceholder": "メール、コメント、sub ID、UUID、パスワード、auth、Telegram ID を検索…",
       "filterTitle": "クライアントをフィルタ",
       "clearAllFilters": "すべてクリア",
-      "filters": {
-        "nodes": "ノード",
-        "localPanel": "ローカル（このパネル）"
-      },
+      "filters": {},
       "showingCount": "{total} 件中 {shown} 件を表示",
       "sortOldest": "古い順",
       "sortNewest": "新しい順",
@@ -788,9 +773,6 @@
       "email": "メール",
       "emailInvalidChars": "メールアドレスにスペース、'/'、'\\'、または制御文字を含めることはできません",
       "subIdInvalidChars": "サブスクリプションIDにスペース、'/'、'\\'、または制御文字を含めることはできません",
-      "group": "グループ",
-      "groupDesc": "関連クライアントをまとめる論理ラベル(チーム、顧客、地域など)。ツールバーからフィルタ可能。",
-      "groupPlaceholder": "例: customer-a",
       "comment": "コメント",
       "traffic": "トラフィック",
       "speed": "速度",
@@ -827,15 +809,6 @@
       "resetAllTrafficsContent": "すべてのクライアントの送受信カウンターがゼロにリセットされます。クォータと有効期限には影響しません。元に戻せません。",
       "deleteConfirmTitle": "クライアント {email} を削除しますか?",
       "deleteConfirmContent": "クライアントを関連付けされたすべてのインバウンドから削除し、トラフィック記録も破棄します。元に戻せません。",
-      "addToGroupTitle": "{count} クライアントをグループに追加",
-      "addToGroupTooltip": "既存のグループを選ぶか新しい名前を入力してください。Ungroup で現在のグループから外せます。",
-      "groupName": "グループ名",
-      "addToGroupSuccessToast": "{count} クライアントを {group} に追加しました",
-      "ungroupSuccessToast": "{count} クライアントのグループをクリアしました",
-      "ungroup": "グループ解除",
-      "ungroupConfirmTitle": "{count} クライアントをグループから外しますか?",
-      "ungroupConfirmContent": "選択したクライアントのグループラベルをクリアします。クライアント自体は保持されます (完全に削除するには Delete を使用)。",
-      "addToGroup": "グループに追加",
       "attach": "アタッチ",
       "adjust": "調整",
       "subLinks": "サブリンク",
@@ -957,18 +930,6 @@
       "renewOnDayDesc": "毎月この日の深夜（パネルのタイムゾーン基準）に更新します。N 日ごとの更新の代わりになります。その日が存在しない月は月末に更新されます。0 で日数間隔モードのままになります。",
       "renewsUsed": "使用済み更新回数",
       "bulkAdTagHint": "設定するには 32 文字の 16 進数タグを入力し、クリアするには 'none' を入力します (MTProto 用)。"
-    },
-    "groups": {},
-    "nodes": {
-      "name": "名前",
-      "apiToken": "API トークン",
-      "apiTokenHint": "リモートパネルでは、セキュリティ設定 → APIトークン でAPIトークンを確認できます。",
-      "latency": "レイテンシ",
-      "statusValues": {},
-      "toasts": {
-        "fillRequired": "名前、アドレス、ポート、APIトークンは必須です"
-      },
-      "mtls": {}
     },
     "settings": {
       "defaultTag": "デフォルト",
@@ -1236,7 +1197,9 @@
         "apiTokenEmpty": "トークンがまだありません — ボットやリモートパネルを認証するために作成してください。",
         "apiTokenDeleteWarning": "このトークンを使用しているクライアントは直ちに認証できなくなります。",
         "apiTokenCreatedTitle": "トークンを作成しました",
-        "apiTokenCreatedNotice": "このトークンを今すぐコピーしてください。セキュリティ上、読み取り可能な形式では保存されず、再表示されません。"
+        "apiTokenCreatedNotice": "このトークンを今すぐコピーしてください。セキュリティ上、読み取り可能な形式では保存されず、再表示されません。",
+        "apiToken": "API トークン",
+        "apiTokenHint": "リモートパネルでは、セキュリティ設定 → APIトークン でAPIトークンを確認できます。"
       },
       "toasts": {
         "modifySettings": "パラメーターが変更されました。",
@@ -1281,8 +1244,6 @@
       "eventOutboundDown": "ダウン",
       "eventOutboundUp": "アップ",
       "eventXrayCrash": "クラッシュ",
-      "eventNodeDown": "ダウン",
-      "eventNodeUp": "アップ",
       "eventCPUHigh": "CPU高負荷（%）",
       "requestFailed": "リクエストに失敗しました",
       "smtpEncryption": "暗号化",
@@ -1586,7 +1547,51 @@
       "subIncyResolveDnsDomainDesc": "DoH サーバー URL。通常は /dns-query で終わります。",
       "subIncyResolveDnsIp": "DoH サーバー IP",
       "subIncyResolveDnsIpDesc": "ブートストラップ用の DoH サーバー IP。",
-      "subIncyGroupRouting": "ルーティング"
+      "subIncyGroupRouting": "ルーティング",
+      "exportDatabaseDesc": "",
+      "allowInsecure": "安全でない接続を許可",
+      "allowInsecureHelp": "TLS 証明書の検証をスキップします（allowInsecure / skip-cert-verify）。",
+      "remarkVars": {
+        "title": "テンプレート変数",
+        "intro": "変数をクリックすると追加されます。サブスクリプション生成時にクライアントごとに置き換えられます。",
+        "preview": "プレビュー",
+        "groups": {
+          "client": "クライアント",
+          "traffic": "トラフィック",
+          "time": "時刻とステータス",
+          "connection": "接続"
+        },
+        "descEMAIL": "クライアントのメール",
+        "descINBOUND": "インバウンド自身の備考（設定名）",
+        "descHOST": "ホストの備考",
+        "descID": "クライアント UUID",
+        "descSHORT_ID": "UUID の最初の 8 文字",
+        "descTELEGRAM_ID": "クライアントの Telegram ID（未設定の場合は空）",
+        "descSUB_ID": "サブスクリプション ID",
+        "descCOMMENT": "クライアントのコメント",
+        "descTRAFFIC_USED": "使用済みトラフィック（人間が読みやすい形式）",
+        "descTRAFFIC_LEFT": "残りトラフィック（無制限の場合は非表示）",
+        "descTRAFFIC_TOTAL": "合計トラフィック（無制限の場合は非表示）",
+        "descTRAFFIC_USED_BYTES": "使用済みトラフィック（バイト）",
+        "descTRAFFIC_LEFT_BYTES": "残りトラフィック（バイト）",
+        "descTRAFFIC_TOTAL_BYTES": "合計トラフィック（バイト）",
+        "descUP": "アップロードトラフィック",
+        "descDOWN": "ダウンロードトラフィック",
+        "descSTATUS": "active / expired / disabled / depleted",
+        "descSTATUS_EMOJI": "絵文字で表したステータス（✅ ⏳ 🚫）",
+        "descDAYS_LEFT": "有効期限までの日数（無制限の場合は非表示）",
+        "descTIME_LEFT": "残り時間（例：12d 4h 30m）",
+        "descUSAGE_PERCENTAGE": "使用済みトラフィックの割合（無制限の場合は非表示）",
+        "descEXPIRE_DATE": "有効期限（YYYY-MM-DD）",
+        "descJALALI_EXPIRE_DATE": "ジャラーリー暦の有効期限（YYYY/MM/DD）",
+        "descEXPIRE_UNIX": "有効期限の Unix タイムスタンプ（秒）",
+        "descCREATED_UNIX": "作成時刻の Unix タイムスタンプ（秒）",
+        "descRESET_DAYS": "トラフィックリセット周期（日数）",
+        "descRESET_DAY": "毎月の更新日",
+        "descPROTOCOL": "インバウンドのプロトコル（VLESS、VMess、Trojan など）",
+        "descTRANSPORT": "トランスポートネットワーク（tcp、ws、grpc など）",
+        "descSECURITY": "トランスポートのセキュリティ（TLS、REALITY、NONE）"
+      }
     },
     "xray": {
       "importRules": "ルールをインポート",
@@ -2093,62 +2098,9 @@
         "poolSize": "プールサイズ"
       },
       "defaultOutbound": "デフォルトアウトバウンド",
-      "defaultOutboundDesc": "ルーティング規則に一致しないトラフィックはこのアウトバウンドを使います（一覧の先頭）。"
-    },
-    "hosts": {
-      "summary": {},
-      "sections": {},
-      "fields": {
-        "allowInsecure": "安全でない接続を許可"
-      },
-      "hints": {
-        "allowInsecure": "TLS 証明書の検証をスキップします（allowInsecure / skip-cert-verify）。"
-      },
-      "remarkVars": {
-        "title": "テンプレート変数",
-        "intro": "変数をクリックすると追加されます。サブスクリプション生成時にクライアントごとに置き換えられます。",
-        "preview": "プレビュー",
-        "groups": {
-          "client": "クライアント",
-          "traffic": "トラフィック",
-          "time": "時刻とステータス",
-          "connection": "接続"
-        },
-        "descEMAIL": "クライアントのメール",
-        "descINBOUND": "インバウンド自身の備考（設定名）",
-        "descHOST": "ホストの備考",
-        "descID": "クライアント UUID",
-        "descSHORT_ID": "UUID の最初の 8 文字",
-        "descTELEGRAM_ID": "クライアントの Telegram ID（未設定の場合は空）",
-        "descSUB_ID": "サブスクリプション ID",
-        "descCOMMENT": "クライアントのコメント",
-        "descTRAFFIC_USED": "使用済みトラフィック（人間が読みやすい形式）",
-        "descTRAFFIC_LEFT": "残りトラフィック（無制限の場合は非表示）",
-        "descTRAFFIC_TOTAL": "合計トラフィック（無制限の場合は非表示）",
-        "descTRAFFIC_USED_BYTES": "使用済みトラフィック（バイト）",
-        "descTRAFFIC_LEFT_BYTES": "残りトラフィック（バイト）",
-        "descTRAFFIC_TOTAL_BYTES": "合計トラフィック（バイト）",
-        "descUP": "アップロードトラフィック",
-        "descDOWN": "ダウンロードトラフィック",
-        "descSTATUS": "active / expired / disabled / depleted",
-        "descSTATUS_EMOJI": "絵文字で表したステータス（✅ ⏳ 🚫）",
-        "descDAYS_LEFT": "有効期限までの日数（無制限の場合は非表示）",
-        "descTIME_LEFT": "残り時間（例：12d 4h 30m）",
-        "descUSAGE_PERCENTAGE": "使用済みトラフィックの割合（無制限の場合は非表示）",
-        "descEXPIRE_DATE": "有効期限（YYYY-MM-DD）",
-        "descJALALI_EXPIRE_DATE": "ジャラーリー暦の有効期限（YYYY/MM/DD）",
-        "descEXPIRE_UNIX": "有効期限の Unix タイムスタンプ（秒）",
-        "descCREATED_UNIX": "作成時刻の Unix タイムスタンプ（秒）",
-        "descRESET_DAYS": "トラフィックリセット周期（日数）",
-        "descRESET_DAY": "毎月の更新日",
-        "descPROTOCOL": "インバウンドのプロトコル（VLESS、VMess、Trojan など）",
-        "descTRANSPORT": "トランスポートネットワーク（tcp、ws、grpc など）",
-        "descSECURITY": "トランスポートのセキュリティ（TLS、REALITY、NONE）"
-      },
-      "toasts": {
-        "badTag": "無効なタグ",
-        "badVlessRoute": "0〜65535 の単一の数値を入力してください"
-      }
+      "defaultOutboundDesc": "ルーティング規則に一致しないトラフィックはこのアウトバウンドを使います（一覧の先頭）。",
+      "ruleName": "名前",
+      "outboundLatency": "レイテンシ"
     }
   },
   "tgbot": {
@@ -2273,8 +2225,6 @@
       "eventDelayDetail": "遅延: {{ .Delay }}ms",
       "eventXrayCrash": "Xrayがクラッシュしました",
       "eventXrayCrashError": "エラー: {{ .Error }}",
-      "eventNodeDown": "ノード {{ .Name }} がダウンしています",
-      "eventNodeUp": "ノード {{ .Name }} が復旧しました",
       "eventLoginFallback": "{{ .Source }} からのログインに失敗しました",
       "memoryThreshold": "メモリ使用率 {{ .Percent }}% がしきい値 {{ .Threshold }}% を超えました"
     },
@@ -2366,7 +2316,6 @@
       "error": "エラー",
       "delay": "遅延",
       "outbound": "アウトバウンド",
-      "node": "ノード",
       "threshold": "しきい値",
       "reason": "理由",
       "time": "時刻",
@@ -2381,8 +2330,6 @@
     "alerts": {
       "outboundDown": "アウトバウンド停止",
       "outboundUp": "アウトバウンド復旧",
-      "nodeDown": "ノード停止",
-      "nodeUp": "ノード復旧",
       "xrayCrash": "Xray コアがクラッシュしました",
       "cpuHigh": "CPU しきい値超過",
       "memoryHigh": "メモリしきい値超過",
@@ -2428,7 +2375,6 @@
   "email": {
     "labelStatus": "ステータス",
     "labelOutbound": "アウトバウンド",
-    "labelNode": "ノード",
     "labelError": "エラー",
     "labelDelay": "遅延",
     "labelUsername": "ユーザー名",

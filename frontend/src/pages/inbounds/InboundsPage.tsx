@@ -13,7 +13,6 @@ import {
   Statistic,
   message,
 } from 'antd';
-
 import { setMessageInstance } from '@/utils/messageBus';
 import {
   ArrowUpOutlined,
@@ -21,10 +20,8 @@ import {
   PieChartOutlined,
   BarsOutlined,
 } from '@ant-design/icons';
-
-import { HttpUtil, SizeFormatter, RandomUtil } from '@/utils';
-import { buildClonePayload } from '@/lib/xray/inbound-clone';
-import { NODE_ELIGIBLE_PROTOCOLS } from '@/lib/xray/node-protocols';
+import { HttpUtil, SizeFormatter } from '@/utils';
+import { buildClonePayload, pickClonePort } from '@/lib/xray/inbound-clone';
 import {
   genAmneziaWGLinks,
   genInboundLinks,
@@ -37,26 +34,19 @@ import { coerceInboundJsonField, type DBInbound } from '@/models/dbinbound';
 import { useTheme } from '@/hooks/useTheme';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { useNodesQuery } from '@/api/queries/useNodesQuery';
-import { useHostsQuery } from '@/api/queries/useHostsQuery';
-import { withHostEndpoints } from '@/lib/hosts/host-link';
 import AppSidebar from '@/layouts/AppSidebar';
 const TextModal = lazy(() => import('@/components/feedback/TextModal'));
 import type { TextModalTab } from '@/components/feedback/TextModal';
 const PromptModal = lazy(() => import('@/components/feedback/PromptModal'));
-
 import { useInbounds } from './useInbounds';
 import { InboundList } from './list';
 import { LazyMount } from '@/components/utility';
 const InboundFormModal = lazy(() => import('./form/InboundFormModal'));
-const CloneInboundModal = lazy(() => import('./CloneInboundModal'));
 const InboundInfoModal = lazy(() => import('./info/InboundInfoModal'));
 const QrCodeModal = lazy(() => import('./qr/QrCodeModal'));
 const AttachClientsModal = lazy(() => import('./clients/AttachClientsModal'));
 const AttachExistingClientsModal = lazy(() => import('./clients/AttachExistingClientsModal'));
 const DetachClientsModal = lazy(() => import('./clients/DetachClientsModal'));
-const AddClientsToGroupModal = lazy(() => import('./clients/AddClientsToGroupModal'));
-
 type RowAction =
   | 'edit'
   | 'showInfo'
@@ -72,20 +62,16 @@ type RowAction =
   | 'detachClients'
   | 'addToGroup'
   | 'clone';
-
 type GeneralAction = 'import' | 'export' | 'subs' | 'resetInbounds';
-
 interface ClientMatchTarget {
   id?: string;
   email?: string;
   password?: string;
 }
-
 export default function InboundsPage() {
   const { t } = useTranslation();
   const { isDark, isUltra, antdThemeConfig } = useTheme();
   const { isMobile } = useMediaQuery();
-
   const {
     fetched,
     fetchError,
@@ -106,90 +92,36 @@ export default function InboundsPage() {
     applyTrafficEvent,
     applyClientStatsEvent,
   } = useInbounds();
-
   const [modal, modalContextHolder] = Modal.useModal();
   const [messageApi, messageContextHolder] = message.useMessage();
   useEffect(() => {
     setMessageInstance(messageApi);
   }, [messageApi]);
-
-  const { nodes: nodesList, fetched: nodesFetched } = useNodesQuery();
-  // MTProto share links are generated from this list, so an empty one must mean
-  // "no hosts" and not "not loaded yet" — the gate below waits for it.
-  const {
-    hosts,
-    fetched: hostsFetched,
-    fetchError: hostsFetchError,
-    refetch: refetchHosts,
-  } = useHostsQuery();
-  // A background refetch that fails while rows are still cached is not fatal.
-  const hostsError = hosts.length > 0 ? '' : hostsFetchError;
-  const nodesById = useMemo(() => {
-    const map = new Map<number, ReturnType<typeof useNodesQuery>['nodes'][number]>();
-    for (const n of nodesList || []) map.set(n.id, n);
-    return map;
-  }, [nodesList]);
-
-  const hasActiveNode = useMemo(
-    () => (nodesList || []).some((n) => n.enable && n.status === 'online'),
-    [nodesList],
-  );
-  const hasNodeAttachedInbound = useMemo(
-    () => (dbInbounds || []).some((ib) => ib?.nodeId != null),
-    [dbInbounds],
-  );
-  const showNodeInfo = hasNodeAttachedInbound || hasActiveNode;
-
-  // Ports already bound per clone target (0 = local panel, matching the
-  // clients page node-filter sentinel), for the clone dialog's client-side
-  // conflict pre-check.
-  const clonePortsInUse = useMemo(() => {
-    const map = new Map<number, Set<number>>();
-    for (const ib of dbInbounds || []) {
-      const key = ib.nodeId ?? 0;
-      const ports = map.get(key) ?? new Set<number>();
-      ports.add(ib.port);
-      map.set(key, ports);
-    }
-    return map;
-  }, [dbInbounds]);
-
+  const clonePortsInUse = useMemo(() => new Set(dbInbounds.map((ib) => ib.port)), [dbInbounds]);
   useWebSocket({
     traffic: applyTrafficEvent,
     client_stats: applyClientStatsEvent,
   });
-
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
   const [formDbInbound, setFormDbInbound] = useState<DBInbound | null>(null);
-
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoDbInbound, setInfoDbInbound] = useState<DBInbound | null>(null);
   const [infoClientIndex, setInfoClientIndex] = useState(0);
-
   const [qrOpen, setQrOpen] = useState(false);
   const [qrDbInbound, setQrDbInbound] = useState<DBInbound | null>(null);
-
   const [attachOpen, setAttachOpen] = useState(false);
   const [attachSource, setAttachSource] = useState<DBInbound | null>(null);
   const [attachExistingOpen, setAttachExistingOpen] = useState(false);
   const [attachExistingTarget, setAttachExistingTarget] = useState<DBInbound | null>(null);
   const [detachOpen, setDetachOpen] = useState(false);
   const [detachSource, setDetachSource] = useState<DBInbound | null>(null);
-
-  const [groupOpen, setGroupOpen] = useState(false);
-  const [groupSource, setGroupSource] = useState<DBInbound | null>(null);
-
-  const [cloneOpen, setCloneOpen] = useState(false);
-  const [cloneSource, setCloneSource] = useState<DBInbound | null>(null);
-
   const [textOpen, setTextOpen] = useState(false);
   const [textTitle, setTextTitle] = useState('');
   const [textContent, setTextContent] = useState('');
   const [textFileName, setTextFileName] = useState('');
   const [textJson, setTextJson] = useState(false);
   const [textTabs, setTextTabs] = useState<TextModalTab[] | undefined>(undefined);
-
   const [promptOpen, setPromptOpen] = useState(false);
   const [promptTitle, setPromptTitle] = useState('');
   const [promptOkText, setPromptOkText] = useState('OK');
@@ -200,21 +132,6 @@ export default function InboundsPage() {
   const [promptHandler, setPromptHandler] = useState<
     ((value: string) => Promise<boolean | void> | boolean | void) | null
   >(null);
-
-  const hostOverrideFor = useCallback(
-    (dbInbound: DBInbound | null) => {
-      if (!dbInbound || dbInbound.nodeId == null) return '';
-      return nodesById.get(dbInbound.nodeId)?.address || '';
-    },
-    [nodesById],
-  );
-
-  const infoNodeAddress = useMemo(
-    () => hostOverrideFor(infoDbInbound),
-    [infoDbInbound, hostOverrideFor],
-  );
-  const qrNodeAddress = useMemo(() => hostOverrideFor(qrDbInbound), [qrDbInbound, hostOverrideFor]);
-
   const openText = useCallback(
     (opts: {
       title: string;
@@ -232,7 +149,6 @@ export default function InboundsPage() {
     },
     [],
   );
-
   const openPrompt = useCallback(
     (opts: {
       title: string;
@@ -252,7 +168,6 @@ export default function InboundsPage() {
     },
     [t],
   );
-
   const onPromptConfirm = useCallback(
     async (value: string) => {
       if (!promptHandler) {
@@ -269,7 +184,6 @@ export default function InboundsPage() {
     },
     [promptHandler],
   );
-
   const projectChildThroughMaster = useCallback(
     (child: DBInbound, master: DBInbound): DBInbound => {
       const projected = JSON.parse(JSON.stringify(child)) as DBInbound;
@@ -289,7 +203,6 @@ export default function InboundsPage() {
     },
     [],
   );
-
   const checkFallback = useCallback(
     (dbInbound: DBInbound): DBInbound => {
       const parent = dbInbound?.fallbackParent;
@@ -301,10 +214,14 @@ export default function InboundsPage() {
       for (const candidate of dbInbounds) {
         if (candidate.id === dbInbound.id) continue;
         if (!['trojan', 'vless'].includes(candidate.protocol)) continue;
-        const candStream = coerceInboundJsonField(candidate.streamSettings) as { network?: string };
+        const candStream = coerceInboundJsonField(candidate.streamSettings) as {
+          network?: string;
+        };
         if (candStream.network !== 'tcp') continue;
         const candSettings = coerceInboundJsonField(candidate.settings) as {
-          fallbacks?: { dest?: string }[];
+          fallbacks?: {
+            dest?: string;
+          }[];
         };
         const fallbacks = candSettings.fallbacks || [];
         if (!fallbacks.find((f) => f.dest === dbInbound.listen)) continue;
@@ -314,7 +231,6 @@ export default function InboundsPage() {
     },
     [dbInbounds, projectChildThroughMaster],
   );
-
   const findClientIndex = useCallback((dbInbound: DBInbound, client: ClientMatchTarget | null) => {
     if (!client) return 0;
     const settings = coerceInboundJsonField(dbInbound.settings) as {
@@ -333,20 +249,13 @@ export default function InboundsPage() {
     });
     return idx >= 0 ? idx : 0;
   }, []);
-
   const exportInboundLinks = useCallback(
     (dbInbound: DBInbound) => {
       const projected = checkFallback(dbInbound);
-      const hostOverride = hostOverrideFor(dbInbound);
+      const hostOverride = '';
       const fallbackHostname = preferPublicHost(window.location.hostname, subSettings.publicHost);
       const genInput = {
-        inbound: withHostEndpoints(
-          inboundFromDb(projected),
-          dbInbound.id,
-          hosts,
-          hostOverride,
-          fallbackHostname,
-        ),
+        inbound: inboundFromDb(projected),
         remark: projected.remark,
         hostOverride,
         fallbackHostname,
@@ -378,9 +287,8 @@ export default function InboundsPage() {
         tabs,
       });
     },
-    [checkFallback, hostOverrideFor, hosts, subSettings.publicHost, openText, t],
+    [checkFallback, subSettings.publicHost, openText, t],
   );
-
   const exportInboundClipboard = useCallback(
     (dbInbound: DBInbound) => {
       openText({
@@ -391,11 +299,12 @@ export default function InboundsPage() {
     },
     [openText, t],
   );
-
   const exportInboundSubs = useCallback(
     (dbInbound: DBInbound) => {
       const settings = coerceInboundJsonField(dbInbound.settings) as {
-        clients?: { subId?: string }[];
+        clients?: {
+          subId?: string;
+        }[];
       };
       const clients = settings.clients || [];
       const subLinks: string[] = [];
@@ -412,7 +321,6 @@ export default function InboundsPage() {
     },
     [subSettings, openText, t],
   );
-
   const exportAllLinks = useCallback(async () => {
     const msg = await HttpUtil.get('/panel/api/inbounds/allLinks');
     const links = msg?.success && Array.isArray(msg.obj) ? (msg.obj as string[]) : [];
@@ -422,14 +330,17 @@ export default function InboundsPage() {
       fileName: t('pages.inbounds.exportAllLinksFileName'),
     });
   }, [openText, t]);
-
   const exportAllSubs = useCallback(async () => {
     const hydrated = await Promise.all(
       dbInbounds.map((ib) => hydrateInbound(ib.id).then((r) => r ?? ib)),
     );
     const out: string[] = [];
     for (const ib of hydrated) {
-      const settings = coerceInboundJsonField(ib.settings) as { clients?: { subId?: string }[] };
+      const settings = coerceInboundJsonField(ib.settings) as {
+        clients?: {
+          subId?: string;
+        }[];
+      };
       const clients = settings.clients || [];
       for (const c of clients) {
         if (c.subId && subSettings.subURI) {
@@ -443,7 +354,6 @@ export default function InboundsPage() {
       fileName: t('pages.inbounds.exportAllSubsFileName'),
     });
   }, [dbInbounds, hydrateInbound, subSettings, openText, t]);
-
   const importInbound = useCallback(() => {
     openPrompt({
       title: t('pages.inbounds.importInbound'),
@@ -461,19 +371,16 @@ export default function InboundsPage() {
       },
     });
   }, [openPrompt, refresh, t]);
-
   const onAddInbound = useCallback(() => {
     setFormMode('add');
     setFormDbInbound(null);
     setFormOpen(true);
   }, []);
-
   const openEdit = useCallback((dbInbound: DBInbound) => {
     setFormMode('edit');
     setFormDbInbound(dbInbound);
     setFormOpen(true);
   }, []);
-
   const confirmDelete = useCallback(
     (dbInbound: DBInbound) => {
       modal.confirm({
@@ -490,7 +397,6 @@ export default function InboundsPage() {
     },
     [modal, refresh, t],
   );
-
   const confirmBulkDelete = useCallback(
     (ids: number[]) =>
       new Promise<boolean>((resolve) => {
@@ -512,7 +418,10 @@ export default function InboundsPage() {
             );
             const obj = (msg?.obj ?? {}) as {
               deleted?: number;
-              skipped?: { id: number; reason: string }[];
+              skipped?: {
+                id: number;
+                reason: string;
+              }[];
             };
             const ok = obj.deleted ?? 0;
             const skipped = obj.skipped ?? [];
@@ -534,7 +443,6 @@ export default function InboundsPage() {
       }),
     [modal, refresh, t, messageApi],
   );
-
   const confirmResetTraffic = useCallback(
     (dbInbound: DBInbound) => {
       modal.confirm({
@@ -550,7 +458,6 @@ export default function InboundsPage() {
     },
     [modal, refresh, t],
   );
-
   const confirmDelAllClients = useCallback(
     (dbInbound: DBInbound) => {
       const count = clientCount[dbInbound.id]?.clients || 0;
@@ -568,19 +475,8 @@ export default function InboundsPage() {
     },
     [modal, refresh, t, clientCount],
   );
-
   const confirmClone = useCallback(
     (dbInbound: DBInbound) => {
-      // Node-eligible protocol with at least one deployable node → open the
-      // target picker; anything else keeps the original one-click local clone.
-      if (
-        NODE_ELIGIBLE_PROTOCOLS[dbInbound.protocol] &&
-        (nodesList || []).some((n) => n.enable && n.status === 'online')
-      ) {
-        setCloneSource(dbInbound);
-        setCloneOpen(true);
-        return;
-      }
       modal.confirm({
         title: t('pages.inbounds.cloneConfirmTitle', { remark: dbInbound.remark }),
         content: t('pages.inbounds.cloneConfirmContent'),
@@ -589,15 +485,14 @@ export default function InboundsPage() {
         onOk: async () => {
           const msg = await HttpUtil.post(
             '/panel/api/inbounds/add',
-            buildClonePayload(dbInbound, RandomUtil.randomInteger(10000, 60000), null),
+            buildClonePayload(dbInbound, pickClonePort(clonePortsInUse)),
           );
           if (msg?.success) await refresh();
         },
       });
     },
-    [modal, nodesList, refresh, t],
+    [modal, t, refresh, clonePortsInUse],
   );
-
   const onGeneralAction = useCallback(
     (key: GeneralAction) => {
       switch (key) {
@@ -627,7 +522,6 @@ export default function InboundsPage() {
     },
     [modal, importInbound, exportAllLinks, exportAllSubs, refresh, messageApi, t],
   );
-
   const onRowAction = useCallback(
     async ({ key, dbInbound }: { key: RowAction; dbInbound: DBInbound }) => {
       // Actions that touch per-client secrets (uuid, password, flow, ...) need
@@ -692,10 +586,6 @@ export default function InboundsPage() {
           setDetachSource(target);
           setDetachOpen(true);
           break;
-        case 'addToGroup':
-          setGroupSource(target);
-          setGroupOpen(true);
-          break;
         case 'clone':
           confirmClone(target);
           break;
@@ -718,7 +608,6 @@ export default function InboundsPage() {
       messageApi,
     ],
   );
-
   return (
     <ConfigProvider theme={antdThemeConfig}>
       {messageContextHolder}
@@ -728,25 +617,19 @@ export default function InboundsPage() {
 
         <Layout className="content-shell">
           <Layout.Content id="content-layout" className="content-area">
-            <Spin
-              spinning={!fetched || !hostsFetched}
-              delay={200}
-              description={t('loading')}
-              size="large"
-            >
-              {!fetched || !hostsFetched ? (
+            <Spin spinning={!fetched || !true} delay={200} description={t('loading')} size="large">
+              {!fetched || !true ? (
                 <div className="loading-spacer" />
-              ) : fetchError || hostsError ? (
+              ) : fetchError || '' ? (
                 <Result
                   status="error"
                   title={t('somethingWentWrong')}
-                  subTitle={fetchError || hostsError}
+                  subTitle={fetchError || ''}
                   extra={
                     <Button
                       type="primary"
                       onClick={() => {
                         void refresh();
-                        void refetchHosts();
                       }}
                     >
                       {t('refresh')}
@@ -801,9 +684,6 @@ export default function InboundsPage() {
                       pageSize={pageSize}
                       isMobile={isMobile}
                       subEnable={subSettings.enable}
-                      nodesById={nodesById}
-                      hasActiveNode={showNodeInfo}
-                      hosts={hosts}
                       onAddInbound={onAddInbound}
                       onGeneralAction={onGeneralAction}
                       onRowAction={({ key, dbInbound }) =>
@@ -826,8 +706,6 @@ export default function InboundsPage() {
             mode={formMode}
             dbInbound={formDbInbound}
             dbInbounds={dbInbounds}
-            availableNodes={nodesList}
-            availableNodesFetched={nodesFetched}
           />
         </LazyMount>
         <LazyMount when={infoOpen}>
@@ -841,9 +719,7 @@ export default function InboundsPage() {
             ipLimitEnable={ipLimitEnable}
             tgBotEnable={tgBotEnable}
             subSettings={subSettings}
-            hosts={hosts}
             lastOnlineMap={lastOnlineMap}
-            nodeAddress={infoNodeAddress}
           />
         </LazyMount>
         <LazyMount when={qrOpen}>
@@ -852,9 +728,7 @@ export default function InboundsPage() {
             onClose={() => setQrOpen(false)}
             dbInbound={qrDbInbound}
             client={null}
-            nodeAddress={qrNodeAddress}
             subSettings={subSettings}
-            hosts={hosts}
           />
         </LazyMount>
         <LazyMount when={attachOpen}>
@@ -880,24 +754,6 @@ export default function InboundsPage() {
             onClose={() => setDetachOpen(false)}
             onDetached={refresh}
             source={detachSource}
-          />
-        </LazyMount>
-        <LazyMount when={groupOpen}>
-          <AddClientsToGroupModal
-            open={groupOpen}
-            onClose={() => setGroupOpen(false)}
-            onAdded={refresh}
-            source={groupSource}
-          />
-        </LazyMount>
-        <LazyMount when={cloneOpen}>
-          <CloneInboundModal
-            open={cloneOpen}
-            onClose={() => setCloneOpen(false)}
-            onCloned={refresh}
-            dbInbound={cloneSource}
-            nodes={nodesList || []}
-            portsInUse={clonePortsInUse}
           />
         </LazyMount>
 

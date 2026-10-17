@@ -3,13 +3,13 @@ package service
 import (
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/util/common"
 	"github.com/8bit-warrior/Miniray/internal/xray"
-
-	"gorm.io/gorm"
 )
 
 func (s *ClientService) ResetTrafficByEmail(inboundSvc *InboundService, email string) (bool, error) {
@@ -74,13 +74,9 @@ func (s *ClientService) BulkResetTraffic(inboundSvc *InboundService, emails []st
 		return 0, err
 	}
 	affected := 0
-	var resetNodes []int
 	err = submitTrafficWrite(func() error {
 		db := database.GetDB()
 		return db.Transaction(func(tx *gorm.DB) error {
-			if err := adjustGroupBaselinesForRemovedTraffic(tx, cleanEmails); err != nil {
-				return err
-			}
 			for _, batch := range chunkStrings(cleanEmails, sqlInChunk) {
 				res := tx.Model(xray.ClientTraffic{}).
 					Where("email IN ?", batch).
@@ -90,24 +86,15 @@ func (s *ClientService) BulkResetTraffic(inboundSvc *InboundService, emails []st
 				}
 				affected += int(res.RowsAffected)
 			}
-			if err := clearGlobalTraffic(tx, cleanEmails...); err != nil {
-				return err
-			}
-			for _, batch := range chunkStrings(cleanEmails, sqlInChunk) {
-				if err := tx.Where("email IN ?", batch).Delete(&model.NodeClientTraffic{}).Error; err != nil {
-					return err
-				}
-			}
-			var qErr error
-			resetNodes, qErr = queueNodeResets(tx, cleanEmails)
-			return qErr
+
+			return nil
 		})
 	})
 	if err != nil {
 		return 0, err
 	}
 	inboundSvc.resetMtprotoClientQuotas(cleanEmails)
-	inboundSvc.deliverNodeResetsNow(resetNodes)
+
 	// After the zeroing, as in ResetTrafficByEmail: enabling a still-depleted
 	// client first lets the next traffic tick switch it off again.
 	for _, e := range cleanEmails {
@@ -125,24 +112,21 @@ func (s *ClientService) BulkResetTraffic(inboundSvc *InboundService, emails []st
 }
 
 func (s *ClientService) ResetAllClientTraffics(inboundSvc *InboundService, id int) error {
-	var resetNodes []int
 	var resetEmails []string
 	err := submitTrafficWrite(func() error {
 		var inner error
-		resetEmails, resetNodes, inner = s.resetAllClientTrafficsLocked(id)
+		resetEmails, inner = s.resetAllClientTrafficsLocked(id)
 		return inner
 	})
 	if err == nil {
 		inboundSvc.resetMtprotoClientQuotas(resetEmails)
-		inboundSvc.deliverNodeResetsNow(resetNodes)
 	}
 	return err
 }
 
-func (s *ClientService) resetAllClientTrafficsLocked(id int) ([]string, []int, error) {
+func (s *ClientService) resetAllClientTrafficsLocked(id int) ([]string, error) {
 	db := database.GetDB()
 	now := time.Now().Unix() * 1000
-	var resetNodes []int
 	var reset []string
 
 	if err := db.Transaction(func(tx *gorm.DB) error {
@@ -168,30 +152,12 @@ func (s *ClientService) resetAllClientTrafficsLocked(id int) ([]string, []int, e
 		}
 		reset = resetEmails
 
-		if err := adjustGroupBaselinesForRemovedTraffic(tx, resetEmails); err != nil {
-			return err
-		}
-
 		result := tx.Model(xray.ClientTraffic{}).
 			Where("email IN ?", resetEmails).
 			Updates(map[string]any{"enable": true, "up": 0, "down": 0})
 
 		if result.Error != nil {
 			return result.Error
-		}
-
-		if err := clearGlobalTraffic(tx, resetEmails...); err != nil {
-			return err
-		}
-
-		for _, batch := range chunkStrings(resetEmails, sqlInChunk) {
-			if err := tx.Where("email IN ?", batch).Delete(&model.NodeClientTraffic{}).Error; err != nil {
-				return err
-			}
-		}
-		var qErr error
-		if resetNodes, qErr = queueNodeResets(tx, resetEmails); qErr != nil {
-			return qErr
 		}
 
 		inboundWhereText := "id "
@@ -207,14 +173,13 @@ func (s *ClientService) resetAllClientTrafficsLocked(id int) ([]string, []int, e
 
 		return result.Error
 	}); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return reset, resetNodes, nil
+	return reset, nil
 }
 
 func (s *ClientService) ResetAllTraffics() (bool, error) {
 	var affected int64
-	var resetNodes []int
 	err := submitTrafficWrite(func() error {
 		return database.GetDB().Transaction(func(tx *gorm.DB) error {
 			res := tx.Model(&xray.ClientTraffic{}).
@@ -224,15 +189,8 @@ func (s *ClientService) ResetAllTraffics() (bool, error) {
 				return res.Error
 			}
 			affected = res.RowsAffected
-			if err := tx.Where("1 = 1").Delete(&model.ClientGlobalTraffic{}).Error; err != nil {
-				return err
-			}
-			if err := tx.Where("1 = 1").Delete(&model.NodeClientTraffic{}).Error; err != nil {
-				return err
-			}
-			var qErr error
-			resetNodes, qErr = queueNodeResets(tx, nil)
-			return qErr
+
+			return nil
 		})
 	})
 	if err != nil {
@@ -240,6 +198,6 @@ func (s *ClientService) ResetAllTraffics() (bool, error) {
 	}
 	inbounds := &InboundService{}
 	inbounds.resetAllMtprotoQuotas()
-	inbounds.deliverNodeResetsNow(resetNodes)
+
 	return affected > 0, nil
 }

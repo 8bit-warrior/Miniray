@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	"go.uber.org/atomic"
+
 	"github.com/8bit-warrior/Miniray/internal/amneziawg"
 	"github.com/8bit-warrior/Miniray/internal/amneziawgnet"
 	"github.com/8bit-warrior/Miniray/internal/config"
@@ -20,8 +22,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/util/json_util"
 	"github.com/8bit-warrior/Miniray/internal/util/maskcompat"
 	"github.com/8bit-warrior/Miniray/internal/xray"
-
-	"go.uber.org/atomic"
 )
 
 var (
@@ -83,8 +83,8 @@ func currentXrayProcess() *xray.Process {
 type XrayService struct {
 	inboundService InboundService
 	settingService SettingService
-	nodeService    NodeService
-	xrayAPI        xray.XrayAPI
+
+	xrayAPI xray.XrayAPI
 }
 
 // IsXrayRunning checks if the Xray process is currently running.
@@ -200,9 +200,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		if !inbound.Enable {
 			continue
 		}
-		if inbound.NodeID != nil {
-			continue
-		}
+
 		if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == model.TUIC {
 			continue
 		}
@@ -350,13 +348,6 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 
 			delete(stream, "externalProxy")
 
-			// finalmask.tcp + REALITY panics Xray-core on the first connection
-			// (XTLS/Xray-core#6453). AddInbound/UpdateInbound reject this
-			// combination at save time, but a row saved before that guard
-			// existed (upgrade, node sync, restored backup, direct DB edit)
-			// would still crash Xray on the next restart without this — drop
-			// it here too, the same way liftXhttpSessionIDKeys and
-			// HealShadowsocksClientMethods heal other legacy data in place.
 			if len(finalMaskRealityTcpMasks(stream)) > 0 {
 				logger.Warningf("Inbound %q: dropping finalmask, incompatible with REALITY security (crashes Xray-core, see XTLS/Xray-core#6453)", inbound.Tag)
 				delete(stream, "finalmask")
@@ -411,7 +402,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 	// balancer) is a valid rule target.
 	for i := range inbounds {
 		inbound := inbounds[i]
-		if inbound.Protocol != model.MTProto || !inbound.Enable || inbound.NodeID != nil {
+		if inbound.Protocol != model.MTProto || !inbound.Enable {
 			continue
 		}
 		injectMtprotoEgress(xrayConfig, inbound)
@@ -445,13 +436,6 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		logger.Warning("read panelOutbound setting failed:", err)
 	} else if egressTag != "" {
 		injectPanelEgress(xrayConfig, egressTag)
-	}
-
-	nodes, err := s.nodeService.GetAll()
-	if err != nil {
-		logger.Warning("read nodes for egress injection failed:", err)
-	} else {
-		injectNodeEgresses(xrayConfig, nodes)
 	}
 
 	return xrayConfig, nil
@@ -551,92 +535,6 @@ func outboundTagExists(outbounds json_util.RawMessage, tag string) bool {
 
 func routingTargetExists(routing map[string]any, outbounds json_util.RawMessage, tag string) bool {
 	return routingTagIsBalancer(routing, tag) || outboundTagExists(outbounds, tag)
-}
-
-// NodeEgressInboundTag returns the loopback SOCKS inbound tag for a given node.
-func NodeEgressInboundTag(nodeID int) string {
-	return fmt.Sprintf("node-egress-%d", nodeID)
-}
-
-// nodeEgressBasePort is the first port tried for node egress bridges.
-const nodeEgressBasePort = 62800
-
-// injectNodeEgresses appends a loopback SOCKS inbound per enabled node that has
-// an OutboundTag, and prepends a routing rule sending that inbound's traffic to
-// the selected outbound tag. These bridges are hot-appliable.
-func injectNodeEgresses(cfg *xray.Config, nodes []*model.Node) {
-	routing := map[string]any{}
-	if len(cfg.RouterConfig) > 0 {
-		if err := json.Unmarshal(cfg.RouterConfig, &routing); err != nil {
-			logger.Warning("node egress: routing section is unparsable, skipping injection:", err)
-			return
-		}
-	}
-
-	used := make(map[int]struct{}, len(cfg.InboundConfigs))
-	usedTags := make(map[string]struct{}, len(cfg.InboundConfigs))
-	for i := range cfg.InboundConfigs {
-		used[cfg.InboundConfigs[i].Port] = struct{}{}
-		usedTags[cfg.InboundConfigs[i].Tag] = struct{}{}
-	}
-
-	rules, _ := routing["rules"].([]any)
-	newRules := make([]any, 0)
-
-	for _, n := range nodes {
-		if !n.Enable || n.OutboundTag == "" {
-			continue
-		}
-		if !routingTargetExists(routing, cfg.OutboundConfigs, n.OutboundTag) {
-			logger.Warning("node egress: target tag [", n.OutboundTag, "] not found, skipping node [", n.Id, "]")
-			continue
-		}
-		tag := NodeEgressInboundTag(n.Id)
-		if _, exists := usedTags[tag]; exists {
-			logger.Warning("node egress: inbound tag [", tag, "] already exists, skipping")
-			continue
-		}
-		usedTags[tag] = struct{}{}
-
-		rule := map[string]any{
-			"type":       "field",
-			"inboundTag": []any{tag},
-		}
-		if routingTagIsBalancer(routing, n.OutboundTag) {
-			rule["balancerTag"] = n.OutboundTag
-		} else {
-			rule["outboundTag"] = n.OutboundTag
-		}
-		newRules = append(newRules, rule)
-
-		port := nodeEgressBasePort + n.Id
-		for {
-			if _, taken := used[port]; !taken {
-				break
-			}
-			port++
-		}
-		used[port] = struct{}{}
-
-		cfg.InboundConfigs = append(cfg.InboundConfigs, xray.InboundConfig{
-			Listen:   json_util.RawMessage(`"127.0.0.1"`),
-			Port:     port,
-			Protocol: "socks",
-			Settings: json_util.RawMessage(`{"auth":"noauth","udp":false}`),
-			Tag:      tag,
-		})
-	}
-
-	if len(newRules) == 0 {
-		return
-	}
-	routing["rules"] = append(newRules, rules...)
-	newRouting, err := json.Marshal(routing)
-	if err != nil {
-		logger.Warning("node egress: failed to rebuild routing section, skipping injection:", err)
-		return
-	}
-	cfg.RouterConfig = json_util.RawMessage(newRouting)
 }
 
 // routingTagIsBalancer reports whether tag names a balancer in the parsed
@@ -755,7 +653,7 @@ func injectAmneziawgnetSocks(cfg *xray.Config, inbounds []*model.Inbound) {
 	}
 
 	for _, inbound := range inbounds {
-		if inbound.Protocol != model.AmneziaWG || !inbound.Enable || inbound.NodeID != nil {
+		if inbound.Protocol != model.AmneziaWG || !inbound.Enable {
 			continue
 		}
 		inst, ok := amneziawg.InstanceFromInbound(inbound)
@@ -807,7 +705,7 @@ func injectTuicSocks(cfg *xray.Config, inbounds []*model.Inbound) {
 	}
 
 	for _, inbound := range inbounds {
-		if inbound.Protocol != model.TUIC || !inbound.Enable || inbound.NodeID != nil {
+		if inbound.Protocol != model.TUIC || !inbound.Enable {
 			continue
 		}
 		if _, taken := existingTags[inbound.Tag]; taken {
@@ -827,49 +725,10 @@ func injectTuicSocks(cfg *xray.Config, inbounds []*model.Inbound) {
 	}
 }
 
-// amneziawgV6EgressTag returns the stable, globally-unique freedom outbound
-// tag for one peer's IPv6 source-identity egress. Stable across config
-// regenerations (a pure function of two stable identifiers), so
-// internal/xray/hot_diff.go's tag-keyed outbound/routing diffing recognizes
-// "unchanged" rather than remove+recreate on every poll. The inbound.Id
-// prefix is defense in depth, not load-bearing on its own: email is already
-// enforced globally unique across the whole panel's client table
-// (model.ClientRecord.Email has a gorm uniqueIndex) — kept anyway since it
-// costs nothing and makes the tag self-describing, matching
-// NodeEgressInboundTag's own style.
 func amneziawgV6EgressTag(inboundID int, email string) string {
 	return fmt.Sprintf("amneziawg-v6-%d-%s", inboundID, email)
 }
 
-// injectAmneziawgV6Egress gives every enabled, non-node-hosted AmneziaWG
-// peer with an IPv6 AllowedIPs entry its own single-purpose freedom
-// outbound, bound via sendThrough to that exact address, plus a routing
-// rule sending only that peer's IPv6-destined traffic through it — restoring the
-// per-client public IPv6 identity the hard cutover temporarily dropped
-// (Phase 3.5 of the migration plan). Scoped to outbound source identity
-// only: it depends on internal/amneziawgnet's own alias mechanism actually
-// giving the host that address at the OS level (see v6alias.go's
-// V6AliasesActive, the exact same gate this function uses below) — without
-// that, sendThrough fails to bind and every connection through it errors
-// outright (freedom.go's dial failure); there is no fallback outbound.
-//
-// The routing rule matches both inboundTag and user: SocksInboundSettings
-// (used by injectAmneziawgnetSocks above) already authenticates each
-// connection as the peer's own email via stock SOCKS5 auth, and a stock
-// Xray SOCKS5 inbound sets that connection's stats/routing identity from
-// the authenticated username — so "user" reliably isolates exactly one
-// peer's traffic, the same building block Finding 3 of the migration plan
-// already established for per-client stats.
-//
-// Modeled on injectNodeEgresses (the established N-per-slice inbound+rule
-// precedent, not injectAmneziawgnetSocks itself, which only ever emits a
-// single inbound and never touches outbounds/routing) and
-// mergeSubscriptionOutbounds's unmarshal-append-remarshal pattern for
-// cfg.OutboundConfigs. Synthetic rules are prepended ahead of whatever's
-// already in the routing rules array, the same pattern injectNodeEgresses/
-// injectMtprotoEgress already use for their own always-must-win infra
-// rules — this never touches the admin's own saved Routing-page rule
-// order.
 func injectAmneziawgV6Egress(cfg *xray.Config, inbounds []*model.Inbound) {
 	// Protocol is checked alongside Tag, not just Tag alone: a tag collision
 	// with some unrelated (non-socks) inbound must not be mistaken for this
@@ -909,7 +768,7 @@ func injectAmneziawgV6Egress(cfg *xray.Config, inbounds []*model.Inbound) {
 	newOutbounds := make([]any, 0)
 
 	for _, inbound := range inbounds {
-		if inbound.Protocol != model.AmneziaWG || !inbound.Enable || inbound.NodeID != nil {
+		if inbound.Protocol != model.AmneziaWG || !inbound.Enable {
 			continue
 		}
 		if _, live := liveInboundTags[inbound.Tag]; !live {

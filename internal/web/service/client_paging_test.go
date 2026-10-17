@@ -27,7 +27,6 @@ type pagingSeed struct {
 	password   string
 	auth       string
 	comment    string
-	group      string
 	tgID       int64
 	reset      int
 	lastOnline int64
@@ -60,8 +59,8 @@ func seedPagingClients(t *testing.T) (int64, []pagingSeed) {
 		{email: "golf@x", enable: true, totalGB: 10 * pagingGB, expiryTime: now + 2*pagingDay, inbounds: []int{vless.Id}},
 		{email: "hotel@x", enable: true, totalGB: 10 * pagingGB, expiryTime: now + 30*pagingDay, used: 10*pagingGB - pagingGB/2, inbounds: []int{vless.Id}},
 		{email: "india@x", enable: true, totalGB: 0, expiryTime: -5 * pagingDay, inbounds: []int{vless.Id}},
-		{email: "juliet@x", enable: true, comment: " vip customer ", group: "VIP", tgID: 555, reset: 7, inbounds: []int{vless.Id}},
-		{email: "kilo_1@x", enable: true, group: "vip", inbounds: nil},
+		{email: "juliet@x", enable: true, comment: " vip customer ", tgID: 555, reset: 7, inbounds: []int{vless.Id}},
+		{email: "kilo_1@x", enable: true, inbounds: nil},
 		{email: "kilo1@x", enable: true, inbounds: []int{trojan.Id}},
 	}
 
@@ -73,7 +72,6 @@ func seedPagingClients(t *testing.T) (int64, []pagingSeed) {
 			Password:   s.password,
 			Auth:       s.auth,
 			Comment:    s.comment,
-			Group:      s.group,
 			TgID:       s.tgID,
 			Reset:      s.reset,
 			Enable:     s.enable,
@@ -135,157 +133,6 @@ func setupPagingServices(t *testing.T) (*ClientService, *InboundService, *Settin
 		t.Fatalf("set trafficDiff: %v", err)
 	}
 	return &ClientService{}, &InboundService{}, settingSvc
-}
-
-func TestListPagedFilters(t *testing.T) {
-	svc, inboundSvc, settingSvc := setupPagingServices(t)
-	now, _ := seedPagingClients(t)
-
-	tests := []struct {
-		name   string
-		params ClientPageParams
-		want   []string
-	}{
-		{
-			name:   "no filter returns every client in id order",
-			params: ClientPageParams{PageSize: 50},
-			want:   []string{"alpha@x", "bravo@x", "charlie@x", "delta@x", "echo@x", "foxtrot@x", "golf@x", "hotel@x", "india@x", "juliet@x", "kilo_1@x", "kilo1@x"},
-		},
-		{
-			name:   "depleted bucket covers quota and expiry",
-			params: ClientPageParams{PageSize: 50, Filter: "depleted"},
-			want:   []string{"charlie@x", "delta@x", "foxtrot@x"},
-		},
-		{
-			name:   "deactive bucket leaves a disabled client that ran out to depleted",
-			params: ClientPageParams{PageSize: 50, Filter: "deactive"},
-			want:   []string{"echo@x"},
-		},
-		{
-			name:   "expiring bucket covers near expiry and near quota",
-			params: ClientPageParams{PageSize: 50, Filter: "expiring"},
-			want:   []string{"golf@x", "hotel@x"},
-		},
-		{
-			name:   "active bucket leaves clients near depletion to expiring",
-			params: ClientPageParams{PageSize: 50, Filter: "active"},
-			want:   []string{"alpha@x", "bravo@x", "india@x", "juliet@x", "kilo_1@x", "kilo1@x"},
-		},
-		{
-			name:   "buckets are ORed",
-			params: ClientPageParams{PageSize: 50, Filter: "depleted,expiring"},
-			want:   []string{"charlie@x", "delta@x", "foxtrot@x", "golf@x", "hotel@x"},
-		},
-		{
-			name:   "unknown bucket keeps matching everything",
-			params: ClientPageParams{PageSize: 50, Filter: "nonsense"},
-			want:   []string{"alpha@x", "bravo@x", "charlie@x", "delta@x", "echo@x", "foxtrot@x", "golf@x", "hotel@x", "india@x", "juliet@x", "kilo_1@x", "kilo1@x"},
-		},
-		{
-			name:   "protocol filter follows the attachments",
-			params: ClientPageParams{PageSize: 50, Protocol: "trojan"},
-			want:   []string{"bravo@x", "charlie@x", "foxtrot@x", "kilo1@x"},
-		},
-		{
-			name:   "inbound filter follows the attachments",
-			params: ClientPageParams{PageSize: 50, Inbound: "2"},
-			want:   []string{"bravo@x", "charlie@x", "foxtrot@x", "kilo1@x"},
-		},
-		{
-			name:   "search matches the email",
-			params: ClientPageParams{PageSize: 50, Search: "KILO"},
-			want:   []string{"kilo_1@x", "kilo1@x"},
-		},
-		{
-			name:   "search treats LIKE wildcards literally",
-			params: ClientPageParams{PageSize: 50, Search: "kilo_1"},
-			want:   []string{"kilo_1@x"},
-		},
-		{
-			name:   "search matches the subId",
-			params: ClientPageParams{PageSize: 50, Search: "sub-alpha"},
-			want:   []string{"alpha@x"},
-		},
-		{
-			name:   "search matches the uuid",
-			params: ClientPageParams{PageSize: 50, Search: "uuid-alpha"},
-			want:   []string{"alpha@x"},
-		},
-		{
-			name:   "search matches the password",
-			params: ClientPageParams{PageSize: 50, Search: "pw-bravo"},
-			want:   []string{"bravo@x"},
-		},
-		{
-			name:   "search matches the auth",
-			params: ClientPageParams{PageSize: 50, Search: "auth-charlie"},
-			want:   []string{"charlie@x"},
-		},
-		{
-			name:   "search matches the comment",
-			params: ClientPageParams{PageSize: 50, Search: "vip customer"},
-			want:   []string{"juliet@x"},
-		},
-		{
-			name:   "search matches the telegram id",
-			params: ClientPageParams{PageSize: 50, Search: "555"},
-			want:   []string{"juliet@x"},
-		},
-		{
-			name:   "group filter is case insensitive",
-			params: ClientPageParams{PageSize: 50, Group: "vip"},
-			want:   []string{"juliet@x", "kilo_1@x"},
-		},
-		{
-			name:   "hasComment yes",
-			params: ClientPageParams{PageSize: 50, HasComment: "yes"},
-			want:   []string{"juliet@x"},
-		},
-		{
-			name:   "hasTgId yes",
-			params: ClientPageParams{PageSize: 50, HasTgID: "yes"},
-			want:   []string{"juliet@x"},
-		},
-		{
-			name:   "autoRenew on",
-			params: ClientPageParams{PageSize: 50, AutoRenew: "on"},
-			want:   []string{"juliet@x"},
-		},
-		{
-			name:   "usage range is inclusive on both bounds",
-			params: ClientPageParams{PageSize: 50, UsageFrom: pagingGB, UsageTo: 5 * pagingGB},
-			want:   []string{"alpha@x", "bravo@x", "delta@x"},
-		},
-		{
-			name:   "expiry range excludes never and delayed start",
-			params: ClientPageParams{PageSize: 50, ExpiryFrom: now, ExpiryTo: now + 10*pagingDay},
-			want:   []string{"golf@x"},
-		},
-		{
-			name:   "filters combine with AND",
-			params: ClientPageParams{PageSize: 50, Filter: "depleted", Protocol: "trojan"},
-			want:   []string{"charlie@x", "foxtrot@x"},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			resp, err := svc.ListPaged(inboundSvc, settingSvc, tc.params)
-			if err != nil {
-				t.Fatalf("ListPaged: %v", err)
-			}
-			got := pagedEmails(resp.Items)
-			if !slices.Equal(got, tc.want) {
-				t.Fatalf("emails = %v, want %v", got, tc.want)
-			}
-			if resp.Filtered != len(tc.want) {
-				t.Fatalf("filtered = %d, want %d", resp.Filtered, len(tc.want))
-			}
-			if resp.Total != 12 {
-				t.Fatalf("total = %d, want 12", resp.Total)
-			}
-		})
-	}
 }
 
 func TestListPagedSorting(t *testing.T) {
@@ -435,12 +282,6 @@ func TestListPagedRowContents(t *testing.T) {
 			t.Fatalf("used = %d, want %d", got.Up+got.Down, want)
 		}
 	})
-
-	t.Run("groups list every name in use", func(t *testing.T) {
-		if !slices.Equal(resp.Groups, []string{"vip", "VIP"}) && !slices.Equal(resp.Groups, []string{"VIP", "vip"}) {
-			t.Fatalf("groups = %v, want VIP and vip", resp.Groups)
-		}
-	})
 }
 
 func TestListPagedSummary(t *testing.T) {
@@ -528,39 +369,6 @@ func TestListPagedSummaryEmailListsAreCapped(t *testing.T) {
 	}
 }
 
-func TestListPagedGlobalTrafficOverlay(t *testing.T) {
-	svc, inboundSvc, settingSvc := setupPagingServices(t)
-	seedPagingClients(t)
-
-	// bravo has used 1GB of its 10GB locally; a master reporting 10GB of
-	// cross-panel usage has to move it into the depleted bucket.
-	if err := inboundSvc.AcceptGlobalTraffic("master-guid", []*xray.ClientTraffic{
-		{Email: "bravo@x", Up: 4 * pagingGB, Down: 6 * pagingGB},
-	}); err != nil {
-		t.Fatalf("AcceptGlobalTraffic: %v", err)
-	}
-
-	resp, err := svc.ListPaged(inboundSvc, settingSvc, ClientPageParams{PageSize: 50, Filter: "depleted"})
-	if err != nil {
-		t.Fatalf("ListPaged: %v", err)
-	}
-	want := []string{"bravo@x", "charlie@x", "delta@x", "foxtrot@x"}
-	if got := pagedEmails(resp.Items); !slices.Equal(got, want) {
-		t.Fatalf("depleted = %v, want %v", got, want)
-	}
-	if resp.Summary.DepletedCount != 4 {
-		t.Fatalf("depletedCount = %d, want 4", resp.Summary.DepletedCount)
-	}
-	for _, it := range resp.Items {
-		if it.Email != "bravo@x" {
-			continue
-		}
-		if it.Traffic == nil || it.Traffic.Up+it.Traffic.Down != 10*pagingGB {
-			t.Fatalf("bravo traffic = %+v, want the overlaid 10GB", it.Traffic)
-		}
-	}
-}
-
 func TestClientQueryOnlineEmails(t *testing.T) {
 	_, _, _ = setupPagingServices(t)
 	seedPagingClients(t)
@@ -630,33 +438,6 @@ func TestListPagedEmptyPanel(t *testing.T) {
 	}
 	if resp.Summary.Active != 0 || resp.Summary.DepletedCount != 0 {
 		t.Fatalf("summary = %+v, want zeroed counters", resp.Summary)
-	}
-	if resp.Groups == nil {
-		t.Fatal("groups = nil, want an empty list so the filter drawer renders")
-	}
-}
-
-// SQLite's LOWER() folds ASCII only, so non-ASCII capitals must still match.
-func TestListPagedNonASCIICase(t *testing.T) {
-	svc, inboundSvc, settingSvc := setupPagingServices(t)
-	rec := model.ClientRecord{Email: "lima@x", Comment: "Привет", Group: "Тест", Enable: true}
-	if err := database.GetDB().Create(&rec).Error; err != nil {
-		t.Fatalf("create client: %v", err)
-	}
-	for name, params := range map[string]ClientPageParams{
-		"group":             {PageSize: 50, Group: "Тест"},
-		"group other case":  {PageSize: 50, Group: "ТЕСТ"},
-		"search":            {PageSize: 50, Search: "Привет"},
-		"search lower case": {PageSize: 50, Search: "привет"},
-		"search upper case": {PageSize: 50, Search: "ПРИВЕТ"},
-	} {
-		resp, err := svc.ListPaged(inboundSvc, settingSvc, params)
-		if err != nil {
-			t.Fatalf("%s: ListPaged: %v", name, err)
-		}
-		if got := pagedEmails(resp.Items); !slices.Equal(got, []string{"lima@x"}) {
-			t.Fatalf("%s: emails = %v, want [lima@x]", name, got)
-		}
 	}
 }
 

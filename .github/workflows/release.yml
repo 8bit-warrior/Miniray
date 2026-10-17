@@ -13,6 +13,10 @@ jobs:
       passed: ${{ steps.build.outcome }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -20,6 +24,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Frontend dependencies
         run: npm ci
+        working-directory: frontend
+      - name: Verify generated API contracts
+        run: |
+          npm run gen --prefix frontend
+          git diff --exit-code -- frontend/src/generated frontend/public/openapi.json
+      - name: Lint and format frontend
+        run: npm run lint && npm run format:check
         working-directory: frontend
       - name: Typecheck
         run: npm run typecheck
@@ -29,6 +40,9 @@ jobs:
         working-directory: frontend
       - name: Test frontend
         run: npm test -- --run
+        working-directory: frontend
+      - name: Build Storybook
+        run: npm run build-storybook
         working-directory: frontend
       - name: Build static web assets
         id: build
@@ -52,8 +66,18 @@ jobs:
         with:
           name: frontend-dist
           path: internal/web/dist/
+      - name: Check installation scripts
+        run: bash -n install.sh update.sh miniray.sh
+      - name: Lint Go backend
+        run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run
       - name: Validate Go backend
-        run: go test ./...
+        run: go test -shuffle=on -count=1 ./...
+      - name: Test against the pinned Xray binary
+        run: |
+          curl -fL --retry 4 -o /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/download/v26.6.27/Xray-linux-64.zip
+          unzip -qo /tmp/xray.zip -d /tmp/xray
+          chmod +x /tmp/xray/xray
+          XRAY_E2E_BINARY=/tmp/xray/xray go test ./internal/xray -count=1
   packages:
     needs: [frontend, backend-tests]
     runs-on: ubuntu-24.04
@@ -136,13 +160,30 @@ jobs:
           path: miniray-${{ matrix.os }}-${{ matrix.arch }}.${{ matrix.artifact_ext }}
           if-no-files-found: error
           retention-days: 7
-  publish:
-    if: startsWith(github.ref, 'refs/tags/v')
+  systemd-acceptance:
     needs: [packages]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: miniray-*
+          path: packages
+          merge-multiple: true
+      - name: Prepare installer checksums
+        run: cd packages && sha256sum miniray-* > SHA256SUMS
+      - name: Install, migrate, update and recover on native systemd
+        run: sudo python3 tests/systemd_acceptance.py "$GITHUB_WORKSPACE/packages" "$GITHUB_WORKSPACE"
+  publish:
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'chore(release): v'))
+    needs: [packages, systemd-acceptance]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           pattern: miniray-*
@@ -159,4 +200,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/*             --title "Miniray $GITHUB_REF_NAME"             --notes "Miniray with pinned Xray-core v26.6.27. See included LICENSE. Test on non-production hosts before adoption."
+          VERSION=$(tr -d '\r\n' < internal/config/version)
+          TAG="v$VERSION"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then test "$GITHUB_REF_NAME" = "$TAG"; fi
+          gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "Miniray $TAG" \
+            --notes "SQLite-only Miniray with independent panel and proxy services, Xray-core v26.6.27, and selective legacy installation migration. Includes Linux amd64/arm64 and Windows amd64/arm64 packages. Installation and service lifecycle checks run before publication. See README.md for installation and LICENSE for licensing."

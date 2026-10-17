@@ -12,13 +12,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/8bit-warrior/Miniray/internal/database/model"
-	"github.com/8bit-warrior/Miniray/internal/util/crypto"
-	"github.com/8bit-warrior/Miniray/internal/xray"
 	"github.com/mattn/go-sqlite3"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"github.com/8bit-warrior/Miniray/internal/database/model"
+	"github.com/8bit-warrior/Miniray/internal/util/crypto"
+	"github.com/8bit-warrior/Miniray/internal/xray"
 )
 
 type LegacyImportResult struct {
@@ -89,7 +90,7 @@ func openLegacySQLite(path string) (*gorm.DB, *sql.DB, error) {
 		return nil, nil, err
 	}
 	var integrity string
-	if err := raw.QueryRow("PRAGMA integrity_check").Scan(&integrity); err != nil {
+	if err := raw.QueryRowContext(context.Background(), "PRAGMA integrity_check").Scan(&integrity); err != nil {
 		_ = raw.Close()
 		return nil, nil, err
 	}
@@ -239,7 +240,16 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 	defer raw.Close()
 
 	var inbounds []model.Inbound
-	if err := source.Find(&inbounds).Error; err != nil {
+	sourceInbounds := source.Model(&model.Inbound{})
+	if source.Migrator().HasColumn("inbounds", "node_id") {
+		var remoteCount int64
+		if err := sourceInbounds.Where("node_id IS NOT NULL AND node_id <> 0").Count(&remoteCount).Error; err != nil {
+			return result, err
+		}
+		result.SkippedRemoteInbounds = int(remoteCount)
+		sourceInbounds = source.Model(&model.Inbound{}).Where("node_id IS NULL OR node_id = 0")
+	}
+	if err := sourceInbounds.Find(&inbounds).Error; err != nil {
 		return result, err
 	}
 	var settings []model.Setting
@@ -358,10 +368,7 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 			result.Settings++
 		}
 		for _, src := range inbounds {
-			if src.NodeID != nil || src.OriginNodeGuid != "" {
-				result.SkippedRemoteInbounds++
-				continue
-			}
+
 			if !isSupportedLegacyInbound(src.Protocol) {
 				result.SkippedUnsupportedInbounds++
 				continue
@@ -403,8 +410,7 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 			if !linkedSourceClients[client.Id] {
 				continue
 			}
-			client.Group = ""
-			client.SyncOrphanedAt = 0
+
 			if err := tx.Create(&client).Error; err != nil {
 				return fmt.Errorf("import client %d: %w", client.Id, err)
 			}
@@ -450,7 +456,7 @@ func ImportLegacySQLite(srcPath, dstPath, legacyAssets string) (result LegacyImp
 					continue
 				}
 				record := client.ToRecord()
-				record.Group = ""
+
 				var existing model.ClientRecord
 				found := tx.Where("email = ?", record.Email).First(&existing)
 				if found.Error != nil && !errors.Is(found.Error, gorm.ErrRecordNotFound) {

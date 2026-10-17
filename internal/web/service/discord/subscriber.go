@@ -187,50 +187,6 @@ func (s *Subscriber) FormatEmbed(e eventbus.Event) (Embed, bool) {
 			Footer:    footer,
 		}, true
 
-	case eventbus.EventNodeDown:
-		fields := []EmbedField{
-			cleanField(tr("discord.fields.node"), e.Source, true),
-		}
-		var data *eventbus.NodeHealthData
-		switch d := e.Data.(type) {
-		case *eventbus.NodeHealthData:
-			data = d
-		case eventbus.NodeHealthData:
-			data = &d
-		}
-		if data != nil && data.XrayError != "" {
-			fields = append(fields, cleanField(tr("discord.fields.error"), data.XrayError, false))
-		}
-		return Embed{
-			Title:     tr("discord.alerts.nodeDown"),
-			Color:     ColorRed,
-			Timestamp: ts,
-			Fields:    fields,
-			Footer:    footer,
-		}, true
-
-	case eventbus.EventNodeUp:
-		fields := []EmbedField{
-			cleanField(tr("discord.fields.node"), e.Source, true),
-		}
-		var data *eventbus.NodeHealthData
-		switch d := e.Data.(type) {
-		case *eventbus.NodeHealthData:
-			data = d
-		case eventbus.NodeHealthData:
-			data = &d
-		}
-		if data != nil && data.LatencyMs > 0 {
-			fields = append(fields, cleanField(tr("discord.fields.delay"), fmt.Sprintf("%dms", data.LatencyMs), true))
-		}
-		return Embed{
-			Title:     tr("discord.alerts.nodeUp"),
-			Color:     ColorGreen,
-			Timestamp: ts,
-			Fields:    fields,
-			Footer:    footer,
-		}, true
-
 	case eventbus.EventXrayCrash:
 		var fields []EmbedField
 		if e.Data != nil {

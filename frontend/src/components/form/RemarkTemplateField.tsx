@@ -70,14 +70,14 @@ export default function RemarkTemplateField({
       content={<RemarkVarPicker onPick={insertToken} variables={variables} />}
       trigger="click"
       placement="bottomRight"
-      title={t('pages.hosts.remarkVars.title')}
+      title={t('pages.settings.remarkVars.title')}
     >
-      <Tooltip title={t('pages.hosts.remarkVars.title')}>
+      <Tooltip title={t('pages.settings.remarkVars.title')}>
         <Button
           type="text"
           size="small"
           icon={<CodeOutlined />}
-          aria-label={t('pages.hosts.remarkVars.title')}
+          aria-label={t('pages.settings.remarkVars.title')}
           style={{ marginInlineEnd: -7 }}
         />
       </Tooltip>
@@ -110,7 +110,7 @@ export default function RemarkTemplateField({
       )}
       {hasRemarkTokens(value) && (
         <div style={{ fontSize: 12, marginTop: 4, opacity: 0.7 }}>
-          {t('pages.hosts.remarkVars.preview')}:{' '}
+          {t('pages.settings.remarkVars.preview')}:{' '}
           <span style={{ fontFamily: 'monospace' }}>
             {previewRemark(value, variables, metadataOnly) || '—'}
           </span>

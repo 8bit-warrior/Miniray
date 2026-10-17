@@ -68,27 +68,3 @@ func TestResetAllTrafficsReenablesDepletedClients(t *testing.T) {
 		t.Fatal("a depleted client must be re-enabled after Reset All Client Traffic, matching every other reset path")
 	}
 }
-
-func TestResetAllTrafficsClearsNodeBaselines(t *testing.T) {
-	db := initTrafficTestDB(t)
-	svc := &ClientService{}
-
-	if err := db.Create(&xray.ClientTraffic{InboundId: 1, Email: "spent@x", Enable: true, Up: 60, Down: 60, Total: 100}).Error; err != nil {
-		t.Fatalf("seed traffic: %v", err)
-	}
-	if err := db.Create(&model.NodeClientTraffic{NodeId: 1, Email: "spent@x", Up: 60, Down: 60}).Error; err != nil {
-		t.Fatalf("seed node baseline: %v", err)
-	}
-
-	if _, err := svc.ResetAllTraffics(); err != nil {
-		t.Fatalf("ResetAllTraffics: %v", err)
-	}
-
-	var cnt int64
-	if err := db.Model(&model.NodeClientTraffic{}).Where("email = ?", "spent@x").Count(&cnt).Error; err != nil {
-		t.Fatalf("count baselines: %v", err)
-	}
-	if cnt != 0 {
-		t.Fatalf("Reset All Client Traffic must clear node baselines like its sibling reset paths, found %d", cnt)
-	}
-}

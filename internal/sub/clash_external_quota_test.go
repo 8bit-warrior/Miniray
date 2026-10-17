@@ -22,22 +22,6 @@ const clashDroppedExternalLink = "ss://YWVzLTI1Ni1nY206Y2xpZW50cHc@198.51.100.9:
 
 const tcpObfsStream = `{"network":"tcp","security":"none","tcpSettings":{"header":{"type":"http","request":{"path":["/"],"headers":{"Host":["test"]}}}}}`
 
-func clashSubRouter(t *testing.T) *gin.Engine {
-	t.Helper()
-	oldDistFS := distFS
-	distFS = testDistFS
-	t.Cleanup(func() { distFS = oldDistFS })
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	NewSUBController(
-		router.Group("/"),
-		WithSUBJsonEnabled(true),
-		WithSUBClashEnabled(true),
-		WithSUBEncryption(false),
-	)
-	return router
-}
-
 func fetchClashSub(t *testing.T, router *gin.Engine, path string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -115,4 +99,20 @@ func TestClashAllUnrepresentableNodesAnswerAlike(t *testing.T) {
 	if statuses["inbound"] != statuses["external-link"] {
 		t.Fatalf("status differs by node source: %v", statuses)
 	}
+}
+
+func clashSubRouter(t *testing.T) *gin.Engine {
+	t.Helper()
+	oldDistFS := distFS
+	distFS = testDistFS
+	t.Cleanup(func() { distFS = oldDistFS })
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	NewSUBController(
+		router.Group("/"),
+		WithSUBJsonEnabled(true),
+		WithSUBClashEnabled(true),
+		WithSUBEncryption(false),
+	)
+	return router
 }

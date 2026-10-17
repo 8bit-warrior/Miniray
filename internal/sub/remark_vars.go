@@ -668,14 +668,3 @@ func (s *SubService) genTemplatedRemark(inbound *model.Inbound, client model.Cli
 	}
 	return ctx.configName()
 }
-
-// genHostRemark builds one host endpoint's remark for a specific client. With a
-// remark template set it is template-driven (body shows the full template on the
-// first link and the name-only part thereafter; displays render the name-only
-// part). With no template it falls back to inbound, host and email joined by "-".
-func (s *SubService) genHostRemark(inbound *model.Inbound, client model.Client, hostRemark string, transport string) string {
-	if s.remarkTemplate != "" {
-		return s.genTemplatedRemark(inbound, client, hostRemark, transport)
-	}
-	return fallbackRemark(inbound.Remark, hostRemark, client.Email)
-}

@@ -36,4 +36,3 @@ func TestClientHwidSchemaSQLite(t *testing.T) {
 	t.Cleanup(func() { _ = CloseDB() })
 	assertClientHwidSchema(t, GetDB())
 }
-

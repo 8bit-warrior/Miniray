@@ -112,15 +112,11 @@
     "dashboard": "Дашборд",
     "inbounds": "Входящие",
     "clients": "Клиенты",
-    "groups": "Группы",
-    "nodes": "Узлы",
     "settings": "Настройки панели",
     "xray": "Конфигурации Xray",
     "routing": "Маршрутизация",
     "outbounds": "Исходящие",
     "apiDocs": "Документация API",
-    "sponsors": "Спонсоры",
-    "hosts": "Хосты",
     "docs": "Документация",
     "openMenu": "Открыть меню",
     "subFormats": "Форматы подписки"
@@ -292,9 +288,6 @@
       "operate": "Меню",
       "enable": "Включить",
       "remark": "Примечание",
-      "node": "Узел",
-      "deployTo": "Развернуть на",
-      "localPanel": "Локальная панель",
       "fallbacks": {
         "title": "Fallback'и",
         "empty": "Фолбэков пока нет",
@@ -330,7 +323,6 @@
       "delAllClientsConfirmTitle": "Удалить всех {count} клиентов из \"{remark}\"?",
       "delAllClientsConfirmContent": "Удаляет всех клиентов этого подключения и сбрасывает их записи трафика. Само подключение сохраняется. Это действие нельзя отменить.",
       "attachClients": "Привязать клиентов к…",
-      "addClientsToGroup": "Добавить клиентов в группу…",
       "attachClientsTitle": "Привязать клиентов из «{remark}»",
       "attachClientsDesc": "Привязывает тех же {count} клиент(ов) (с тем же UUID/паролем и общим трафиком) к выбранным входящим. Они остаются и на этом входящем.",
       "attachClientsTargets": "Целевые входящие",
@@ -439,13 +431,10 @@
         "inboundCreateSuccess": "Подключение успешно создано",
         "bulkDeleted": "Удалено подключений: {count}",
         "bulkDeletedMixed": "Удалено: {ok}, не удалось: {failed}",
-        "clonedMany": "Скопировано подключений: {count}",
-        "clonedMixed": "Скопировано: {ok}, не удалось: {failed}",
         "inboundDeleteSuccess": "Подключение успешно удалено",
         "inboundClientAddSuccess": "Клиент(ы) подключения добавлен(ы)",
         "inboundClientDeleteSuccess": "Клиент подключения удалён",
         "inboundClientUpdateSuccess": "Клиент подключения обновлён",
-        "savedNodeOfflineWillSync": "Сохранено локально. Опорный узел отключён или недоступен — изменение синхронизируется после повторного подключения.",
         "resetAllClientTrafficSuccess": "Весь трафик клиента сброшен",
         "resetAllTrafficSuccess": "Весь трафик сброшен",
         "resetInboundClientTrafficSuccess": "Трафик сброшен",
@@ -684,7 +673,6 @@
         "disableFlow": "Отключить поток XTLS",
         "disableFlowHelp": "Исключить этот inbound из автоматического добавления xtls-rprx-vision, даже если его транспорт поддерживает flow (например, туннелированный XHTTP inbound с шифрованием VLESS). Клиенты сохраняют Vision на других подходящих inbound в той же подписке. Только VLESS.",
         "shareAddrStrategyOptions": {
-          "node": "Адрес узла",
           "listen": "Адрес прослушивания inbound",
           "custom": "Пользовательская"
         }
@@ -742,10 +730,7 @@
       "searchPlaceholder": "Поиск email, комментария, sub ID, UUID, пароля, auth, Telegram ID…",
       "filterTitle": "Фильтр клиентов",
       "clearAllFilters": "Очистить все",
-      "filters": {
-        "nodes": "Узлы",
-        "localPanel": "Локально (эта панель)"
-      },
+      "filters": {},
       "showingCount": "Показано {shown} из {total}",
       "sortOldest": "Сначала старые",
       "sortNewest": "Сначала новые",
@@ -788,9 +773,6 @@
       "email": "Email",
       "emailInvalidChars": "Email не может содержать пробелы, '/', '\\' или управляющие символы",
       "subIdInvalidChars": "ID подписки не может содержать пробелы, '/', '\\' или управляющие символы",
-      "group": "Группа",
-      "groupDesc": "Логическая метка для группировки связанных клиентов (например, команда, клиент, регион). Фильтруется из панели инструментов.",
-      "groupPlaceholder": "например, customer-a",
       "comment": "Комментарий",
       "traffic": "Трафик",
       "speed": "Скорость",
@@ -827,15 +809,6 @@
       "resetAllTrafficsContent": "Счётчики отправки/приёма всех клиентов сбрасываются в ноль. Квоты и срок действия не затрагиваются. Это действие нельзя отменить.",
       "deleteConfirmTitle": "Удалить клиента {email}?",
       "deleteConfirmContent": "Клиент будет удалён из всех привязанных входящих, а его запись трафика будет уничтожена. Это действие нельзя отменить.",
-      "addToGroupTitle": "Добавить {count} клиент(ов) в группу",
-      "addToGroupTooltip": "Выберите существующую группу или введите новое имя. Используйте Ungroup, чтобы удалить клиентов из их текущей группы.",
-      "groupName": "Имя группы",
-      "addToGroupSuccessToast": "{count} клиент(ов) добавлено в {group}",
-      "ungroupSuccessToast": "Группа очищена у {count} клиент(ов)",
-      "ungroup": "Разгруппировать",
-      "ungroupConfirmTitle": "Удалить {count} клиент(ов) из их группы?",
-      "ungroupConfirmContent": "Очищает метку группы у каждого выбранного клиента. Сами клиенты сохраняются (используйте Delete для полного удаления).",
-      "addToGroup": "Добавить в группу",
       "attach": "Привязать",
       "adjust": "Корректировка",
       "subLinks": "Sub-ссылки",
@@ -957,18 +930,6 @@
       "renewOnDayDesc": "Продлевать этого числа каждого месяца, в полночь по часовому поясу панели, вместо интервала в днях. Если в месяце такого числа нет, продление придётся на последний день. 0 — оставить режим интервала.",
       "renewsUsed": "Продлений израсходовано",
       "bulkAdTagHint": "Введите 32-значный hex-тег для установки или 'none' для очистки спонсорского канала на MTProto."
-    },
-    "groups": {},
-    "nodes": {
-      "name": "Имя",
-      "apiToken": "API Токен",
-      "apiTokenHint": "Удалённая панель показывает свой токен API в разделе Учетная запись → Токен API.",
-      "latency": "Задержка",
-      "statusValues": {},
-      "toasts": {
-        "fillRequired": "Имя, адрес, порт и токен API обязательны"
-      },
-      "mtls": {}
     },
     "settings": {
       "defaultTag": "По умолчанию",
@@ -1236,7 +1197,9 @@
         "apiTokenEmpty": "Токенов пока нет — создайте один для аутентификации ботов или удалённых панелей.",
         "apiTokenDeleteWarning": "Любой клиент, использующий этот токен, немедленно потеряет аутентификацию.",
         "apiTokenCreatedTitle": "Токен создан",
-        "apiTokenCreatedNotice": "Скопируйте этот токен сейчас. В целях безопасности он не хранится в читаемом виде и больше не будет показан."
+        "apiTokenCreatedNotice": "Скопируйте этот токен сейчас. В целях безопасности он не хранится в читаемом виде и больше не будет показан.",
+        "apiToken": "API Токен",
+        "apiTokenHint": "Удалённая панель показывает свой токен API в разделе Учетная запись → Токен API."
       },
       "toasts": {
         "modifySettings": "Настройки изменены",
@@ -1281,8 +1244,6 @@
       "eventOutboundDown": "Недоступен",
       "eventOutboundUp": "Работает",
       "eventXrayCrash": "Сбой",
-      "eventNodeDown": "Недоступен",
-      "eventNodeUp": "В сети",
       "eventCPUHigh": "Превышение порога CPU (%)",
       "requestFailed": "Запрос не удался",
       "smtpEncryption": "Шифрование",
@@ -1586,7 +1547,51 @@
       "subIncyResolveDnsDomainDesc": "URL DoH-сервера, обычно заканчивается на /dns-query.",
       "subIncyResolveDnsIp": "IP DoH-сервера",
       "subIncyResolveDnsIpDesc": "IP DoH-сервера, нужен для bootstrap.",
-      "subIncyGroupRouting": "Маршрутизация"
+      "subIncyGroupRouting": "Маршрутизация",
+      "exportDatabaseDesc": "",
+      "allowInsecure": "Разрешить небезопасное",
+      "allowInsecureHelp": "Пропустить проверку TLS-сертификата (allowInsecure / skip-cert-verify).",
+      "remarkVars": {
+        "title": "Переменные шаблона",
+        "intro": "Нажмите на переменную, чтобы добавить её. Она заменяется для каждого клиента при генерации подписки.",
+        "preview": "Предпросмотр",
+        "groups": {
+          "client": "Клиент",
+          "traffic": "Трафик",
+          "time": "Время и статус",
+          "connection": "Подключение"
+        },
+        "descEMAIL": "Email клиента",
+        "descINBOUND": "Собственное примечание входящего (имя конфигурации)",
+        "descHOST": "Примечание хоста",
+        "descID": "UUID клиента",
+        "descSHORT_ID": "Первые 8 символов UUID",
+        "descTELEGRAM_ID": "Telegram ID клиента (пусто, если не задан)",
+        "descSUB_ID": "ID подписки",
+        "descCOMMENT": "Комментарий клиента",
+        "descTRAFFIC_USED": "Использованный трафик (в читаемом виде)",
+        "descTRAFFIC_LEFT": "Оставшийся трафик (скрыт при безлимите)",
+        "descTRAFFIC_TOTAL": "Всего трафика (скрыт при безлимите)",
+        "descTRAFFIC_USED_BYTES": "Использованный трафик в байтах",
+        "descTRAFFIC_LEFT_BYTES": "Оставшийся трафик в байтах",
+        "descTRAFFIC_TOTAL_BYTES": "Всего трафика в байтах",
+        "descUP": "Исходящий трафик",
+        "descDOWN": "Входящий трафик",
+        "descSTATUS": "активен / истёк / отключён / исчерпан",
+        "descSTATUS_EMOJI": "Статус в виде эмодзи (✅ ⏳ 🚫)",
+        "descDAYS_LEFT": "Дней до окончания (скрыто при безлимите)",
+        "descTIME_LEFT": "Оставшееся время (например, 12d 4h 30m)",
+        "descUSAGE_PERCENTAGE": "Использованный трафик в процентах (скрыт при безлимите)",
+        "descEXPIRE_DATE": "Дата окончания (ГГГГ-ММ-ДД)",
+        "descJALALI_EXPIRE_DATE": "Дата окончания по календарю Jalali (ГГГГ/ММ/ДД)",
+        "descEXPIRE_UNIX": "Окончание в виде Unix-метки времени (секунды)",
+        "descCREATED_UNIX": "Время создания в виде Unix-метки времени (секунды)",
+        "descRESET_DAYS": "Период сброса трафика в днях",
+        "descRESET_DAY": "Число месяца, в которое продлевается доступ",
+        "descPROTOCOL": "Протокол входящего (VLESS, VMess, Trojan, …)",
+        "descTRANSPORT": "Транспортная сеть (tcp, ws, grpc, …)",
+        "descSECURITY": "Безопасность транспорта (TLS, REALITY, NONE)"
+      }
     },
     "xray": {
       "importRules": "Импорт правил",
@@ -2093,62 +2098,9 @@
         "poolSize": "Размер пула"
       },
       "defaultOutbound": "Исходящий по умолчанию",
-      "defaultOutboundDesc": "Трафик без совпадения с правилами маршрутизации идёт через этот исходящий (первый в списке)."
-    },
-    "hosts": {
-      "summary": {},
-      "sections": {},
-      "fields": {
-        "allowInsecure": "Разрешить небезопасное"
-      },
-      "hints": {
-        "allowInsecure": "Пропустить проверку TLS-сертификата (allowInsecure / skip-cert-verify)."
-      },
-      "remarkVars": {
-        "title": "Переменные шаблона",
-        "intro": "Нажмите на переменную, чтобы добавить её. Она заменяется для каждого клиента при генерации подписки.",
-        "preview": "Предпросмотр",
-        "groups": {
-          "client": "Клиент",
-          "traffic": "Трафик",
-          "time": "Время и статус",
-          "connection": "Подключение"
-        },
-        "descEMAIL": "Email клиента",
-        "descINBOUND": "Собственное примечание входящего (имя конфигурации)",
-        "descHOST": "Примечание хоста",
-        "descID": "UUID клиента",
-        "descSHORT_ID": "Первые 8 символов UUID",
-        "descTELEGRAM_ID": "Telegram ID клиента (пусто, если не задан)",
-        "descSUB_ID": "ID подписки",
-        "descCOMMENT": "Комментарий клиента",
-        "descTRAFFIC_USED": "Использованный трафик (в читаемом виде)",
-        "descTRAFFIC_LEFT": "Оставшийся трафик (скрыт при безлимите)",
-        "descTRAFFIC_TOTAL": "Всего трафика (скрыт при безлимите)",
-        "descTRAFFIC_USED_BYTES": "Использованный трафик в байтах",
-        "descTRAFFIC_LEFT_BYTES": "Оставшийся трафик в байтах",
-        "descTRAFFIC_TOTAL_BYTES": "Всего трафика в байтах",
-        "descUP": "Исходящий трафик",
-        "descDOWN": "Входящий трафик",
-        "descSTATUS": "активен / истёк / отключён / исчерпан",
-        "descSTATUS_EMOJI": "Статус в виде эмодзи (✅ ⏳ 🚫)",
-        "descDAYS_LEFT": "Дней до окончания (скрыто при безлимите)",
-        "descTIME_LEFT": "Оставшееся время (например, 12d 4h 30m)",
-        "descUSAGE_PERCENTAGE": "Использованный трафик в процентах (скрыт при безлимите)",
-        "descEXPIRE_DATE": "Дата окончания (ГГГГ-ММ-ДД)",
-        "descJALALI_EXPIRE_DATE": "Дата окончания по календарю Jalali (ГГГГ/ММ/ДД)",
-        "descEXPIRE_UNIX": "Окончание в виде Unix-метки времени (секунды)",
-        "descCREATED_UNIX": "Время создания в виде Unix-метки времени (секунды)",
-        "descRESET_DAYS": "Период сброса трафика в днях",
-        "descRESET_DAY": "Число месяца, в которое продлевается доступ",
-        "descPROTOCOL": "Протокол входящего (VLESS, VMess, Trojan, …)",
-        "descTRANSPORT": "Транспортная сеть (tcp, ws, grpc, …)",
-        "descSECURITY": "Безопасность транспорта (TLS, REALITY, NONE)"
-      },
-      "toasts": {
-        "badTag": "Недопустимый тег",
-        "badVlessRoute": "Введите одно число от 0 до 65535"
-      }
+      "defaultOutboundDesc": "Трафик без совпадения с правилами маршрутизации идёт через этот исходящий (первый в списке).",
+      "ruleName": "Имя",
+      "outboundLatency": "Задержка"
     }
   },
   "tgbot": {
@@ -2273,8 +2225,6 @@
       "eventDelayDetail": "Задержка: {{ .Delay }} мс",
       "eventXrayCrash": "Сбой Xray",
       "eventXrayCrashError": "Ошибка: {{ .Error }}",
-      "eventNodeDown": "Узел {{ .Name }} НЕДОСТУПЕН",
-      "eventNodeUp": "Узел {{ .Name }} В СЕТИ",
       "eventLoginFallback": "Неудачный вход с {{ .Source }}",
       "memoryThreshold": "🔴 Использование памяти {{ .Percent }}% превышает пороговое значение {{ .Threshold }}%"
     },
@@ -2366,7 +2316,6 @@
       "error": "Ошибка",
       "delay": "Задержка",
       "outbound": "Исходящее",
-      "node": "Узел",
       "threshold": "Порог",
       "reason": "Причина",
       "time": "Время",
@@ -2381,8 +2330,6 @@
     "alerts": {
       "outboundDown": "Исходящее недоступно",
       "outboundUp": "Исходящее восстановлено",
-      "nodeDown": "Узел недоступен",
-      "nodeUp": "Узел снова в сети",
       "xrayCrash": "Сбой ядра Xray",
       "cpuHigh": "Превышен порог CPU",
       "memoryHigh": "Превышен порог памяти",
@@ -2428,7 +2375,6 @@
   "email": {
     "labelStatus": "Статус",
     "labelOutbound": "Исходящее подключение",
-    "labelNode": "Узел",
     "labelError": "Ошибка",
     "labelDelay": "Задержка",
     "labelUsername": "Имя пользователя",

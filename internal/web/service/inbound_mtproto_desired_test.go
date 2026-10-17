@@ -30,12 +30,6 @@ func TestDesiredMtprotoInstancesFiltersDepleted(t *testing.T) {
 	depleted := loadInboundByTag(t, "mt-all-depleted")
 	seedClientTraffic(t, depleted.Id, "dave", false)
 
-	nodeID := 5
-	seedInboundConflictNode(t, "mt-node-owned", "", 46003, model.MTProto,
-		"",
-		`{"clients":[{"email":"erin","secret":"`+mtprotoTestSecretB+`","enable":true}]}`,
-		&nodeID)
-
 	instances, err := svc.DesiredMtprotoInstances()
 	if err != nil {
 		t.Fatalf("DesiredMtprotoInstances: %v", err)

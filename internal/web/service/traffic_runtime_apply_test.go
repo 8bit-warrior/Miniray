@@ -9,29 +9,10 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/xray"
 )
 
-func TestTrafficDisableImmediatelyUpdatesNodeRuntime(t *testing.T) {
-	setupConflictDB(t)
-	nodeID, fake := setupNodeRuntime(t)
-	client := model.Client{Email: "spent-node", Enable: true}
-	ib := nodeInbound(t, nodeID, 46301, []model.Client{client})
-	if err := database.GetDB().Create(&xray.ClientTraffic{
-		InboundId: ib.Id, Email: client.Email, Enable: true, Up: 100, Total: 100,
-	}).Error; err != nil {
-		t.Fatalf("seed traffic: %v", err)
-	}
-
-	if _, _, err := (&InboundService{}).AddTraffic(nil, nil); err != nil {
-		t.Fatalf("AddTraffic: %v", err)
-	}
-	if got := fake.updateInbound.Load(); got != 1 {
-		t.Fatalf("remote UpdateInbound calls = %d, want 1 after commit", got)
-	}
-}
-
 func TestTrafficDisableRefreshesLocalMTProtoSidecar(t *testing.T) {
 	setupConflictDB(t)
 	mgr := runtime.NewManager(runtime.LocalDeps{APIPort: func() int { return 0 }})
-	fake := &fakeNodeRuntime{}
+	fake := &fakeRuntime{}
 	mgr.SetLocalRuntimeOverride(fake)
 	runtime.SetManager(mgr)
 	t.Cleanup(func() { runtime.SetManager(nil) })
@@ -63,7 +44,7 @@ func TestTrafficDisableRefreshesLocalMTProtoSidecar(t *testing.T) {
 func TestDelDepletedClientsCleansRuntimeAfterCommit(t *testing.T) {
 	setupConflictDB(t)
 	mgr := runtime.NewManager(runtime.LocalDeps{APIPort: func() int { return 0 }})
-	fake := &fakeNodeRuntime{}
+	fake := &fakeRuntime{}
 	mgr.SetLocalRuntimeOverride(fake)
 	runtime.SetManager(mgr)
 	t.Cleanup(func() { runtime.SetManager(nil) })

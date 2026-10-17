@@ -1,10 +1,8 @@
 // Shape of one entry in a client's IP log, as returned by
-// POST /panel/api/clients/ips/:email. `node` is the name of the node the IP is
-// connecting through, or '' when it is on this local panel (or unattributed).
+// POST /panel/api/clients/ips/:email.
 export type ClientIpInfo = {
   ip: string;
   time: string;
-  node: string;
 };
 
 // normalizeClientIps accepts the API payload and returns typed entries. It also
@@ -15,7 +13,7 @@ export function normalizeClientIps(obj: unknown): ClientIpInfo[] {
   const out: ClientIpInfo[] = [];
   for (const x of obj) {
     if (typeof x === 'string') {
-      if (x.length > 0) out.push({ ip: x, time: '', node: '' });
+      if (x) out.push({ ip: x, time: '' });
       continue;
     }
     if (x && typeof x === 'object') {
@@ -25,7 +23,6 @@ export function normalizeClientIps(obj: unknown): ClientIpInfo[] {
       out.push({
         ip,
         time: typeof o.time === 'string' ? o.time : '',
-        node: typeof o.node === 'string' ? o.node : '',
       });
     }
   }

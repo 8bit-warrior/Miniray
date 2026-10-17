@@ -1,4 +1,3 @@
-import i18next from 'i18next';
 import { httpRequest } from '@/api/http-init';
 import type { HttpResponse } from '@/api/http-init';
 import { getMessage } from './messageBus';
@@ -39,13 +38,6 @@ export class HttpUtil {
     if (msg.success) {
       if (!silentSuccess) {
         getMessage().success(msg.msg);
-      }
-      if (
-        msg.obj &&
-        typeof msg.obj === 'object' &&
-        (msg.obj as { nodePending?: unknown }).nodePending === true
-      ) {
-        getMessage().warning(i18next.t('pages.inbounds.toasts.savedNodeOfflineWillSync'));
       }
       return;
     }

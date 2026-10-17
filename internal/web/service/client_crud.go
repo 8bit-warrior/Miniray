@@ -15,6 +15,7 @@ import (
 	"unicode"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
@@ -22,8 +23,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/util/common"
 	"github.com/8bit-warrior/Miniray/internal/util/random"
 	"github.com/8bit-warrior/Miniray/internal/xray"
-
-	"gorm.io/gorm"
 )
 
 func hasForbiddenClientChar(s string) bool {
@@ -256,8 +255,6 @@ func (s *ClientService) Create(inboundSvc *InboundService, payload *ClientCreate
 		// already existed, and a create the panel reported as failed must not.
 		return needRestart, fanoutErr
 	}
-	// A re-created email is a live identity again: a delete tombstone left
-	// standing makes the next node merge prune the new client's inbound links.
 	withdrawClientTombstones(client.Email)
 	return needRestart, s.setClientLimitHwidByEmail(client.Email, payload.LimitHwid)
 }
@@ -272,8 +269,6 @@ type inboundApply struct {
 	run func() (bool, error)
 }
 
-// fanoutInboundApplies runs the applies with the node pushes overlapping, so a
-// client spanning several nodes no longer costs one RPC round-trip per node.
 func fanoutInboundApplies(applies []inboundApply) (bool, error) {
 	var needRestart atomic.Bool
 	errs := make([]error, len(applies))
@@ -321,10 +316,6 @@ func (s *ClientService) fanoutInboundClientAdds(inboundSvc *InboundService, adds
 	return fanoutInboundApplies(applies)
 }
 
-// fanoutInboundResults runs one job per inbound with the node pushes
-// overlapping, so a bulk op costs one RPC round-trip instead of one per node.
-// limit is the caller's own cap: an op that allocates tunnel addresses passes 1,
-// because allocation reads a cross-inbound used-set before it writes.
 func fanoutInboundResults[T any](inboundIds []int, limit int, run func(i int) T) ([]T, []error) {
 	if limit < 1 {
 		limit = 1
@@ -373,36 +364,6 @@ func sortedInboundIds[V any](byInbound map[int]V) []int {
 	}
 	slices.Sort(ids)
 	return ids
-}
-
-// markInboundNodesDirty makes a half-applied client edit unobservable to a node
-// snapshot merge, which skips a node whose config is already flagged dirty.
-func markInboundNodesDirty(inboundIds []int) error {
-	if len(inboundIds) == 0 {
-		return nil
-	}
-	var nodeIDs []int
-	for _, batch := range chunkInts(inboundIds, sqlInChunk) {
-		var ids []int
-		if err := database.GetDB().Model(&model.Inbound{}).
-			Where("id IN ? AND node_id IS NOT NULL", batch).
-			Distinct().Pluck("node_id", &ids).Error; err != nil {
-			return err
-		}
-		nodeIDs = append(nodeIDs, ids...)
-	}
-	if len(nodeIDs) == 0 {
-		return nil
-	}
-	return runSerializedTx(func(tx *gorm.DB) error {
-		svc := &NodeService{}
-		for _, id := range nodeIDs {
-			if err := svc.MarkNodeDirtyTx(tx, id); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
 }
 
 func (s *ClientService) fillProtocolDefaults(c *model.Client, ib *model.Inbound) error {
@@ -587,9 +548,6 @@ func (s *ClientService) Update(inboundSvc *InboundService, id int, updated model
 	if err != nil {
 		return false, err
 	}
-	// The rename rewrites the one shared client record, so every node holding
-	// this client goes stale — not just the ones an inboundIds filter applies.
-	attachedIds := append([]int(nil), inboundIds...)
 	if len(inboundFilter) > 0 {
 		allow := make(map[int]struct{}, len(inboundFilter))
 		for _, fid := range inboundFilter {
@@ -733,11 +691,7 @@ func (s *ClientService) Update(inboundSvc *InboundService, id int, updated model
 			return s.UpdateInboundClient(inboundSvc, data, existing.Email)
 		}})
 	}
-	// Each apply marks only its OWN node dirty, so between the first and last
-	// one a merge could resurrect the pre-edit email as a second client.
-	if err := markInboundNodesDirty(attachedIds); err != nil {
-		return false, err
-	}
+
 	needRestart, applyErr := fanoutInboundApplies(applies)
 	if applyErr != nil {
 		return needRestart, applyErr
@@ -799,19 +753,7 @@ func (s *ClientService) Update(inboundSvc *InboundService, id int, updated model
 		return needRestart, err
 	}
 
-	// Persist the group explicitly. SyncInbound deliberately preserves the
-	// stored group when the inbound settings carry none — so a node snapshot or a
-	// group-less settings rebuild can't wipe it (see SyncInbound + its tests).
-	// That guard also meant clearing the group in the client editor never took
-	// effect. The editor always round-trips the field, so apply it here,
-	// including the empty string that removes the client from its group.
-	if err := database.GetDB().Model(&model.ClientRecord{}).
-		Where("id = ?", id).
-		UpdateColumn("group_name", updated.Group).Error; err != nil {
-		return needRestart, err
-	}
-
-	// Same shape as the group write above: SyncInbound keeps a stored ad-tag
+	// Persist the ad tag: SyncInbound keeps a stored ad-tag
 	// when the incoming settings carry none, so clearing the override must be
 	// applied here, where the editor always round-trips the field.
 	if err := database.GetDB().Model(&model.ClientRecord{}).
@@ -883,20 +825,12 @@ func (s *ClientService) Delete(inboundSvc *InboundService, id int, keepTraffic b
 	if applyErr != nil {
 		delErrs = append(delErrs, applyErr)
 	}
-	// A failed inbound still holds the client in its settings JSON: keep the
-	// record so the next delete retries exactly the leftovers, and report it.
-	// The tombstone lifts with it, or the next node merge finishes the deletion.
 	if len(delErrs) > 0 {
 		withdrawClientTombstones(existing.Email)
 		return needRestart, errors.Join(delErrs...)
 	}
 
 	if err := runSerializedTx(func(tx *gorm.DB) error {
-		if existing.Email != "" {
-			if err := adjustGroupBaselinesForRemovedTraffic(tx, []string{existing.Email}); err != nil {
-				return err
-			}
-		}
 		if err := tx.Where("client_id = ?", id).Delete(&model.ClientInbound{}).Error; err != nil {
 			return err
 		}
@@ -910,13 +844,8 @@ func (s *ClientService) Delete(inboundSvc *InboundService, id int, keepTraffic b
 			if err := tx.Where("email = ?", existing.Email).Delete(&xray.ClientTraffic{}).Error; err != nil {
 				return err
 			}
-			if err := clearGlobalTraffic(tx, existing.Email); err != nil {
-				return err
-			}
+
 			if err := tx.Where("client_email = ?", existing.Email).Delete(&model.InboundClientIps{}).Error; err != nil {
-				return err
-			}
-			if err := tx.Where("email = ?", existing.Email).Delete(&model.NodeClientTraffic{}).Error; err != nil {
 				return err
 			}
 		}
@@ -1139,15 +1068,11 @@ func (s *ClientService) DeleteByEmail(inboundSvc *InboundService, email string, 
 		if err := db.Where("email = ?", email).Delete(&xray.ClientTraffic{}).Error; err != nil {
 			return needRestart, err
 		}
-		if err := clearGlobalTraffic(db, email); err != nil {
-			return needRestart, err
-		}
+
 		if err := db.Where("client_email = ?", email).Delete(&model.InboundClientIps{}).Error; err != nil {
 			return needRestart, err
 		}
-		if err := db.Where("email = ?", email).Delete(&model.NodeClientTraffic{}).Error; err != nil {
-			return needRestart, err
-		}
+
 	}
 	return needRestart, nil
 }

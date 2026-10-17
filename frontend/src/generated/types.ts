@@ -4,7 +4,6 @@ export type OnlineAPISupport = number;
 export type ProcessState = string;
 export type Protocol = string;
 export type addrFamily = number;
-export type staticEgressResolver = string;
 export type trafficLocalApplyAction = number;
 export type transportBits = number;
 
@@ -49,6 +48,9 @@ export interface AllSetting {
   ldapVlessField: string;
   outboundDownThreshold: number;
   pageSize: number;
+  panelOfflineEnabled: boolean;
+  panelOfflineUnit: string;
+  panelOfflineValue: number;
   panelOutbound: string;
   realityScanCandidates: string;
   remarkTemplate: string;
@@ -237,6 +239,9 @@ export interface AllSettingView {
   ldapVlessField: string;
   outboundDownThreshold: number;
   pageSize: number;
+  panelOfflineEnabled: boolean;
+  panelOfflineUnit: string;
+  panelOfflineValue: number;
   panelOutbound: string;
   realityScanCandidates: string;
   remarkTemplate: string;
@@ -414,7 +419,6 @@ export interface Client {
   expiryTime: number;
   flow?: string;
   forwardedPorts?: string;
-  group?: string;
   id?: string;
   keepAlive?: number | null;
   limitIp: number;
@@ -446,7 +450,6 @@ export interface ClientInbound {
 
 export interface ClientPageResponse {
   filtered: number;
-  groups: string[];
   items: ClientSlim[];
   page: number;
   pageSize: number;
@@ -465,7 +468,6 @@ export interface ClientRecord {
   expiryTime: number;
   flow: string;
   forwardedPorts: string;
-  group: string;
   id: number;
   keepAlive: number;
   limitHwid: number;
@@ -521,7 +523,6 @@ export interface ClientSlim {
   email: string;
   enable: boolean;
   expiryTime: number;
-  group?: string;
   inboundIds: number[];
   limitHwid: number;
   limitIp: number;
@@ -619,79 +620,6 @@ export interface HistoryOfSeeders {
   seederName: string;
 }
 
-export interface Host {
-  address: string;
-  allowInsecure: boolean;
-  alpn: string[];
-  cipherSuites: string;
-  createdAt: number;
-  echConfigList: string;
-  excludeFromSubTypes: string[];
-  finalMask: string;
-  fingerprint: string;
-  groupId: string;
-  hostHeader: string;
-  id: number;
-  inboundId: number;
-  isDisabled: boolean;
-  isHidden: boolean;
-  keepSniBlank: boolean;
-  mihomoIpVersion: string;
-  mihomoX25519: boolean;
-  muxParams: unknown;
-  nodeGuids?: string[];
-  overrideSniFromAddress: boolean;
-  path: string;
-  pinnedPeerCertSha256: string[];
-  port: number;
-  remark: string;
-  security: string;
-  serverDescription: string;
-  shuffleHost: boolean;
-  sni: string;
-  sockoptParams: unknown;
-  sortOrder: number;
-  tags: string[];
-  updatedAt: number;
-  verifyPeerCertByName: string;
-  vlessRoute: string;
-}
-
-export interface HostGroup {
-  allowInsecure: boolean;
-  alpn: string[];
-  cipherSuites: string;
-  echConfigList: string;
-  excludeFromSubTypes: string[];
-  finalMask: string;
-  fingerprint: string;
-  groupId: string;
-  hostHeader: string;
-  hosts: string[];
-  inboundIds: number[];
-  isDisabled: boolean;
-  isHidden: boolean;
-  keepSniBlank: boolean;
-  mihomoIpVersion: string;
-  mihomoX25519: boolean;
-  muxParams: string;
-  nodeGuids: string[];
-  overrideSniFromAddress: boolean;
-  path: string;
-  pinnedPeerCertSha256: string[];
-  port: number;
-  remark: string;
-  security: string;
-  serverDescription: string;
-  shuffleHost: boolean;
-  sni: string;
-  sockoptParams: string;
-  sortOrder: number;
-  tags: string[];
-  verifyPeerCertByName: string;
-  vlessRoute: string;
-}
-
 export interface HwidSlotStatus {
   active: boolean;
   full: boolean;
@@ -711,8 +639,6 @@ export interface Inbound {
   id: number;
   lastTrafficResetTime: number;
   listen: string;
-  nodeId?: number | null;
-  originNodeGuid?: string;
   port: number;
   protocol: Protocol;
   remark: string;
@@ -754,8 +680,6 @@ export interface InboundOption {
   listen?: string;
   mtprotoDomain?: string;
   network?: string;
-  nodeAddress?: string;
-  nodeId?: number | null;
   port: number;
   protocol: string;
   remark: string;
@@ -809,112 +733,6 @@ export interface NewUUIDResponse {
   uuid: string;
 }
 
-export interface Node {
-  activeCount: number;
-  address: string;
-  allowPrivateAddress: boolean;
-  basePath: string;
-  clientCount: number;
-  configDirty: boolean;
-  configDirtyAt: number;
-  cpuPct: number;
-  createdAt: number;
-  depletedCount: number;
-  disabledCount: number;
-  enable: boolean;
-  guid: string;
-  id: number;
-  inboundCount: number;
-  inboundSyncMode: string;
-  inboundTags: string[];
-  lastError: string;
-  lastHeartbeat: number;
-  latencyMs: number;
-  memPct: number;
-  name: string;
-  netDown: number;
-  netUp: number;
-  onlineCount: number;
-  outboundTag: string;
-  panelVersion: string;
-  parentGuid?: string;
-  pinnedCertSha256: string;
-  port: number;
-  remark: string;
-  scheme: string;
-  status: string;
-  tlsVerifyMode: string;
-  transitive?: boolean;
-  updatedAt: number;
-  uptimeSecs: number;
-  xrayError: string;
-  xrayState: string;
-  xrayVersion: string;
-}
-
-export interface NodeMutationRequest {
-  address: string;
-  allowPrivateAddress: boolean;
-  apiToken?: string | null;
-  basePath: string;
-  clearApiToken?: boolean;
-  enable: boolean;
-  id: number;
-  inboundSyncMode: string;
-  inboundTags: string[];
-  name: string;
-  outboundTag: string;
-  pinnedCertSha256: string;
-  port: number;
-  remark: string;
-  scheme: string;
-  tlsVerifyMode: string;
-}
-
-export interface NodeView {
-  activeCount: number;
-  address: string;
-  allowPrivateAddress: boolean;
-  basePath: string;
-  clientCount: number;
-  configDirty: boolean;
-  configDirtyAt: number;
-  cpuPct: number;
-  createdAt: number;
-  depletedCount: number;
-  disabledCount: number;
-  enable: boolean;
-  guid: string;
-  hasApiToken: boolean;
-  id: number;
-  inboundCount: number;
-  inboundSyncMode: string;
-  inboundTags: string[];
-  lastError: string;
-  lastHeartbeat: number;
-  latencyMs: number;
-  memPct: number;
-  name: string;
-  netDown: number;
-  netUp: number;
-  onlineCount: number;
-  outboundTag: string;
-  panelVersion: string;
-  parentGuid?: string;
-  pinnedCertSha256: string;
-  port: number;
-  remark: string;
-  scheme: string;
-  status: string;
-  tlsVerifyMode: string;
-  transitive?: boolean;
-  updatedAt: number;
-  uptimeSecs: number;
-  xrayError: string;
-  xrayState: string;
-  xrayVersion: string;
-}
-
 export interface OutboundTraffics {
   down: number;
   id: number;
@@ -941,19 +759,6 @@ export interface PeerActivity {
   online: boolean;
   tag: string;
   up: number;
-}
-
-export interface ProbeResultUI {
-  cpuPct: number;
-  error: string;
-  latencyMs: number;
-  memPct: number;
-  panelVersion: string;
-  status: string;
-  uptimeSecs: number;
-  xrayError: string;
-  xrayState: string;
-  xrayVersion: string;
 }
 
 export interface RealityScanResult {
@@ -1024,24 +829,6 @@ export interface Setting {
   id: number;
   key: string;
   value: string;
-}
-
-export interface Sponsor {
-  enable?: boolean | null;
-  from?: string | null;
-  id: string;
-  link: string;
-  logo?: string;
-  name: string;
-  slots: string[];
-  text: Record<string, string>;
-  title: Record<string, string>;
-  until: string;
-}
-
-export interface SponsorList {
-  contact?: string;
-  sponsors: Sponsor[];
 }
 
 export interface SubBalancer {

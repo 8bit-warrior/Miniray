@@ -41,7 +41,7 @@ production-style links work without round-tripping through Go.
 | `npm run test:watch` | Vitest watch mode |
 | `npm run storybook` | Storybook dev server on `:6006` (component workbench + autodocs) |
 | `npm run build-storybook` | Static Storybook build — CI compile-checks every story |
-| `npm run gen:api` | Build `public/openapi.json` from `pages/api-docs/endpoints.ts` |
+| `npm run gen:api` | Refresh `public/openapi.json` schemas from generated Go types |
 | `npm run gen:zod` | Run the Go-side openapigen tool → `src/generated/{zod,types}.ts` |
 
 CI runs `typecheck`, `lint`, `format:check`, `test`, `build`, and
@@ -105,8 +105,8 @@ frontend/
     ├── main.tsx         # Shared root for the admin SPA (index.html)
     ├── routes.tsx       # react-router routes mounted under /panel/
     ├── pages/           # One folder per route, page component + helpers
-    │   ├── index/, login/, inbounds/, clients/, xray/, nodes/,
-    │   ├── settings/, api-docs/, sub/
+    │   ├── index/, login/, inbounds/, clients/, xray/,
+    │   ├── settings/, sub/
     ├── layouts/         # AdminLayout (sidebar + header + outlet)
     ├── components/      # Cross-page React components (+ co-located *.stories.tsx)
     ├── hooks/           # useClients, useTheme, useWebSocket, …

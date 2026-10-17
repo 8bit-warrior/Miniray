@@ -23,7 +23,7 @@ export default function RemarkVarPicker({
   return (
     <div style={{ maxWidth: 460, maxHeight: 'min(70vh, 640px)', overflowY: 'auto' }}>
       <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 8 }}>
-        {t('pages.hosts.remarkVars.intro')}
+        {t('pages.settings.remarkVars.intro')}
       </Typography.Paragraph>
       {REMARK_VAR_GROUPS.filter((group) => variables.some((v) => v.group === group)).map(
         (group) => (
@@ -37,13 +37,13 @@ export default function RemarkVarPicker({
                 marginBottom: 4,
               }}
             >
-              {t(`pages.hosts.remarkVars.groups.${group}`)}
+              {t(`pages.settings.remarkVars.groups.${group}`)}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
               {variables
                 .filter((v) => v.group === group)
                 .map((v) => (
-                  <Tooltip key={v.token} title={t(`pages.hosts.remarkVars.desc${v.token}`)}>
+                  <Tooltip key={v.token} title={t(`pages.settings.remarkVars.desc${v.token}`)}>
                     <Tag
                       role="button"
                       tabIndex={0}

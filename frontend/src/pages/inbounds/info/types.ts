@@ -1,6 +1,4 @@
 import type { SubSettings } from '../useInbounds';
-import type { HostRecord } from '@/schemas/api/host';
-
 export interface ClientStats {
   email: string;
   up: number;
@@ -9,7 +7,6 @@ export interface ClientStats {
   expiryTime: number;
   enable?: boolean;
 }
-
 export interface ClientSetting {
   email?: string;
   id?: string;
@@ -26,7 +23,6 @@ export interface ClientSetting {
   created_at?: number;
   updated_at?: number;
 }
-
 export interface InboundInfo {
   protocol: string;
   clients: ClientSetting[];
@@ -46,11 +42,14 @@ export interface InboundInfo {
   stream: {
     network: string;
     security: string;
-    xhttp?: { mode?: string };
-    grpc?: { multiMode?: boolean };
+    xhttp?: {
+      mode?: string;
+    };
+    grpc?: {
+      multiMode?: boolean;
+    };
   };
 }
-
 export interface DBInboundLike {
   id: number;
   address: string;
@@ -71,7 +70,6 @@ export interface DBInboundLike {
   sniffing: unknown;
   clientStats?: ClientStats[];
 }
-
 export interface InboundInfoModalProps {
   open: boolean;
   onClose: () => void;
@@ -81,8 +79,6 @@ export interface InboundInfoModalProps {
   trafficDiff?: number;
   ipLimitEnable?: boolean;
   tgBotEnable?: boolean;
-  nodeAddress?: string;
   subSettings?: SubSettings;
-  hosts?: HostRecord[];
   lastOnlineMap?: Record<string, number>;
 }

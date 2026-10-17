@@ -16,59 +16,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 )
 
-func initHwidSubRouter(t *testing.T, limit int) (*gin.Engine, string) {
-	t.Helper()
-	tmp := t.TempDir()
-	t.Chdir(tmp)
-	if err := os.MkdirAll("internal/web/dist", 0o755); err != nil {
-		t.Fatalf("mkdir dist: %v", err)
-	}
-	if err := os.WriteFile("internal/web/dist/subpage.html", []byte("<html><head></head><body></body></html>"), 0o644); err != nil {
-		t.Fatalf("write subpage: %v", err)
-	}
-
-	t.Setenv("MINIRAY_DB_FOLDER", tmp)
-	dbtest.InitDB(t, filepath.Join(tmp, "miniray.db"))
-
-	const subID = "sub-hwid-route"
-	const email = "route@example.com"
-	const uuid = "11111111-2222-4333-8444-555555555555"
-	db := database.GetDB()
-	ib := &model.Inbound{
-		UserId:         1,
-		Tag:            "hwid-sub",
-		Enable:         true,
-		Port:           443,
-		Protocol:       model.VLESS,
-		Settings:       `{"clients":[]}`,
-		StreamSettings: `{"network":"tcp","security":"none"}`,
-	}
-	if err := db.Create(ib).Error; err != nil {
-		t.Fatalf("seed inbound: %v", err)
-	}
-	client := &model.ClientRecord{Email: email, SubID: subID, UUID: uuid, Enable: true, LimitHwid: limit}
-	if err := db.Create(client).Error; err != nil {
-		t.Fatalf("seed client: %v", err)
-	}
-	if err := db.Create(&model.ClientInbound{ClientId: client.Id, InboundId: ib.Id}).Error; err != nil {
-		t.Fatalf("seed client inbound: %v", err)
-	}
-
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	NewSUBController(
-		router.Group("/"),
-		WithSUBPath("/sub/"),
-		WithSUBJsonPath("/json/"),
-		WithSUBClashPath("/clash/"),
-		WithSUBClashAutoDetect(true),
-		WithSUBJsonAutoDetect(true),
-		WithSUBJsonEnabled(true),
-		WithSUBClashEnabled(true),
-	)
-	return router, subID
-}
-
 func requestSub(t *testing.T, router *gin.Engine, method string, path string, hwid string, accept string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(method, path, nil)
@@ -253,4 +200,57 @@ func TestSubscriptionHwidStatusHidesUnknownVersusDisabled(t *testing.T) {
 	if disabled.Body.Len() != 0 {
 		t.Fatalf("404 body = %q, want empty", disabled.Body.String())
 	}
+}
+
+func initHwidSubRouter(t *testing.T, limit int) (*gin.Engine, string) {
+	t.Helper()
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+	if err := os.MkdirAll("internal/web/dist", 0o755); err != nil {
+		t.Fatalf("mkdir dist: %v", err)
+	}
+	if err := os.WriteFile("internal/web/dist/subpage.html", []byte("<html><head></head><body></body></html>"), 0o644); err != nil {
+		t.Fatalf("write subpage: %v", err)
+	}
+
+	t.Setenv("MINIRAY_DB_FOLDER", tmp)
+	dbtest.InitDB(t, filepath.Join(tmp, "miniray.db"))
+
+	const subID = "sub-hwid-route"
+	const email = "route@example.com"
+	const uuid = "11111111-2222-4333-8444-555555555555"
+	db := database.GetDB()
+	ib := &model.Inbound{
+		UserId:         1,
+		Tag:            "hwid-sub",
+		Enable:         true,
+		Port:           443,
+		Protocol:       model.VLESS,
+		Settings:       `{"clients":[]}`,
+		StreamSettings: `{"network":"tcp","security":"none"}`,
+	}
+	if err := db.Create(ib).Error; err != nil {
+		t.Fatalf("seed inbound: %v", err)
+	}
+	client := &model.ClientRecord{Email: email, SubID: subID, UUID: uuid, Enable: true, LimitHwid: limit}
+	if err := db.Create(client).Error; err != nil {
+		t.Fatalf("seed client: %v", err)
+	}
+	if err := db.Create(&model.ClientInbound{ClientId: client.Id, InboundId: ib.Id}).Error; err != nil {
+		t.Fatalf("seed client inbound: %v", err)
+	}
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	NewSUBController(
+		router.Group("/"),
+		WithSUBPath("/sub/"),
+		WithSUBJsonPath("/json/"),
+		WithSUBClashPath("/clash/"),
+		WithSUBClashAutoDetect(true),
+		WithSUBJsonAutoDetect(true),
+		WithSUBJsonEnabled(true),
+		WithSUBClashEnabled(true),
+	)
+	return router, subID
 }

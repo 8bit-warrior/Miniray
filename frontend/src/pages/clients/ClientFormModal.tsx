@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  AutoComplete,
   Button,
   Col,
   Form,
@@ -29,7 +28,6 @@ import {
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { Controller, FormProvider, useForm, useWatch, useFieldArray } from 'react-hook-form';
-
 import { HttpUtil, IntlUtil, RandomUtil, Wireguard } from '@/utils';
 import { formatInboundLabel } from '@/lib/inbounds/label';
 import { generateMtprotoSecret } from '@/lib/xray/inbound-defaults';
@@ -51,10 +49,8 @@ import { useFail2banStatusQuery, getLimitIpNotice } from '@/api/queries/useFail2
 import ClientRenewalFields from './ClientRenewalFields';
 import { ClientFormSchema, ClientCreateFormSchema, type ClientFormValues } from '@/schemas/client';
 import './ClientFormModal.css';
-
 const FLOW_OPTIONS = Object.values(TLS_FLOW_CONTROL);
 const VMESS_SECURITY_OPTIONS = ['auto', 'aes-128-gcm', 'chacha20-poly1305'] as const;
-
 const MULTI_CLIENT_PROTOCOLS = new Set([
   'shadowsocks',
   'vless',
@@ -66,10 +62,8 @@ const MULTI_CLIENT_PROTOCOLS = new Set([
   'amneziawg',
   'tuic',
 ]);
-
 const CLIENT_FORM_MODAL_Z_INDEX = 1000;
 const CLIENT_IP_LOG_MODAL_Z_INDEX = CLIENT_FORM_MODAL_Z_INDEX + 1;
-
 interface ExternalLinkRow {
   kind: 'link' | 'subscription';
   value: string;
@@ -80,15 +74,12 @@ interface ExternalLinkRow {
   lastFetchAt: number;
   lastFetchError: string;
 }
-
 interface ApiMsg<T = unknown> {
   success?: boolean;
   msg?: string;
   obj?: T;
 }
-
 type Mode = 'add' | 'edit';
-
 interface SaveMetaEdit {
   isEdit: true;
   email: string;
@@ -96,18 +87,15 @@ interface SaveMetaEdit {
   detach: number[];
   externalLinks: ExternalLinkInput[];
 }
-
 interface SaveMetaCreate {
   isEdit: false;
   email: string;
   externalLinks: ExternalLinkInput[];
 }
-
 interface SaveCreatePayload {
   client: Record<string, unknown>;
   inboundIds: number[];
 }
-
 interface ClientFormModalProps {
   open: boolean;
   mode: Mode;
@@ -117,7 +105,6 @@ interface ClientFormModalProps {
   attachedIds?: number[];
   tunnelAllowedIPs?: Record<number, string>;
   tgBotEnable?: boolean;
-  groups?: string[];
   save: (
     payload: Record<string, unknown> | SaveCreatePayload,
     meta: SaveMetaEdit | SaveMetaCreate,
@@ -125,7 +112,6 @@ interface ClientFormModalProps {
   resetTraffic?: (client: ClientRecord) => Promise<ApiMsg | null>;
   onOpenChange: (open: boolean) => void;
 }
-
 type Values = ClientFormValues & {
   expiryDate: number;
   limitHwid: number;
@@ -140,7 +126,6 @@ type Values = ClientFormValues & {
   secret: string;
   adTag: string;
 };
-
 const EMPTY: Values = {
   email: '',
   subId: '',
@@ -163,7 +148,6 @@ const EMPTY: Values = {
   limitIp: 0,
   limitHwid: 0,
   tgId: 0,
-  group: '',
   comment: '',
   enable: true,
   inboundIds: [],
@@ -178,7 +162,6 @@ const EMPTY: Values = {
   secret: '',
   adTag: '',
 };
-
 function toExternalLinkRows(links: ExternalLink[] | undefined): ExternalLinkRow[] {
   return (links || []).map((l) => ({
     kind: l.kind === 'subscription' ? 'subscription' : 'link',
@@ -191,24 +174,20 @@ function toExternalLinkRows(links: ExternalLink[] | undefined): ExternalLinkRow[
     lastFetchError: l.lastFetchError || '',
   }));
 }
-
 function bytesToGB(bytes: number): number {
   if (!bytes || bytes <= 0) return 0;
   return Math.round((bytes / (1024 * 1024 * 1024)) * 100) / 100;
 }
-
 export function gbToBytes(gb: number): number {
   if (!gb || gb <= 0) return 0;
   return Math.round(gb * 1024 * 1024 * 1024);
 }
-
 export function parseAllowedIPsList(raw: string): string[] {
   return raw
     .split(',')
     .map((s) => s.trim())
     .filter((s) => s !== '');
 }
-
 // Maps each of the two AllowedIPs fields to the specific wg/awg inbound the
 // client is currently attached to, so a save with both protocols attached at
 // once can send each its own value instead of one shared field ambiguously
@@ -229,7 +208,6 @@ export function resolveTunnelAllowedIPsByInbound(
   if (awgId != null) result[awgId] = awgAllowedIPs;
   return result;
 }
-
 export function resolveTotalBytes(
   originalBytes: number | null | undefined,
   displayedGB: number,
@@ -239,7 +217,6 @@ export function resolveTotalBytes(
   }
   return gbToBytes(displayedGB);
 }
-
 export default function ClientFormModal({
   open,
   mode,
@@ -249,7 +226,6 @@ export default function ClientFormModal({
   attachedIds = [],
   tunnelAllowedIPs = {},
   tgBotEnable = false,
-  groups = [],
   save,
   resetTraffic,
   onOpenChange,
@@ -257,7 +233,6 @@ export default function ClientFormModal({
   const { t } = useTranslation();
   const [messageApi, messageContextHolder] = message.useMessage();
   const isEdit = mode === 'edit';
-
   const methods = useForm<Values>({ defaultValues: EMPTY });
   const inboundIds = useWatch({ control: methods.control, name: 'inboundIds' });
   const delayedStart = useWatch({ control: methods.control, name: 'delayedStart' });
@@ -281,7 +256,6 @@ export default function ClientFormModal({
     append: appendExternalLink,
     remove: removeExternalLink,
   } = useFieldArray({ control: methods.control, name: 'externalLinks' });
-
   const [submitting, setSubmitting] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [clientIps, setClientIps] = useState<ClientIpInfo[]>([]);
@@ -304,7 +278,6 @@ export default function ClientFormModal({
   const fail2ban = useFail2banStatusQuery();
   const limitIpDisabled = !fail2ban.usable;
   const limitIpNotice = getLimitIpNotice(fail2ban, t);
-
   // Declared ahead of the seeding effect below (which needs them to resolve
   // which specific wg/awg inbound this client is attached to, for seeding
   // wgAllowedIPs/awgAllowedIPs from tunnelAllowedIPs) -- both are pure
@@ -317,7 +290,6 @@ export default function ClientFormModal({
     }
     return ids;
   }, [inbounds]);
-
   const amneziawgIds = useMemo(() => {
     const ids = new Set<number>();
     for (const row of inbounds || []) {
@@ -325,7 +297,6 @@ export default function ClientFormModal({
     }
     return ids;
   }, [inbounds]);
-
   function addExternalLinkRow(kind: 'link' | 'subscription') {
     appendExternalLink({
       kind,
@@ -338,12 +309,10 @@ export default function ClientFormModal({
       lastFetchError: '',
     });
   }
-
   useEffect(() => {
     if (!open) return;
     setIpsModalOpen(false);
     setHwidsModalOpen(false);
-
     if (isEdit && client) {
       const et = Number(client.expiryTime) || 0;
       const seedIds = Array.isArray(attachedIds) ? attachedIds : [];
@@ -376,7 +345,6 @@ export default function ClientFormModal({
         limitIp: client.limitIp || 0,
         limitHwid: client.limitHwid || 0,
         tgId: Number(client.tgId) || 0,
-        group: client.group || '',
         comment: client.comment || '',
         enable: !!client.enable,
         inboundIds: Array.isArray(attachedIds) ? [...attachedIds] : [],
@@ -416,10 +384,8 @@ export default function ClientFormModal({
         wgPublicKey: wgKeypair.publicKey,
       });
     }
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isEdit]);
-
   const flowCapableIds = useMemo(() => {
     const ids = new Set<number>();
     for (const row of inbounds || []) {
@@ -427,7 +393,6 @@ export default function ClientFormModal({
     }
     return ids;
   }, [inbounds]);
-
   const vlessLikeIds = useMemo(() => {
     const ids = new Set<number>();
     for (const row of inbounds || []) {
@@ -435,7 +400,6 @@ export default function ClientFormModal({
     }
     return ids;
   }, [inbounds]);
-
   const vmessIds = useMemo(() => {
     const ids = new Set<number>();
     for (const row of inbounds || []) {
@@ -443,7 +407,6 @@ export default function ClientFormModal({
     }
     return ids;
   }, [inbounds]);
-
   const mtprotoIds = useMemo(() => {
     const ids = new Set<number>();
     for (const row of inbounds || []) {
@@ -451,7 +414,6 @@ export default function ClientFormModal({
     }
     return ids;
   }, [inbounds]);
-
   const mtprotoDomain = useMemo(() => {
     for (const id of inboundIds || []) {
       const ib = (inbounds || []).find((row) => row.id === id);
@@ -459,7 +421,6 @@ export default function ClientFormModal({
     }
     return 'www.cloudflare.com';
   }, [inboundIds, inbounds]);
-
   const ss2022Method = useMemo(() => {
     for (const id of inboundIds || []) {
       const ib = (inbounds || []).find((row) => row.id === id);
@@ -468,7 +429,6 @@ export default function ClientFormModal({
     }
     return '';
   }, [inboundIds, inbounds]);
-
   function regeneratePassword() {
     methods.setValue(
       'password',
@@ -477,51 +437,41 @@ export default function ClientFormModal({
         : RandomUtil.randomLowerAndNum(16),
     );
   }
-
   const showFlow = useMemo(
     () => (inboundIds || []).some((id) => flowCapableIds.has(id)),
     [inboundIds, flowCapableIds],
   );
-
   const showReverseTag = useMemo(
     () => (inboundIds || []).some((id) => vlessLikeIds.has(id)),
     [inboundIds, vlessLikeIds],
   );
-
   const showSecurity = useMemo(
     () => (inboundIds || []).some((id) => vmessIds.has(id)),
     [inboundIds, vmessIds],
   );
-
   const showWireguard = useMemo(
     () => (inboundIds || []).some((id) => wireguardIds.has(id)),
     [inboundIds, wireguardIds],
   );
-
   const showAmneziawg = useMemo(
     () => (inboundIds || []).some((id) => amneziawgIds.has(id)),
     [inboundIds, amneziawgIds],
   );
-
   const showMtproto = useMemo(
     () => (inboundIds || []).some((id) => mtprotoIds.has(id)),
     [inboundIds, mtprotoIds],
   );
-
   function regenerateWireguardKeys() {
     const kp = Wireguard.generateKeypair();
     methods.setValue('wgPrivateKey', kp.privateKey);
     methods.setValue('wgPublicKey', kp.publicKey);
   }
-
   function regenerateWireguardPresharedKey() {
     methods.setValue('wgPreSharedKey', Wireguard.keyToBase64(Wireguard.generatePresharedKey()));
   }
-
   function regenerateMtprotoSecret() {
     methods.setValue('secret', generateMtprotoSecret(mtprotoDomain));
   }
-
   useEffect(() => {
     // Only clear the flow once we actually have inbound options to judge
     // capability from. While the options list is momentarily empty (e.g. the
@@ -532,13 +482,11 @@ export default function ClientFormModal({
       methods.setValue('flow', '');
     }
   }, [inbounds, showFlow, flow, methods]);
-
   useEffect(() => {
     if (!showReverseTag && reverseTag) {
       methods.setValue('reverseTag', '');
     }
   }, [showReverseTag, reverseTag, methods]);
-
   useEffect(() => {
     if (!ss2022Method) return;
     const current = methods.getValues('password');
@@ -546,13 +494,11 @@ export default function ClientFormModal({
       methods.setValue('password', RandomUtil.randomShadowsocksPassword(ss2022Method));
     }
   }, [ss2022Method, methods]);
-
   useEffect(() => {
     if (showMtproto && !secret) {
       methods.setValue('secret', generateMtprotoSecret(mtprotoDomain));
     }
   }, [showMtproto, secret, mtprotoDomain, methods]);
-
   const inboundOptions = useMemo(
     () =>
       (inbounds || [])
@@ -565,19 +511,16 @@ export default function ClientFormModal({
         })),
     [inbounds, inboundIds],
   );
-
   const expiryDayjs = useMemo<Dayjs | null>(
     () => (expiryDate > 0 ? dayjs(expiryDate) : null),
     [expiryDate],
   );
-
   const linkRows = externalLinkFields
     .map((field, index) => ({ field, index }))
     .filter((row) => row.field.kind === 'link');
   const subscriptionRows = externalLinkFields
     .map((field, index) => ({ field, index }))
     .filter((row) => row.field.kind === 'subscription');
-
   async function loadIps() {
     if (!isEdit || !client?.email) return;
     setIpsLoading(true);
@@ -594,12 +537,10 @@ export default function ClientFormModal({
       setIpsLoading(false);
     }
   }
-
   function openIpsModal() {
     setIpsModalOpen(true);
     if (clientIps.length === 0) void loadIps();
   }
-
   async function clearIps() {
     if (!isEdit || !client?.email) return;
     setIpsClearing(true);
@@ -612,16 +553,13 @@ export default function ClientFormModal({
       setIpsClearing(false);
     }
   }
-
   function openHwidsModal() {
     setHwidsModalOpen(true);
     if (clientHwids.length === 0) void loadHwids();
   }
-
   function close() {
     onOpenChange(false);
   }
-
   async function onResetTraffic() {
     if (!isEdit || !client?.email || !resetTraffic) return;
     setResetting(true);
@@ -636,7 +574,6 @@ export default function ClientFormModal({
       setResetting(false);
     }
   }
-
   async function onSubmit() {
     const values = methods.getValues();
     const schema = isEdit ? ClientFormSchema : ClientCreateFormSchema;
@@ -661,7 +598,6 @@ export default function ClientFormModal({
       limitIp: values.limitIp,
       limitHwid: values.limitHwid,
       tgId: values.tgId,
-      group: values.group,
       comment: values.comment,
       enable: values.enable,
       inboundIds: values.inboundIds,
@@ -695,7 +631,6 @@ export default function ClientFormModal({
       limitIp: Number(values.limitIp) || 0,
       limitHwid: Number(values.limitHwid) || 0,
       tgId: Number(values.tgId) || 0,
-      group: values.group,
       comment: values.comment,
       enable: !!values.enable,
     };
@@ -703,7 +638,6 @@ export default function ClientFormModal({
     if (reverseTagValue) {
       clientPayload.reverse = { tag: reverseTagValue };
     }
-
     if (showWireguard || showAmneziawg) {
       // AmneziaWG peers are wire-identical to WireGuard peers (same
       // privateKey/publicKey/preSharedKey/allowedIPs fields on model.Client),
@@ -741,7 +675,6 @@ export default function ClientFormModal({
         clientPayload.forwardedPorts = values.awgForwardedPorts.trim();
       }
     }
-
     if (showMtproto) {
       const adTag = values.adTag.trim();
       if (adTag !== '' && !/^[0-9a-fA-F]{32}$/.test(adTag)) {
@@ -751,7 +684,6 @@ export default function ClientFormModal({
       clientPayload.secret = values.secret;
       clientPayload.adTag = adTag;
     }
-
     const externalLinks: ExternalLinkInput[] = values.externalLinks
       .map((r) => ({
         kind: r.kind,
@@ -762,7 +694,6 @@ export default function ClientFormModal({
         namePrefix: (r.namePrefix || '').trim(),
       }))
       .filter((r) => r.value !== '');
-
     setSubmitting(true);
     try {
       let msg;
@@ -789,7 +720,6 @@ export default function ClientFormModal({
       setSubmitting(false);
     }
   }
-
   return (
     <>
       {messageContextHolder}
@@ -1018,20 +948,7 @@ export default function ClientFormModal({
                             <Input />
                           </FormField>
                         </Col>
-                        <Col xs={24} md={12}>
-                          <FormField
-                            name="group"
-                            label={t('pages.clients.group')}
-                            tooltip={t('pages.clients.groupDesc')}
-                            transform={{ output: (v) => v ?? '' }}
-                          >
-                            <AutoComplete
-                              placeholder={t('pages.clients.groupPlaceholder')}
-                              options={groups.map((g) => ({ value: g }))}
-                              allowClear
-                            />
-                          </FormField>
-                        </Col>
+                        <Col xs={24} md={12}></Col>
                       </Row>
 
                       {(tgBotEnable || showReverseTag) && (
@@ -1549,11 +1466,6 @@ export default function ClientFormModal({
               >
                 {entry.ip}
                 {entry.time ? ` (${entry.time})` : ''}
-                {entry.node ? (
-                  <span style={{ marginInlineStart: 6, opacity: 0.85, fontWeight: 600 }}>
-                    @ {entry.node}
-                  </span>
-                ) : null}
               </Tag>
             ))}
           </div>

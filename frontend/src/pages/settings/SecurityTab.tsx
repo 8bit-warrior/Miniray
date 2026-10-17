@@ -21,7 +21,7 @@ interface ApiTokenRow {
   name: string;
   enabled: boolean;
   createdAt: number;
-  scope: 'admin' | 'monitor' | 'node-sync';
+  scope: 'admin' | 'monitor';
   expiresAt: number;
 }
 
@@ -326,11 +326,11 @@ export default function SecurityTab({ allSetting, updateSetting, saveSetting }: 
           },
           {
             key: '3',
-            label: catTabLabel(<ApiOutlined />, t('pages.nodes.apiToken'), isMobile),
+            label: catTabLabel(<ApiOutlined />, t('pages.settings.security.apiToken'), isMobile),
             children: (
               <div className="api-token-section">
                 <div className="api-token-header">
-                  <p className="api-token-hint">{t('pages.nodes.apiTokenHint')}</p>
+                  <p className="api-token-hint">{t('pages.settings.security.apiTokenHint')}</p>
                   <Button type="primary" size="small" onClick={openCreateModal}>
                     + {t('pages.settings.security.apiTokenNew') || 'New token'}
                   </Button>

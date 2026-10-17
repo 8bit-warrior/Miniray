@@ -112,15 +112,11 @@
     "dashboard": "系统状态",
     "inbounds": "入站",
     "clients": "客户端",
-    "groups": "分组",
-    "nodes": "节点",
     "settings": "面板设置",
     "xray": "Xray 配置",
     "routing": "路由",
     "outbounds": "出站",
     "apiDocs": "API 文档",
-    "sponsors": "赞助商",
-    "hosts": "主机",
     "docs": "文档",
     "openMenu": "打开菜单",
     "subFormats": "Sub Formats"
@@ -292,9 +288,6 @@
       "operate": "菜单",
       "enable": "启用",
       "remark": "备注",
-      "node": "节点",
-      "deployTo": "部署到",
-      "localPanel": "本地面板",
       "fallbacks": {
         "title": "Fallbacks",
         "empty": "暂无回落",
@@ -330,7 +323,6 @@
       "delAllClientsConfirmTitle": "从 \"{remark}\" 中删除全部 {count} 个客户端？",
       "delAllClientsConfirmContent": "从此入站中移除每个客户端并丢弃其流量记录。入站本身将保留。此操作无法撤销。",
       "attachClients": "附加客户端到…",
-      "addClientsToGroup": "将客户端添加到分组…",
       "attachClientsTitle": "从 “{remark}” 附加客户端",
       "attachClientsDesc": "将相同的 {count} 个客户端(相同 UUID/密码和共享流量)附加到选定的入站。它们仍保留在此入站中。",
       "attachClientsTargets": "目标入站",
@@ -438,13 +430,10 @@
         "inboundCreateSuccess": "入站连接已成功创建",
         "bulkDeleted": "已删除 {count} 个入站",
         "bulkDeletedMixed": "已删除 {ok} 个，失败 {failed} 个",
-        "clonedMany": "已克隆 {count} 个入站",
-        "clonedMixed": "已克隆 {ok} 个，失败 {failed} 个",
         "inboundDeleteSuccess": "入站连接已成功删除",
         "inboundClientAddSuccess": "已添加入站客户端",
         "inboundClientDeleteSuccess": "入站客户端已删除",
         "inboundClientUpdateSuccess": "入站客户端已更新",
-        "savedNodeOfflineWillSync": "已在本地保存。某个支撑节点离线或已禁用——重新连接后将同步此更改。",
         "resetAllClientTrafficSuccess": "客户端所有流量已重置",
         "resetAllTrafficSuccess": "所有流量已重置",
         "resetInboundClientTrafficSuccess": "流量已重置",
@@ -681,7 +670,6 @@
         "disableFlow": "禁用 XTLS flow",
         "disableFlowHelp": "让此入站跳过自动注入 xtls-rprx-vision，即使其传输支持 flow（例如启用 VLESS 加密的隧道化 XHTTP 入站）。客户端在同一订阅中的其他可用入站上仍保留 Vision。仅限 VLESS。",
         "shareAddrStrategyOptions": {
-          "node": "节点地址",
           "listen": "入站监听地址",
           "custom": "自定义"
         },
@@ -742,10 +730,7 @@
       "searchPlaceholder": "搜索邮箱、备注、sub ID、UUID、密码、auth、Telegram ID…",
       "filterTitle": "筛选客户端",
       "clearAllFilters": "清除全部",
-      "filters": {
-        "nodes": "节点",
-        "localPanel": "本机（此面板）"
-      },
+      "filters": {},
       "showingCount": "显示 {shown} / {total}",
       "sortOldest": "最旧优先",
       "sortNewest": "最新优先",
@@ -788,9 +773,6 @@
       "email": "邮箱",
       "emailInvalidChars": "邮箱不能包含空格、'/'、'\\' 或控制字符",
       "subIdInvalidChars": "订阅 ID 不能包含空格、'/'、'\\' 或控制字符",
-      "group": "分组",
-      "groupDesc": "用于对相关客户端进行分桶的逻辑标签（如团队、客户、地区）。可从工具栏筛选。",
-      "groupPlaceholder": "如 customer-a",
       "comment": "备注",
       "traffic": "流量",
       "speed": "速度",
@@ -827,15 +809,6 @@
       "resetAllTrafficsContent": "所有客户端的上下行计数器将归零。配额与过期时间不受影响。该操作不可撤销。",
       "deleteConfirmTitle": "删除客户端 {email}？",
       "deleteConfirmContent": "将从所有关联入站中移除该客户端并删除其流量记录。该操作不可撤销。",
-      "addToGroupTitle": "将 {count} 个客户端添加到分组",
-      "addToGroupTooltip": "选择现有分组或输入新名称。使用 Ungroup 操作从当前分组移除客户端。",
-      "groupName": "分组名称",
-      "addToGroupSuccessToast": "已将 {count} 个客户端添加到 {group}",
-      "ungroupSuccessToast": "已清除 {count} 个客户端的分组",
-      "ungroup": "取消分组",
-      "ungroupConfirmTitle": "将 {count} 个客户端从其分组中移除?",
-      "ungroupConfirmContent": "清除每个选中客户端的分组标签。客户端本身保留（使用 Delete 完全移除）。",
-      "addToGroup": "添加到分组",
       "attach": "附加",
       "adjust": "调整",
       "subLinks": "订阅链接",
@@ -957,18 +930,6 @@
       "renewOnDayDesc": "每个自然月的这一天午夜（按面板时区）续期，而不是每 N 天续期一次。若当月没有该日期，则在当月最后一天续期。填 0 保持按天间隔模式。",
       "renewsUsed": "已用续期次数",
       "bulkAdTagHint": "输入 32 位十六进制标签以设置，或输入 'none' 清除 MTProto 赞助频道。"
-    },
-    "groups": {},
-    "nodes": {
-      "name": "名称",
-      "apiToken": "API 令牌",
-      "apiTokenHint": "远程面板在 安全设定 → API 令牌 中显示其 API 令牌。",
-      "latency": "延迟",
-      "statusValues": {},
-      "toasts": {
-        "fillRequired": "名称、地址、端口和 API 令牌为必填项"
-      },
-      "mtls": {}
     },
     "settings": {
       "defaultTag": "默认",
@@ -1236,7 +1197,9 @@
         "apiTokenEmpty": "暂无令牌 — 创建一个用于认证机器人或远程面板。",
         "apiTokenDeleteWarning": "使用此令牌的任何调用方将立即无法认证。",
         "apiTokenCreatedTitle": "令牌已创建",
-        "apiTokenCreatedNotice": "请立即复制此令牌。出于安全考虑，它不会以可读形式存储，也不会再次显示。"
+        "apiTokenCreatedNotice": "请立即复制此令牌。出于安全考虑，它不会以可读形式存储，也不会再次显示。",
+        "apiToken": "API 令牌",
+        "apiTokenHint": "远程面板在 安全设定 → API 令牌 中显示其 API 令牌。"
       },
       "toasts": {
         "modifySettings": "参数已更改。",
@@ -1281,8 +1244,6 @@
       "eventOutboundDown": "断开",
       "eventOutboundUp": "恢复",
       "eventXrayCrash": "崩溃",
-      "eventNodeDown": "离线",
-      "eventNodeUp": "上线",
       "eventCPUHigh": "CPU 占用过高（%）",
       "requestFailed": "请求失败",
       "smtpEncryption": "加密",
@@ -1586,7 +1547,51 @@
       "subIncyResolveDnsDomainDesc": "DoH 服务器 URL，通常以 /dns-query 结尾。",
       "subIncyResolveDnsIp": "DoH 服务器 IP",
       "subIncyResolveDnsIpDesc": "用于引导的 DoH 服务器 IP。",
-      "subIncyGroupRouting": "路由"
+      "subIncyGroupRouting": "路由",
+      "exportDatabaseDesc": "",
+      "allowInsecure": "允许不安全连接",
+      "allowInsecureHelp": "跳过 TLS 证书验证（allowInsecure / skip-cert-verify）。",
+      "remarkVars": {
+        "title": "模板变量",
+        "intro": "点击变量即可添加。生成订阅时会按客户端逐一替换。",
+        "preview": "预览",
+        "groups": {
+          "client": "客户端",
+          "traffic": "流量",
+          "time": "时间与状态",
+          "connection": "连接"
+        },
+        "descEMAIL": "客户端邮箱",
+        "descINBOUND": "入站本身的备注（配置名称）",
+        "descHOST": "主机备注",
+        "descID": "客户端 UUID",
+        "descSHORT_ID": "UUID 的前 8 个字符",
+        "descTELEGRAM_ID": "客户端的 Telegram ID（未设置则为空）",
+        "descSUB_ID": "订阅 ID",
+        "descCOMMENT": "客户端备注",
+        "descTRAFFIC_USED": "已用流量（易读格式）",
+        "descTRAFFIC_LEFT": "剩余流量（无限制时隐藏）",
+        "descTRAFFIC_TOTAL": "总流量（无限制时隐藏）",
+        "descTRAFFIC_USED_BYTES": "已用流量（字节）",
+        "descTRAFFIC_LEFT_BYTES": "剩余流量（字节）",
+        "descTRAFFIC_TOTAL_BYTES": "总流量（字节）",
+        "descUP": "上传流量",
+        "descDOWN": "下载流量",
+        "descSTATUS": "active / expired / disabled / depleted",
+        "descSTATUS_EMOJI": "以表情符号显示状态（✅ ⏳ 🚫）",
+        "descDAYS_LEFT": "距到期天数（无限制时隐藏）",
+        "descTIME_LEFT": "剩余时间（例如 12d 4h 30m）",
+        "descUSAGE_PERCENTAGE": "已用流量百分比（无限制时隐藏）",
+        "descEXPIRE_DATE": "到期日期（YYYY-MM-DD）",
+        "descJALALI_EXPIRE_DATE": "Jalali（波斯）历的到期日期（YYYY/MM/DD）",
+        "descEXPIRE_UNIX": "到期时间的 Unix 时间戳（秒）",
+        "descCREATED_UNIX": "创建时间的 Unix 时间戳（秒）",
+        "descRESET_DAYS": "流量重置周期（天）",
+        "descRESET_DAY": "按月续期的日期",
+        "descPROTOCOL": "入站协议（VLESS、VMess、Trojan……）",
+        "descTRANSPORT": "传输网络（tcp、ws、grpc……）",
+        "descSECURITY": "传输安全（TLS、REALITY、NONE）"
+      }
     },
     "xray": {
       "importRules": "导入规则",
@@ -2093,62 +2098,9 @@
         "poolSize": "池大小"
       },
       "defaultOutbound": "默认出站",
-      "defaultOutboundDesc": "未匹配任何路由规则的流量走此出站（列表中的第一个出站）。"
-    },
-    "hosts": {
-      "summary": {},
-      "sections": {},
-      "fields": {
-        "allowInsecure": "允许不安全连接"
-      },
-      "hints": {
-        "allowInsecure": "跳过 TLS 证书验证（allowInsecure / skip-cert-verify）。"
-      },
-      "remarkVars": {
-        "title": "模板变量",
-        "intro": "点击变量即可添加。生成订阅时会按客户端逐一替换。",
-        "preview": "预览",
-        "groups": {
-          "client": "客户端",
-          "traffic": "流量",
-          "time": "时间与状态",
-          "connection": "连接"
-        },
-        "descEMAIL": "客户端邮箱",
-        "descINBOUND": "入站本身的备注（配置名称）",
-        "descHOST": "主机备注",
-        "descID": "客户端 UUID",
-        "descSHORT_ID": "UUID 的前 8 个字符",
-        "descTELEGRAM_ID": "客户端的 Telegram ID（未设置则为空）",
-        "descSUB_ID": "订阅 ID",
-        "descCOMMENT": "客户端备注",
-        "descTRAFFIC_USED": "已用流量（易读格式）",
-        "descTRAFFIC_LEFT": "剩余流量（无限制时隐藏）",
-        "descTRAFFIC_TOTAL": "总流量（无限制时隐藏）",
-        "descTRAFFIC_USED_BYTES": "已用流量（字节）",
-        "descTRAFFIC_LEFT_BYTES": "剩余流量（字节）",
-        "descTRAFFIC_TOTAL_BYTES": "总流量（字节）",
-        "descUP": "上传流量",
-        "descDOWN": "下载流量",
-        "descSTATUS": "active / expired / disabled / depleted",
-        "descSTATUS_EMOJI": "以表情符号显示状态（✅ ⏳ 🚫）",
-        "descDAYS_LEFT": "距到期天数（无限制时隐藏）",
-        "descTIME_LEFT": "剩余时间（例如 12d 4h 30m）",
-        "descUSAGE_PERCENTAGE": "已用流量百分比（无限制时隐藏）",
-        "descEXPIRE_DATE": "到期日期（YYYY-MM-DD）",
-        "descJALALI_EXPIRE_DATE": "Jalali（波斯）历的到期日期（YYYY/MM/DD）",
-        "descEXPIRE_UNIX": "到期时间的 Unix 时间戳（秒）",
-        "descCREATED_UNIX": "创建时间的 Unix 时间戳（秒）",
-        "descRESET_DAYS": "流量重置周期（天）",
-        "descRESET_DAY": "按月续期的日期",
-        "descPROTOCOL": "入站协议（VLESS、VMess、Trojan……）",
-        "descTRANSPORT": "传输网络（tcp、ws、grpc……）",
-        "descSECURITY": "传输安全（TLS、REALITY、NONE）"
-      },
-      "toasts": {
-        "badTag": "无效的标签",
-        "badVlessRoute": "请输入 0 到 65535 之间的单个数字"
-      }
+      "defaultOutboundDesc": "未匹配任何路由规则的流量走此出站（列表中的第一个出站）。",
+      "ruleName": "名称",
+      "outboundLatency": "延迟"
     }
   },
   "tgbot": {
@@ -2273,8 +2225,6 @@
       "eventDelayDetail": "延迟：{{ .Delay }} 毫秒",
       "eventXrayCrash": "Xray 已崩溃",
       "eventXrayCrashError": "错误：{{ .Error }}",
-      "eventNodeDown": "节点 {{ .Name }} 已离线",
-      "eventNodeUp": "节点 {{ .Name }} 已上线",
       "eventLoginFallback": "来自 {{ .Source }} 的登录失败",
       "memoryThreshold": "内存使用率 {{ .Percent }}% 超过阈值 {{ .Threshold }}%"
     },
@@ -2366,7 +2316,6 @@
       "error": "错误",
       "delay": "延迟",
       "outbound": "出站",
-      "node": "节点",
       "threshold": "阈值",
       "reason": "原因",
       "time": "时间",
@@ -2381,8 +2330,6 @@
     "alerts": {
       "outboundDown": "出站已断开",
       "outboundUp": "出站已恢复",
-      "nodeDown": "节点已离线",
-      "nodeUp": "节点已恢复",
       "xrayCrash": "Xray 核心崩溃",
       "cpuHigh": "CPU 超出阈值",
       "memoryHigh": "内存超出阈值",
@@ -2428,7 +2375,6 @@
   "email": {
     "labelStatus": "状态",
     "labelOutbound": "出站",
-    "labelNode": "节点",
     "labelError": "错误",
     "labelDelay": "延迟",
     "labelUsername": "用户名",

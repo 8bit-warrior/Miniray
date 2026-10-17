@@ -71,11 +71,6 @@ func IsDevBuild() bool {
 	return GetBuildCommit() != ""
 }
 
-// GetPanelVersion returns the version a panel advertises to a managing master
-// node and displays in the UI: the plain version for stable builds, or
-// "dev+<short commit>" for dev builds. The dev form mirrors the master's
-// getPanelUpdateInfo latestVersion so a node on the current dev commit compares
-// as up to date instead of always showing "update available".
 func GetPanelVersion() string {
 	if !IsDevBuild() {
 		return GetBaseVersion()
@@ -178,28 +173,7 @@ func GetUpdateStatusFilePath() string {
 }
 
 // GetDBKind only supports SQLite.
-func GetDBKind()string{return "sqlite"}
-
-// GetNodeTokenEncryptionMode returns off, migration, or required. Explicit
-// policy prevents a missing key from silently downgrading encrypted storage.
-func GetNodeTokenEncryptionMode() string {
-	return strings.TrimSpace(os.Getenv("NODE_TOKEN_ENCRYPTION"))
-}
-
-// GetNodeTokenKeyFile returns the mode-0600 keyring path, configurable through
-// MINIRAY_NODE_TOKEN_KEY_FILE.
-func GetNodeTokenKeyFile() string {
-	if p := strings.TrimSpace(os.Getenv("MINIRAY_NODE_TOKEN_KEY_FILE")); p != "" {
-		return p
-	}
-	return "/etc/miniray/node_token_key.json"
-}
-
-// GetNodeTokenKeyEnv returns the name of the env var holding a single base64
-// 32-byte node-token key (secondary to the key file). Empty value => unused.
-func GetNodeTokenKeyEnv() string {
-	return "MINIRAY_NODE_TOKEN_KEY"
-}
+func GetDBKind() string { return "sqlite" }
 
 // GetEnvFilePaths returns the candidate service environment file paths (the file
 // systemd loads via EnvironmentFile) across the supported distro families.
@@ -273,4 +247,19 @@ func init() {
 		return // old does not exist
 	}
 	_ = copyFile(oldDBPath, newDBPath) // ignore error
+}
+
+func GetSecretEncryptionMode() string {
+	return strings.TrimSpace(os.Getenv("SECRET_ENCRYPTION"))
+}
+
+func GetSecretKeyFile() string {
+	if p := strings.TrimSpace(os.Getenv("MINIRAY_SECRET_KEY_FILE")); p != "" {
+		return p
+	}
+	return "/etc/miniray/secret_key.json"
+}
+
+func GetSecretKeyEnv() string {
+	return "MINIRAY_SECRET_KEY"
 }

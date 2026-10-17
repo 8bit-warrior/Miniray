@@ -1,12 +1,8 @@
-import type { NodeRecord } from '@/api/queries/useNodesQuery';
-import type { HostRecord } from '@/schemas/api/host';
-
 export interface StreamHints {
   network: string;
   isTls: boolean;
   isReality: boolean;
 }
-
 export type ProtocolFlags = {
   isVMess?: boolean;
   isVLess?: boolean;
@@ -20,7 +16,6 @@ export type ProtocolFlags = {
   isTuic?: boolean;
   isTunnel?: boolean;
 };
-
 export interface DBInboundRecord extends ProtocolFlags {
   id: number;
   enable: boolean;
@@ -32,12 +27,12 @@ export interface DBInboundRecord extends ProtocolFlags {
   down: number;
   total: number;
   expiryTime: number;
-  _expiryTime: { valueOf(): number } | null;
-  nodeId?: number | null;
+  _expiryTime: {
+    valueOf(): number;
+  } | null;
   settings: unknown;
   streamSettings: unknown;
 }
-
 export interface ClientCountEntry {
   clients: number;
   active: string[];
@@ -46,12 +41,10 @@ export interface ClientCountEntry {
   expiring: string[];
   online: string[];
 }
-
 export interface InboundSpeedEntry {
   up: number;
   down: number;
 }
-
 export type RowAction =
   | 'edit'
   | 'showInfo'
@@ -63,9 +56,7 @@ export type RowAction =
   | 'resetTraffic'
   | 'delAllClients'
   | 'clone';
-
 export type GeneralAction = 'import' | 'export' | 'subs' | 'resetInbounds';
-
 export interface InboundListProps {
   dbInbounds: DBInboundRecord[];
   clientCount: Record<number, ClientCountEntry>;
@@ -77,9 +68,6 @@ export interface InboundListProps {
   pageSize: number;
   isMobile: boolean;
   subEnable: boolean;
-  nodesById: Map<number, NodeRecord>;
-  hasActiveNode: boolean;
-  hosts: HostRecord[];
   onAddInbound: () => void;
   onGeneralAction: (key: GeneralAction) => void;
   onRowAction: (action: { key: RowAction; dbInbound: DBInboundRecord }) => void;

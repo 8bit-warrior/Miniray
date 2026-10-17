@@ -112,15 +112,11 @@
     "dashboard": "نمای کلی",
     "inbounds": "ورودی‌ها",
     "clients": "کلاینت‌ها",
-    "groups": "گروه‌ها",
-    "nodes": "نودها",
     "settings": "تنظیمات پنل",
     "xray": "پیکربندی Xray",
     "routing": "مسیریابی",
     "outbounds": "خروجی‌ها",
     "apiDocs": "مستندات API",
-    "sponsors": "اسپانسرها",
-    "hosts": "میزبان‌ها",
     "docs": "مستندات",
     "openMenu": "باز کردن منو",
     "subFormats": "Sub Formats"
@@ -292,9 +288,6 @@
       "operate": "منو",
       "enable": "فعال",
       "remark": "نام",
-      "node": "نود",
-      "deployTo": "استقرار روی",
-      "localPanel": "پنل لوکال",
       "fallbacks": {
         "title": "Fallbackها",
         "empty": "هنوز فال‌بکی اضافه نشده",
@@ -330,7 +323,6 @@
       "delAllClientsConfirmTitle": "حذف هر {count} کلاینت اینباند «{remark}»؟",
       "delAllClientsConfirmContent": "تمام کلاینت‌های این اینباند به همراه رکوردهای ترافیک‌شان حذف می‌شوند. خود اینباند باقی می‌ماند. این عمل غیرقابل بازگشت است.",
       "attachClients": "الصاق کاربران به…",
-      "addClientsToGroup": "افزودن کاربران به گروه…",
       "attachClientsTitle": "الصاق کاربران از «{remark}»",
       "attachClientsDesc": "همان {count} کاربر (با UUID/رمز یکسان و ترافیک مشترک) را به ورودی‌(های) انتخابی الصاق می‌کند. در این ورودی هم باقی می‌مانند.",
       "attachClientsTargets": "ورودی‌های مقصد",
@@ -438,13 +430,10 @@
         "inboundCreateSuccess": "ورودی با موفقیت ایجاد شد",
         "bulkDeleted": "{count} اینباند حذف شد",
         "bulkDeletedMixed": "{ok} حذف، {failed} ناموفق",
-        "clonedMany": "{count} اینباند کلون شد",
-        "clonedMixed": "{ok} کلون، {failed} ناموفق",
         "inboundDeleteSuccess": "ورودی با موفقیت حذف شد",
         "inboundClientAddSuccess": "کلاینت(های) ورودی اضافه شدند",
         "inboundClientDeleteSuccess": "کلاینت ورودی حذف شد",
         "inboundClientUpdateSuccess": "کلاینت ورودی به‌روزرسانی شد",
-        "savedNodeOfflineWillSync": "به‌صورت محلی ذخیره شد. یک نود پشتیبان آفلاین یا غیرفعال است — تغییر پس از اتصال مجدد همگام‌سازی می‌شود.",
         "resetAllClientTrafficSuccess": "تمام ترافیک کلاینت بازنشانی شد",
         "resetAllTrafficSuccess": "تمام ترافیک‌ها بازنشانی شدند",
         "resetInboundClientTrafficSuccess": "ترافیک بازنشانی شد",
@@ -682,7 +671,6 @@
         "disableFlow": "غیرفعال‌کردن جریان XTLS",
         "disableFlowHelp": "این inbound را از تزریق خودکار xtls-rprx-vision کنار بگذارید، حتی وقتی ترنسپورت آن از flow پشتیبانی می‌کند (مثلاً یک inbound از نوع XHTTP تونل‌شده با رمزنگاری VLESS). کلاینت‌ها Vision را روی سایر inboundهای سازگار در همان اشتراک حفظ می‌کنند. فقط برای VLESS.",
         "shareAddrStrategyOptions": {
-          "node": "آدرس نود",
           "listen": "آدرس شنود ورودی",
           "custom": "سفارشی"
         },
@@ -742,10 +730,7 @@
       "searchPlaceholder": "جستجوی ایمیل، توضیح، Sub ID، UUID، رمز، احراز، Telegram ID...",
       "filterTitle": "فیلتر کاربران",
       "clearAllFilters": "پاک کردن همه",
-      "filters": {
-        "nodes": "نودها",
-        "localPanel": "محلی (همین پنل)"
-      },
+      "filters": {},
       "showingCount": "نمایش {shown} از {total}",
       "sortOldest": "قدیمی‌ترین",
       "sortNewest": "جدیدترین",
@@ -788,9 +773,6 @@
       "email": "ایمیل",
       "emailInvalidChars": "ایمیل نمی‌تواند شامل فاصله، '/'، '\\' یا کاراکترهای کنترلی باشد",
       "subIdInvalidChars": "شناسه‌ی اشتراک نمی‌تواند شامل فاصله، '/'، '\\' یا کاراکترهای کنترلی باشد",
-      "group": "گروه",
-      "groupDesc": "برچسبی منطقی برای دسته‌بندی کاربران مرتبط (مثل تیم، مشتری، منطقه). از نوار ابزار قابل فیلتر است.",
-      "groupPlaceholder": "مثلاً customer-a",
       "comment": "توضیحات",
       "traffic": "ترافیک",
       "speed": "سرعت",
@@ -827,15 +809,6 @@
       "resetAllTrafficsContent": "شمارنده ارسال/دریافت همه کلاینت‌ها به صفر می‌رسد. سهمیه و تاریخ انقضا تغییری نمی‌کند. این عمل غیرقابل بازگشت است.",
       "deleteConfirmTitle": "حذف کلاینت {email}؟",
       "deleteConfirmContent": "این کلاینت از تمام اینباندهای متصل حذف و سابقه ترافیک آن پاک می‌شود. این عمل غیرقابل بازگشت است.",
-      "addToGroupTitle": "افزودن {count} کاربر به یک گروه",
-      "addToGroupTooltip": "یک گروه موجود را انتخاب کنید یا نام جدیدی تایپ کنید. برای حذف کاربران از گروه فعلی، از Ungroup استفاده کنید.",
-      "groupName": "نام گروه",
-      "addToGroupSuccessToast": "{count} کاربر به {group} اضافه شد",
-      "ungroupSuccessToast": "گروه از {count} کاربر پاک شد",
-      "ungroup": "خارج از گروه",
-      "ungroupConfirmTitle": "حذف {count} کاربر از گروهشان؟",
-      "ungroupConfirmContent": "برچسب گروه را روی هر کاربر انتخابی پاک می‌کند. کاربران حفظ می‌شوند (برای حذف کامل از Delete استفاده کنید).",
-      "addToGroup": "افزودن به گروه",
       "attach": "الصاق",
       "adjust": "تنظیم",
       "subLinks": "لینک‌های اشتراک",
@@ -957,18 +930,6 @@
       "renewOnDayDesc": "در این روز از هر ماه تقویمی، در نیمه‌شب به وقت پنل تمدید می‌شود، به جای هر N روز. اگر ماه کوتاه‌تر از روز انتخابی باشد، در آخرین روز آن ماه تمدید می‌شود. مقدار ۰ حالت بازهٔ روزانه را حفظ می‌کند.",
       "renewsUsed": "تمدیدهای استفاده‌شده",
       "bulkAdTagHint": "یک برچسب هگز ۳۲ کاراکتری برای تنظیم وارد کنید، یا 'none' برای پاک کردن در MTProto."
-    },
-    "groups": {},
-    "nodes": {
-      "name": "نام",
-      "apiToken": "توکن API",
-      "apiTokenHint": "پنل ریموت توکن API خودش را در بخش احرازهویت → توکن API نمایش می‌دهد.",
-      "latency": "تاخیر",
-      "statusValues": {},
-      "toasts": {
-        "fillRequired": "نام، آدرس، پورت و توکن API الزامی است"
-      },
-      "mtls": {}
     },
     "settings": {
       "defaultTag": "پیش‌فرض",
@@ -1240,7 +1201,9 @@
         "apiTokenEmpty": "هنوز توکنی وجود ندارد — برای احراز هویت ربات‌ها یا پنل‌های راه دور یکی بسازید.",
         "apiTokenDeleteWarning": "هر کلاینتی که از این توکن استفاده می‌کند بلافاصله احراز هویتش قطع می‌شود.",
         "apiTokenCreatedTitle": "توکن ساخته شد",
-        "apiTokenCreatedNotice": "اکنون این توکن را کپی کنید. به‌دلیل امنیتی به‌صورت قابل‌خواندن ذخیره نمی‌شود و دوباره نمایش داده نخواهد شد."
+        "apiTokenCreatedNotice": "اکنون این توکن را کپی کنید. به‌دلیل امنیتی به‌صورت قابل‌خواندن ذخیره نمی‌شود و دوباره نمایش داده نخواهد شد.",
+        "apiToken": "توکن API",
+        "apiTokenHint": "پنل ریموت توکن API خودش را در بخش احرازهویت → توکن API نمایش می‌دهد."
       },
       "toasts": {
         "modifySettings": "پارامترها تغییر کرده‌اند.",
@@ -1285,8 +1248,6 @@
       "eventOutboundDown": "قطع",
       "eventOutboundUp": "وصل",
       "eventXrayCrash": "کرش",
-      "eventNodeDown": "قطع",
-      "eventNodeUp": "وصل",
       "eventCPUHigh": "بالا بودن CPU (٪)",
       "requestFailed": "درخواست ناموفق بود",
       "smtpEncryption": "رمزنگاری",
@@ -1586,7 +1547,51 @@
       "subIncyResolveDnsDomainDesc": "آدرس سرور DoH، معمولاً به /dns-query ختم میشود.",
       "subIncyResolveDnsIp": "آیپی سرور DoH",
       "subIncyResolveDnsIpDesc": "آیپی سرور DoH برای بوتاسترپ.",
-      "subIncyGroupRouting": "مسیریابی"
+      "subIncyGroupRouting": "مسیریابی",
+      "exportDatabaseDesc": "",
+      "allowInsecure": "اجازهٔ اتصال ناامن",
+      "allowInsecureHelp": "رد کردن بررسی گواهی TLS (allowInsecure / skip-cert-verify).",
+      "remarkVars": {
+        "title": "متغیرهای قالب",
+        "intro": "برای افزودن یک متغیر روی آن کلیک کنید. هنگام ساخت اشتراک، برای هر کاربر جایگزین می‌شود.",
+        "preview": "پیش‌نمایش",
+        "groups": {
+          "client": "کاربر",
+          "traffic": "ترافیک",
+          "time": "زمان و وضعیت",
+          "connection": "اتصال"
+        },
+        "descEMAIL": "ایمیل کاربر",
+        "descINBOUND": "نام خود اینباند (نام کانفیگ)",
+        "descHOST": "نام میزبان",
+        "descID": "UUID کاربر",
+        "descSHORT_ID": "۸ کاراکتر اول UUID",
+        "descTELEGRAM_ID": "شناسهٔ تلگرام کاربر (در صورت عدم تنظیم خالی)",
+        "descSUB_ID": "شناسهٔ اشتراک",
+        "descCOMMENT": "توضیحات کاربر",
+        "descTRAFFIC_USED": "ترافیک مصرف‌شده (قابل خواندن برای انسان)",
+        "descTRAFFIC_LEFT": "ترافیک باقی‌مانده (در صورت نامحدود بودن پنهان می‌شود)",
+        "descTRAFFIC_TOTAL": "ترافیک کل (در صورت نامحدود بودن پنهان می‌شود)",
+        "descTRAFFIC_USED_BYTES": "ترافیک مصرف‌شده به بایت",
+        "descTRAFFIC_LEFT_BYTES": "ترافیک باقی‌مانده به بایت",
+        "descTRAFFIC_TOTAL_BYTES": "ترافیک کل به بایت",
+        "descUP": "ترافیک آپلود",
+        "descDOWN": "ترافیک دانلود",
+        "descSTATUS": "فعال / منقضی‌شده / غیرفعال / مصرف‌شده",
+        "descSTATUS_EMOJI": "وضعیت به‌صورت ایموجی (✅ ⏳ 🚫)",
+        "descDAYS_LEFT": "روزهای باقی‌مانده تا انقضا (در صورت نامحدود بودن پنهان می‌شود)",
+        "descTIME_LEFT": "زمان باقی‌مانده (مثلاً 12d 4h 30m)",
+        "descUSAGE_PERCENTAGE": "ترافیک مصرف‌شده به درصد (در صورت نامحدود بودن پنهان می‌شود)",
+        "descEXPIRE_DATE": "تاریخ انقضا (YYYY-MM-DD)",
+        "descJALALI_EXPIRE_DATE": "تاریخ انقضا در تقویم جلالی (YYYY/MM/DD)",
+        "descEXPIRE_UNIX": "انقضا به‌صورت مهر زمانی Unix (ثانیه)",
+        "descCREATED_UNIX": "زمان ایجاد به‌صورت مهر زمانی Unix (ثانیه)",
+        "descRESET_DAYS": "دورهٔ بازنشانی ترافیک به روز",
+        "descRESET_DAY": "روز ماه برای تمدید تقویمی",
+        "descPROTOCOL": "پروتکل اینباند (VLESS، VMess، Trojan، …)",
+        "descTRANSPORT": "شبکهٔ انتقال (tcp، ws، grpc، …)",
+        "descSECURITY": "امنیت انتقال (TLS، REALITY، NONE)"
+      }
     },
     "xray": {
       "save": "ذخیره",
@@ -2093,62 +2098,9 @@
         "poolSize": "اندازه استخر"
       },
       "defaultOutbound": "خروجی پیش‌فرض",
-      "defaultOutboundDesc": "ترافیکی که با هیچ قانون مسیریابی جور نشود از این خروجی استفاده می‌کند (اولین خروجی در فهرست)."
-    },
-    "hosts": {
-      "summary": {},
-      "sections": {},
-      "fields": {
-        "allowInsecure": "اجازهٔ اتصال ناامن"
-      },
-      "hints": {
-        "allowInsecure": "رد کردن بررسی گواهی TLS (allowInsecure / skip-cert-verify)."
-      },
-      "remarkVars": {
-        "title": "متغیرهای قالب",
-        "intro": "برای افزودن یک متغیر روی آن کلیک کنید. هنگام ساخت اشتراک، برای هر کاربر جایگزین می‌شود.",
-        "preview": "پیش‌نمایش",
-        "groups": {
-          "client": "کاربر",
-          "traffic": "ترافیک",
-          "time": "زمان و وضعیت",
-          "connection": "اتصال"
-        },
-        "descEMAIL": "ایمیل کاربر",
-        "descINBOUND": "نام خود اینباند (نام کانفیگ)",
-        "descHOST": "نام میزبان",
-        "descID": "UUID کاربر",
-        "descSHORT_ID": "۸ کاراکتر اول UUID",
-        "descTELEGRAM_ID": "شناسهٔ تلگرام کاربر (در صورت عدم تنظیم خالی)",
-        "descSUB_ID": "شناسهٔ اشتراک",
-        "descCOMMENT": "توضیحات کاربر",
-        "descTRAFFIC_USED": "ترافیک مصرف‌شده (قابل خواندن برای انسان)",
-        "descTRAFFIC_LEFT": "ترافیک باقی‌مانده (در صورت نامحدود بودن پنهان می‌شود)",
-        "descTRAFFIC_TOTAL": "ترافیک کل (در صورت نامحدود بودن پنهان می‌شود)",
-        "descTRAFFIC_USED_BYTES": "ترافیک مصرف‌شده به بایت",
-        "descTRAFFIC_LEFT_BYTES": "ترافیک باقی‌مانده به بایت",
-        "descTRAFFIC_TOTAL_BYTES": "ترافیک کل به بایت",
-        "descUP": "ترافیک آپلود",
-        "descDOWN": "ترافیک دانلود",
-        "descSTATUS": "فعال / منقضی‌شده / غیرفعال / مصرف‌شده",
-        "descSTATUS_EMOJI": "وضعیت به‌صورت ایموجی (✅ ⏳ 🚫)",
-        "descDAYS_LEFT": "روزهای باقی‌مانده تا انقضا (در صورت نامحدود بودن پنهان می‌شود)",
-        "descTIME_LEFT": "زمان باقی‌مانده (مثلاً 12d 4h 30m)",
-        "descUSAGE_PERCENTAGE": "ترافیک مصرف‌شده به درصد (در صورت نامحدود بودن پنهان می‌شود)",
-        "descEXPIRE_DATE": "تاریخ انقضا (YYYY-MM-DD)",
-        "descJALALI_EXPIRE_DATE": "تاریخ انقضا در تقویم جلالی (YYYY/MM/DD)",
-        "descEXPIRE_UNIX": "انقضا به‌صورت مهر زمانی Unix (ثانیه)",
-        "descCREATED_UNIX": "زمان ایجاد به‌صورت مهر زمانی Unix (ثانیه)",
-        "descRESET_DAYS": "دورهٔ بازنشانی ترافیک به روز",
-        "descRESET_DAY": "روز ماه برای تمدید تقویمی",
-        "descPROTOCOL": "پروتکل اینباند (VLESS، VMess، Trojan، …)",
-        "descTRANSPORT": "شبکهٔ انتقال (tcp، ws، grpc، …)",
-        "descSECURITY": "امنیت انتقال (TLS، REALITY، NONE)"
-      },
-      "toasts": {
-        "badTag": "برچسب نامعتبر",
-        "badVlessRoute": "یک عدد بین 0 تا 65535 وارد کنید"
-      }
+      "defaultOutboundDesc": "ترافیکی که با هیچ قانون مسیریابی جور نشود از این خروجی استفاده می‌کند (اولین خروجی در فهرست).",
+      "ruleName": "نام",
+      "outboundLatency": "تاخیر"
     }
   },
   "tgbot": {
@@ -2273,8 +2225,6 @@
       "eventDelayDetail": "تأخیر: {{ .Delay }} میلی‌ثانیه",
       "eventXrayCrash": "Xray کرش کرد",
       "eventXrayCrashError": "خطا: {{ .Error }}",
-      "eventNodeDown": "نود {{ .Name }} قطع است",
-      "eventNodeUp": "نود {{ .Name }} وصل است",
       "eventLoginFallback": "ورود ناموفق از {{ .Source }}",
       "memoryThreshold": "مصرف حافظه {{ .Percent }}% از حد آستانه {{ .Threshold }}% فراتر رفته است"
     },
@@ -2366,7 +2316,6 @@
       "error": "خطا",
       "delay": "تأخیر",
       "outbound": "خروجی",
-      "node": "نود",
       "threshold": "آستانه",
       "reason": "دلیل",
       "time": "زمان",
@@ -2381,8 +2330,6 @@
     "alerts": {
       "outboundDown": "خروجی از دسترس خارج شد",
       "outboundUp": "خروجی در دسترس است",
-      "nodeDown": "نود از دسترس خارج شد",
-      "nodeUp": "نود در دسترس است",
       "xrayCrash": "هسته Xray از کار افتاد",
       "cpuHigh": "عبور از آستانه پردازنده",
       "memoryHigh": "عبور از آستانه حافظه",
@@ -2428,7 +2375,6 @@
   "email": {
     "labelStatus": "وضعیت",
     "labelOutbound": "خروجی",
-    "labelNode": "نود",
     "labelError": "خطا",
     "labelDelay": "تأخیر",
     "labelUsername": "نام‌کاربری",

@@ -43,10 +43,7 @@ const GROUPS: NotificationGroupConfig[] = [
   {
     icon: <DesktopOutlined />,
     title: 'eventGroupNode',
-    events: [
-      { key: 'node.down', label: 'eventNodeDown', settingKey: '' },
-      { key: 'node.up', label: 'eventNodeUp', settingKey: '' },
-    ],
+    events: [],
   },
   {
     icon: <DashboardOutlined />,

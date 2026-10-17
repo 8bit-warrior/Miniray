@@ -16,7 +16,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// getRemoteIp extracts the real IP address from the request headers or remote address.
 func getRemoteIp(c *gin.Context) string {
 	remoteIP, ok := extractTrustedIP(c.Request.RemoteAddr)
 	if !ok {
@@ -180,16 +179,6 @@ func jsonMsgObj(c *gin.Context, msg string, obj any, err error) {
 		}
 	}
 	c.JSON(http.StatusOK, m)
-}
-
-// pendingNodeObj returns a response object flagging that the save committed
-// locally but a backing node was offline/disabled, so the change will be
-// mirrored to the node once it reconnects. Returns nil when nothing is pending.
-func pendingNodeObj(pending bool) any {
-	if pending {
-		return gin.H{"nodePending": true}
-	}
-	return nil
 }
 
 // pureJsonMsg sends a pure JSON message response with custom status code.

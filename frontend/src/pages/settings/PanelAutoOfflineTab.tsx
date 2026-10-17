@@ -16,19 +16,20 @@ export default function PanelAutoOfflineTab({
   updateSetting: (v: Partial<AllSetting>) => void;
   onValidityChange?: (valid: boolean) => void;
 }) {
-  const [text, setText] = useState(() => String(allSetting.panelOfflineValue));
+  const savedText = String(allSetting.panelOfflineValue);
+  const [draft, setDraft] = useState({ savedText, text: savedText });
+  const text = draft.savedText === savedText ? draft.text : savedText;
   const [bootEnabled, setBootEnabled] = useState<boolean | null>(null);
   const [bootSaving, setBootSaving] = useState(false);
   const [notice, contextHolder] = message.useMessage();
 
-  useEffect(() => setText(String(allSetting.panelOfflineValue)), [allSetting.panelOfflineValue]);
-
   useEffect(() => {
     let active = true;
-    HttpUtil.get<{ enabled: boolean }>('/panel/api/setting/panelAutostart', undefined, { silent: true })
-      .then((result) => {
-        if (active && result?.success && result.obj) setBootEnabled(result.obj.enabled);
-      });
+    HttpUtil.get<{ enabled: boolean }>('/panel/api/setting/panelAutostart', undefined, {
+      silent: true,
+    }).then((result) => {
+      if (active && result?.success && result.obj) setBootEnabled(result.obj.enabled);
+    });
     return () => {
       active = false;
     };
@@ -95,9 +96,12 @@ export default function PanelAutoOfflineTab({
             aria-invalid={allSetting.panelOfflineEnabled && !valid}
             onChange={(event) => {
               const value = event.target.value;
-              setText(value);
-              if (/^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value)) &&
-                  Number(value) <= MAX[allSetting.panelOfflineUnit]) {
+              setDraft({ savedText, text: value });
+              if (
+                /^[1-9]\d*$/.test(value) &&
+                Number.isSafeInteger(Number(value)) &&
+                Number(value) <= MAX[allSetting.panelOfflineUnit]
+              ) {
                 updateSetting({ panelOfflineValue: Number(value) });
               }
             }}

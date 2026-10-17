@@ -31,17 +31,6 @@ func (f *fakeHappLinkGenerator) Generate(_ context.Context, clientID int, host s
 	return f.result, f.err
 }
 
-func newHappClientTestRouter(generator service.HappLinkGenerator) *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	router.Use(func(c *gin.Context) {
-		c.Set("I18n", func(_ locale.I18nType, key string, _ ...string) string { return key })
-		c.Next()
-	})
-	(&ClientController{happGenerator: generator}).initRouter(router.Group("/clients"))
-	return router
-}
-
 func TestGenerateHappLinkForwardsCurrentRequestAndReturnsOnlyLink(t *testing.T) {
 	fake := &fakeHappLinkGenerator{result: service.HappLinkResult{EncryptedLink: "happ://crypt5/fresh"}}
 	router := newHappClientTestRouter(fake)
@@ -146,4 +135,15 @@ func assertHappFailureWithoutSecret(t *testing.T, rec *httptest.ResponseRecorder
 	if strings.Contains(rec.Body.String(), secret) {
 		t.Fatalf("failure leaked provider secret: %s", rec.Body.String())
 	}
+}
+
+func newHappClientTestRouter(generator service.HappLinkGenerator) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("I18n", func(_ locale.I18nType, key string, _ ...string) string { return key })
+		c.Next()
+	})
+	(&ClientController{happGenerator: generator}).initRouter(router.Group("/clients"))
+	return router
 }

@@ -37,9 +37,6 @@ func awgRelayWindowSettingsWithForward(t *testing.T, tag, forwardedPorts string)
 func pushInboundIDSequence(t *testing.T, nextID int) {
 	t.Helper()
 	// The counter is a sqlite_sequence row, so this has no PostgreSQL equivalent.
-	if database.IsPostgres() {
-		t.Skip("the inbounds AUTOINCREMENT counter is a SQLite row")
-	}
 	res := database.GetDB().Exec("UPDATE sqlite_sequence SET seq = ? WHERE name = ?", nextID-1, "inbounds")
 	if res.Error != nil {
 		t.Fatalf("push the inbounds sequence to %d: %v", nextID, res.Error)
@@ -247,48 +244,5 @@ func TestUpdateInbound_AmneziawgRefusesItsOwnRelayPort(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "relay port") {
 		t.Fatalf("the refusal must say the port is an automatic relay one, got %v", err)
-	}
-}
-
-// A row adopted from a node keeps the protocol it arrived with and its central
-// id (inbound_node.go:737), but gets no relay -- so its slot can never be taken.
-func TestCheckPortConflict_NodeAssignedAmneziawgOwnsNoRelaySlot(t *testing.T) {
-	setupConflictDB(t)
-	blocker := addAmneziaWGInbound(t, "awg-blocker", 51820, true)
-
-	nodeID := 7
-	adopted := &model.Inbound{
-		Tag:      "awg-adopted",
-		Enable:   true,
-		Listen:   "0.0.0.0",
-		Port:     51821,
-		Protocol: model.AmneziaWG,
-		Settings: awgRelayWindowSettings(t, "awg-adopted"),
-		NodeID:   &nodeID,
-	}
-	collidingID := blocker.Id + 435
-	if amneziawgnet.SOCKSPortForInbound(collidingID) != amneziawgnet.SOCKSPortForInbound(blocker.Id) {
-		t.Fatalf("fixture: id %d does not derive the blocker's relay port", collidingID)
-	}
-
-	got, err := (&InboundService{}).checkPortConflict(adopted, collidingID)
-	if err != nil {
-		t.Fatalf("checkPortConflict: %v", err)
-	}
-	if got != nil {
-		t.Fatalf("id %d is node-assigned and binds no relay, so it cannot collide; got %q",
-			collidingID, got.String())
-	}
-
-	// The same rule covers the row's own port: with no relay on this host, its
-	// WireGuard port may legitimately BE the port its id would derive.
-	adopted.Port = amneziawgnet.SOCKSPortForInbound(collidingID)
-	got, err = (&InboundService{}).checkPortConflict(adopted, collidingID)
-	if err != nil {
-		t.Fatalf("checkPortConflict: %v", err)
-	}
-	if got != nil {
-		t.Fatalf("id %d is node-assigned and binds no relay, so its own port is not a conflict; got %q",
-			collidingID, got.String())
 	}
 }

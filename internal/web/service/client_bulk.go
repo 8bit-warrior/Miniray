@@ -8,14 +8,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/util/common"
 	"github.com/8bit-warrior/Miniray/internal/xray"
-
-	"gorm.io/gorm"
 )
 
 // BulkAttachResult reports the outcome of a bulk attach across target inbounds.
@@ -72,8 +71,6 @@ func (s *ClientService) BulkAttach(inboundSvc *InboundService, emails []string, 
 	}
 
 	needRestart := false
-	// Prepared in order first, as in Create: fillProtocolDefaults mints the
-	// shared credentials, so only the node pushes below may overlap.
 	attachIds := make([]int, 0, len(inboundIds))
 	attachPayloads := make([]string, 0, len(inboundIds))
 	attachClients := make([][]model.Client, 0, len(inboundIds))
@@ -650,12 +647,6 @@ type bulkInboundAdjustResult struct {
 	needRestart     bool
 }
 
-// bulkAdjustInboundClients applies expiry/total deltas to multiple clients
-// inside a single inbound's settings JSON. The xray runtime is updated
-// only for remote-node inbounds; local nodes do not need a notification
-// because the AddUser payload does not include totalGB/expiryTime —
-// changing those fields is identity-preserving and the panel's traffic
-// enforcement loop picks up the new limits from ClientTraffic directly.
 func (s *ClientService) bulkAdjustInboundClients(
 	inboundSvc *InboundService,
 	inboundId int,
@@ -798,10 +789,7 @@ func (s *ClientService) bulkAdjustInboundClients(
 	prevSettings := oldInbound.Settings
 	oldInbound.Settings = string(newSettings)
 
-	// A flow change rewrites the user's xray config, which the lightweight
-	// UpdateUser push below does not carry. Local nodes reload via restart;
-	// remote nodes get a full reconcile (MarkNodeDirty) instead of a per-user push.
-	if flowChanged && oldInbound.NodeID == nil {
+	if flowChanged {
 		res.needRestart = true
 	}
 
@@ -818,9 +806,7 @@ func (s *ClientService) bulkAdjustInboundClients(
 		if err := s.SyncInbound(tx, inboundId, finalClients); err != nil {
 			return err
 		}
-		if oldInbound.NodeID != nil {
-			return (&NodeService{}).MarkNodeDirtyTx(tx, *oldInbound.NodeID)
-		}
+
 		return nil
 	})
 	if txErr != nil {
@@ -830,37 +816,8 @@ func (s *ClientService) bulkAdjustInboundClients(
 			}
 		}
 	} else {
-		if adTagChanged && oldInbound.Protocol == model.MTProto && oldInbound.NodeID == nil {
+		if adTagChanged && oldInbound.Protocol == model.MTProto {
 			inboundSvc.applyLocalMtproto(oldInbound.Id)
-		}
-		if oldInbound.NodeID != nil && !flowChanged && len(foundEmails) <= nodeBulkPushThreshold {
-			rt, push, _, perr := inboundSvc.nodePushPlan(oldInbound)
-			if perr != nil {
-				logger.Warning("BulkAdjust: node runtime lookup after commit failed:", perr)
-			} else if push {
-				for email := range foundEmails {
-					entry := plan[email]
-					updated := *entry.record.ToClient()
-					if entry.applyExpiry {
-						updated.ExpiryTime = entry.newExpiry
-					}
-					if entry.applyTotal {
-						updated.TotalGB = entry.newTotal
-					}
-					if adTag != "" && oldInbound.Protocol == model.MTProto {
-						updated.AdTag = wantAdTag
-					}
-					updated.UpdatedAt = nowMs
-					ctx, cancel := nodePushContext()
-					err1 := rt.UpdateUser(ctx, oldInbound, email, updated)
-					cancel()
-					if err1 != nil {
-						logger.Warning("Error in updating client on", rt.Name(), ":", err1)
-						// First failure ends the batch push; the reconcile converges the rest.
-						break
-					}
-				}
-			}
 		}
 	}
 
@@ -985,9 +942,6 @@ func (s *ClientService) BulkDelete(inboundSvc *InboundService, emails []string, 
 		// Serialize the row cleanup against the traffic poll to avoid the
 		// cross-transaction lock-order deadlock on client_traffics/inbounds.
 		if err := runSerializedTx(func(tx *gorm.DB) error {
-			if e := adjustGroupBaselinesForRemovedTraffic(tx, successEmails); e != nil {
-				return e
-			}
 			if e := clearClientHwidsBySubIDTx(tx, successSubIDs...); e != nil {
 				return e
 			}
@@ -1193,9 +1147,7 @@ func (s *ClientService) bulkDelInboundClients(
 		if err := s.SyncInbound(tx, inboundId, finalClients); err != nil {
 			return err
 		}
-		if oldInbound.NodeID != nil {
-			return (&NodeService{}).MarkNodeDirtyTx(tx, *oldInbound.NodeID)
-		}
+
 		return nil
 	})
 	if txErr != nil {
@@ -1204,7 +1156,7 @@ func (s *ClientService) bulkDelInboundClients(
 				res.perEmailSkipped[email] = txErr.Error()
 			}
 		}
-	} else if oldInbound.NodeID == nil {
+	} else {
 		rt, rterr := inboundSvc.runtimeFor(oldInbound)
 		if rterr != nil {
 			res.needRestart = true
@@ -1221,32 +1173,6 @@ func (s *ClientService) bulkDelInboundClients(
 				} else {
 					logger.Debug("Error in deleting client on", rt.Name(), ":", err1)
 					res.needRestart = true
-				}
-			}
-		}
-	} else {
-		dispatchEmails := make([]string, 0, len(wantedEmails))
-		for email := range wantedEmails {
-			if _, skip := res.perEmailSkipped[email]; !skip {
-				dispatchEmails = append(dispatchEmails, email)
-			}
-		}
-		if len(dispatchEmails) > nodeBulkPushThreshold {
-			return res
-		}
-		rt, push, _, perr := inboundSvc.nodePushPlan(oldInbound)
-		if perr != nil {
-			logger.Warning("BulkDelete: node runtime lookup after commit failed:", perr)
-		} else if push {
-			for _, email := range dispatchEmails {
-				ctx, cancel := nodePushContext()
-				err1 := rt.DeleteClient(ctx, email)
-				cancel()
-				if err1 != nil {
-					logger.Warning("Error in deleting client on", rt.Name(), ":", err1)
-					// The node is already dirty, so one reconcile converges the rest of
-					// the batch instead of paying another deadline per client.
-					break
 				}
 			}
 		}
@@ -1517,8 +1443,6 @@ func (s *ClientService) bulkCreate(inboundSvc *InboundService, payloads []Client
 			inserted = append(inserted, prep[idx].payloadIdx)
 		}
 	}
-	// A re-created email is a live identity again: a delete tombstone left
-	// standing makes the next node merge prune the new client's inbound links.
 	return result, inserted, needRestart, nil
 }
 
@@ -1770,15 +1694,12 @@ func (s *ClientService) bulkSetEnableInboundClients(inboundSvc *InboundService, 
 	prevSettings := oldInbound.Settings
 	oldInbound.Settings = string(newSettings)
 
-	rt, push, _, perr := inboundSvc.nodePushPlan(oldInbound)
+	rt, push, _, perr := inboundSvc.localRuntimePlan(oldInbound)
 	if perr != nil {
 		for _, ch := range changed {
 			res.perEmailSkipped[ch.email] = perr.Error()
 		}
 		return res
-	}
-	if oldInbound.NodeID != nil && push && len(changed) > nodeBulkPushThreshold {
-		push = false
 	}
 
 	txErr := runSerializedTx(func(tx *gorm.DB) error {
@@ -1792,9 +1713,7 @@ func (s *ClientService) bulkSetEnableInboundClients(inboundSvc *InboundService, 
 		if err := s.SyncInbound(tx, inboundId, finalClients); err != nil {
 			return err
 		}
-		if oldInbound.NodeID != nil {
-			return (&NodeService{}).MarkNodeDirtyTx(tx, *oldInbound.NodeID)
-		}
+
 		return nil
 	})
 	if txErr != nil {
@@ -1804,7 +1723,7 @@ func (s *ClientService) bulkSetEnableInboundClients(inboundSvc *InboundService, 
 		return res
 	}
 
-	if oldInbound.NodeID == nil {
+	{
 		if !push {
 			res.needRestart = true
 		} else {
@@ -1835,24 +1754,6 @@ func (s *ClientService) bulkSetEnableInboundClients(inboundSvc *InboundService, 
 					}
 				}
 			}
-		}
-	} else if push {
-		pushFailed := false
-		for _, ch := range changed {
-			updated := ch.client
-			updated.UpdatedAt = nowMs
-			ctx, cancel := nodePushContext()
-			err1 := rt.UpdateUser(ctx, oldInbound, ch.email, updated)
-			cancel()
-			if err1 != nil {
-				logger.Warning("Error in updating client on", rt.Name(), ":", err1)
-				pushFailed = true
-				// First failure ends the batch push; the reconcile converges the rest.
-				break
-			}
-		}
-		if !pushFailed {
-			advancePushedInbound(rt, prevSettings, string(newSettings), oldInbound)
 		}
 	}
 

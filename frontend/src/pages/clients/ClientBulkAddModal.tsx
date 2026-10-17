@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  AutoComplete,
   Button,
   Form,
   Input,
@@ -17,7 +16,6 @@ import { ReloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
-
 import { RandomUtil, SizeFormatter } from '@/utils';
 import { formatInboundLabel } from '@/lib/inbounds/label';
 import { TLS_FLOW_CONTROL, TRAFFIC_RESETS } from '@/schemas/primitives';
@@ -27,9 +25,7 @@ import { useClients, type InboundOption } from '@/hooks/useClients';
 import { useFail2banStatusQuery, getLimitIpNotice } from '@/api/queries/useFail2banStatusQuery';
 import ClientRenewalFields from './ClientRenewalFields';
 import { ClientBulkAddFormSchema, type ClientBulkAddFormValues } from '@/schemas/client';
-
 const FLOW_OPTIONS = Object.values(TLS_FLOW_CONTROL);
-
 const MULTI_CLIENT_PROTOCOLS = new Set([
   'shadowsocks',
   'vless',
@@ -40,7 +36,6 @@ const MULTI_CLIENT_PROTOCOLS = new Set([
   'amneziawg',
   'tuic',
 ]);
-
 const EMPTY: ClientBulkAddFormValues = {
   emailMethod: 0,
   firstNum: 1,
@@ -49,7 +44,6 @@ const EMPTY: ClientBulkAddFormValues = {
   emailPostfix: '',
   quantity: 1,
   subId: '',
-  group: '',
   comment: '',
   flow: '',
   limitIp: 0,
@@ -64,26 +58,21 @@ const EMPTY: ClientBulkAddFormValues = {
   trafficResetDay: 1,
   inboundIds: [],
 };
-
 interface ClientBulkAddModalProps {
   open: boolean;
   inbounds: InboundOption[];
-  groups?: string[];
   onOpenChange: (open: boolean) => void;
   onSaved?: () => void;
 }
-
 export default function ClientBulkAddModal({
   open,
   inbounds,
-  groups = [],
   onOpenChange,
   onSaved,
 }: ClientBulkAddModalProps) {
   const { t } = useTranslation();
   const [messageApi, messageContextHolder] = message.useMessage();
   const { bulkCreate } = useClients({ list: false });
-
   const methods = useForm<ClientBulkAddFormValues>({ defaultValues: EMPTY });
   const inboundIds = useWatch({ control: methods.control, name: 'inboundIds' });
   const emailMethod = useWatch({ control: methods.control, name: 'emailMethod' });
@@ -98,7 +87,6 @@ export default function ClientBulkAddModal({
   const fail2ban = useFail2banStatusQuery();
   const limitIpDisabled = !fail2ban.usable;
   const limitIpNotice = getLimitIpNotice(fail2ban, t);
-
   const [wasOpen, setWasOpen] = useState(false);
   if (open !== wasOpen) {
     setWasOpen(open);
@@ -107,7 +95,6 @@ export default function ClientBulkAddModal({
       setDelayedStart(false);
     }
   }
-
   const flowCapableIds = useMemo(() => {
     const ids = new Set<number>();
     for (const row of inbounds || []) {
@@ -115,12 +102,10 @@ export default function ClientBulkAddModal({
     }
     return ids;
   }, [inbounds]);
-
   const showFlow = useMemo(
     () => (inboundIds || []).some((id) => flowCapableIds.has(id)),
     [inboundIds, flowCapableIds],
   );
-
   const ss2022Method = useMemo(() => {
     for (const id of inboundIds || []) {
       const ib = (inbounds || []).find((row) => row.id === id);
@@ -129,13 +114,11 @@ export default function ClientBulkAddModal({
     }
     return '';
   }, [inboundIds, inbounds]);
-
   useEffect(() => {
     if (!showFlow && flow) {
       methods.setValue('flow', '');
     }
   }, [showFlow, flow, methods]);
-
   const inboundOptions = useMemo(
     () =>
       (inbounds || [])
@@ -146,14 +129,11 @@ export default function ClientBulkAddModal({
         })),
     [inbounds],
   );
-
   const expiryDate = useMemo<Dayjs | null>(
     () => (expiryTime > 0 ? dayjs(expiryTime) : null),
     [expiryTime],
   );
-
   const delayedExpireDays = expiryTime < 0 ? expiryTime / -86400000 : 0;
-
   function buildEmails(values: ClientBulkAddFormValues): string[] {
     const method = values.emailMethod;
     const out: string[] = [];
@@ -177,7 +157,6 @@ export default function ClientBulkAddModal({
     }
     return out;
   }
-
   async function submit() {
     const current = methods.getValues();
     const validated = ClientBulkAddFormSchema.safeParse(current);
@@ -187,7 +166,6 @@ export default function ClientBulkAddModal({
     }
     const emails = buildEmails(current);
     if (emails.length === 0) return;
-
     setSaving(true);
     try {
       const payloads = emails.map((email) => ({
@@ -210,7 +188,6 @@ export default function ClientBulkAddModal({
           trafficResetDay: Number(current.trafficResetDay) || 1,
           limitIp: Number(current.limitIp) || 0,
           limitHwid: Number(current.limitHwid) || 0,
-          group: current.group,
           comment: current.comment,
           enable: true,
         },
@@ -236,7 +213,6 @@ export default function ClientBulkAddModal({
       setSaving(false);
     }
   }
-
   return (
     <>
       {messageContextHolder}
@@ -336,19 +312,6 @@ export default function ClientBulkAddModal({
                 />
               </Space.Compact>
             </Form.Item>
-
-            <FormField
-              name="group"
-              label={t('pages.clients.group')}
-              tooltip={t('pages.clients.groupDesc')}
-              transform={{ output: (v) => v ?? '' }}
-            >
-              <AutoComplete
-                placeholder={t('pages.clients.groupPlaceholder')}
-                options={groups.map((g) => ({ value: g }))}
-                allowClear
-              />
-            </FormField>
 
             <FormField
               name="limitHwid"

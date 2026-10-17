@@ -309,7 +309,7 @@ export function useOutboundColumns({
         },
       },
       {
-        title: t('pages.nodes.latency'),
+        title: t('pages.xray.outboundLatency'),
         key: 'testResult',
         align: 'left',
         width: 140,

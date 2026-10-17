@@ -2,11 +2,7 @@
 .clients-page,
 .inbounds-page,
 .xray-page,
-.settings-page,
-.nodes-page,
-.groups-page,
-.api-docs-page,
-.sponsors-page {
+.settings-page {
   --bg-page: #e6e8ec;
   --bg-card: #ffffff;
   min-height: 100vh;
@@ -17,11 +13,7 @@
 .clients-page.is-dark,
 .inbounds-page.is-dark,
 .xray-page.is-dark,
-.settings-page.is-dark,
-.nodes-page.is-dark,
-.groups-page.is-dark,
-.api-docs-page.is-dark,
-.sponsors-page.is-dark {
+.settings-page.is-dark {
   --bg-page: #1a1b1f;
   --bg-card: #23252b;
 }
@@ -30,11 +22,7 @@
 .clients-page.is-dark.is-ultra,
 .inbounds-page.is-dark.is-ultra,
 .xray-page.is-dark.is-ultra,
-.settings-page.is-dark.is-ultra,
-.nodes-page.is-dark.is-ultra,
-.groups-page.is-dark.is-ultra,
-.api-docs-page.is-dark.is-ultra,
-.sponsors-page.is-dark.is-ultra {
+.settings-page.is-dark.is-ultra {
   --bg-page: #000;
   --bg-card: #101013;
 }
@@ -48,13 +36,7 @@
 .xray-page .ant-layout,
 .xray-page .ant-layout-content,
 .settings-page .ant-layout,
-.settings-page .ant-layout-content,
-.nodes-page .ant-layout,
-.nodes-page .ant-layout-content,
-.groups-page .ant-layout,
-.groups-page .ant-layout-content,
-.api-docs-page .ant-layout,
-.api-docs-page .ant-layout-content {
+.settings-page .ant-layout-content {
   background: transparent;
 }
 
@@ -62,10 +44,7 @@
 .clients-page .content-shell,
 .inbounds-page .content-shell,
 .xray-page .content-shell,
-.settings-page .content-shell,
-.nodes-page .content-shell,
-.groups-page .content-shell,
-.api-docs-page .content-shell {
+.settings-page .content-shell {
   background: transparent;
 }
 
@@ -73,27 +52,20 @@
 .clients-page .content-area,
 .inbounds-page .content-area,
 .xray-page .content-area,
-.settings-page .content-area,
-.nodes-page .content-area,
-.groups-page .content-area {
+.settings-page .content-area {
   padding: 24px;
 }
 
 @media (max-width: 768px) {
   .clients-page .content-area,
-  .inbounds-page .content-area,
-  .nodes-page .content-area,
-  .groups-page .content-area {
+  .inbounds-page .content-area {
     padding: 8px;
   }
 }
-
 .loading-spacer {
   min-height: calc(100vh - 120px);
 }
 
-/* Tall action menus (e.g. the inbound/client context menus) must stay inside
-   the viewport even when antd flips them upward near the screen edge. */
 .ant-dropdown .ant-dropdown-menu {
   max-height: calc(100vh - 32px);
   overflow-y: auto;
@@ -175,57 +147,13 @@ body.dark .ant-dropdown-menu-item-divider {
 }
 
 .clients-page .summary-card,
-.inbounds-page .summary-card,
-.nodes-page .summary-card,
-.groups-page .summary-card {
+.inbounds-page .summary-card {
   padding: 16px;
 }
 
 @media (max-width: 768px) {
   .clients-page .summary-card,
-  .inbounds-page .summary-card,
-  .nodes-page .summary-card,
-  .groups-page .summary-card {
-    padding: 8px;
-  }
-}
-
-/* Hosts page shares the standard panel page shell (background, transparent
-   layout, content padding, summary-card padding). */
-.hosts-page {
-  --bg-page: #e6e8ec;
-  --bg-card: #ffffff;
-  min-height: 100vh;
-  background: var(--bg-page);
-}
-
-.hosts-page.is-dark {
-  --bg-page: #1a1b1f;
-  --bg-card: #23252b;
-}
-
-.hosts-page.is-dark.is-ultra {
-  --bg-page: #000;
-  --bg-card: #101013;
-}
-
-.hosts-page .ant-layout,
-.hosts-page .ant-layout-content,
-.hosts-page .content-shell {
-  background: transparent;
-}
-
-.hosts-page .content-area {
-  padding: 24px;
-}
-
-.hosts-page .summary-card {
-  padding: 16px;
-}
-
-@media (max-width: 768px) {
-  .hosts-page .content-area,
-  .hosts-page .summary-card {
+  .inbounds-page .summary-card {
     padding: 8px;
   }
 }

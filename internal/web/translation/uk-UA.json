@@ -112,15 +112,11 @@
     "dashboard": "Огляд",
     "inbounds": "Вхідні",
     "clients": "Клієнти",
-    "groups": "Групи",
-    "nodes": "Вузли",
     "settings": "Налаштування панелі",
     "xray": "Конфігурації Xray",
     "routing": "Маршрутизація",
     "outbounds": "Вихідні",
     "apiDocs": "Документація API",
-    "sponsors": "Спонсори",
-    "hosts": "Хости",
     "docs": "Документація",
     "openMenu": "Відкрити меню",
     "subFormats": "Формати підписки"
@@ -292,9 +288,6 @@
       "operate": "Меню",
       "enable": "Увімкнено",
       "remark": "Примітка",
-      "node": "Вузол",
-      "deployTo": "Розгорнути на",
-      "localPanel": "Локальна панель",
       "fallbacks": {
         "title": "Fallback'и",
         "empty": "Фолбеків поки немає",
@@ -330,7 +323,6 @@
       "delAllClientsConfirmTitle": "Видалити всіх {count} клієнтів із \"{remark}\"?",
       "delAllClientsConfirmContent": "Видаляє всіх клієнтів цього вхідного й скидає їхні записи трафіку. Сам вхідний зберігається. Цю дію не можна скасувати.",
       "attachClients": "Прив'язати клієнтів до…",
-      "addClientsToGroup": "Додати клієнтів до групи…",
       "attachClientsTitle": "Прив'язати клієнтів з «{remark}»",
       "attachClientsDesc": "Прив'язує тих самих {count} клієнт(ів) (з тим самим UUID/паролем і спільним трафіком) до обраних вхідних. Вони залишаються і на цьому вхідному.",
       "attachClientsTargets": "Цільові вхідні",
@@ -438,13 +430,10 @@
         "inboundCreateSuccess": "Вхідне підключення успішно створено",
         "bulkDeleted": "Видалено підключень: {count}",
         "bulkDeletedMixed": "Видалено: {ok}, не вдалось: {failed}",
-        "clonedMany": "Скопійовано підключень: {count}",
-        "clonedMixed": "Скопійовано: {ok}, не вдалось: {failed}",
         "inboundDeleteSuccess": "Вхідне підключення успішно видалено",
         "inboundClientAddSuccess": "Клієнт(и) вхідного підключення додано",
         "inboundClientDeleteSuccess": "Клієнта вхідного підключення видалено",
         "inboundClientUpdateSuccess": "Клієнта вхідного підключення оновлено",
-        "savedNodeOfflineWillSync": "Збережено локально. Опорний вузол вимкнено або недоступний — зміни синхронізуються після повторного підключення.",
         "resetAllClientTrafficSuccess": "Весь трафік клієнта скинуто",
         "resetAllTrafficSuccess": "Весь трафік скинуто",
         "resetInboundClientTrafficSuccess": "Трафік скинуто",
@@ -682,7 +671,6 @@
         "burstBytesPerSec": "Пікових байтів за секунду",
         "burstBytesPerSecTip": "Допуск для коротких сплесків понад сталу швидкість (розмір token-bucket). Якщо менше за «Байтів за секунду», піднімається до цього значення.",
         "shareAddrStrategyOptions": {
-          "node": "Адреса вузла",
           "listen": "Адреса прослуховування inbound",
           "custom": "Користувацька"
         },
@@ -742,10 +730,7 @@
       "searchPlaceholder": "Пошук email, коментаря, sub ID, UUID, паролю, auth, Telegram ID…",
       "filterTitle": "Фільтр клієнтів",
       "clearAllFilters": "Очистити все",
-      "filters": {
-        "nodes": "Вузли",
-        "localPanel": "Локально (ця панель)"
-      },
+      "filters": {},
       "showingCount": "Показано {shown} з {total}",
       "sortOldest": "Спочатку старі",
       "sortNewest": "Спочатку нові",
@@ -788,9 +773,6 @@
       "email": "Email",
       "emailInvalidChars": "Email не може містити пробіли, '/', '\\' або керуючі символи",
       "subIdInvalidChars": "ID підписки не може містити пробіли, '/', '\\' або керуючі символи",
-      "group": "Група",
-      "groupDesc": "Логічна мітка для групування пов'язаних клієнтів (напр. команда, клієнт, регіон). Фільтрується з панелі інструментів.",
-      "groupPlaceholder": "напр. customer-a",
       "comment": "Коментар",
       "traffic": "Трафік",
       "speed": "Швидкість",
@@ -827,15 +809,6 @@
       "resetAllTrafficsContent": "Лічильники відправлення/отримання кожного клієнта обнулюються. Квоти й термін дії не змінюються. Цю дію неможливо скасувати.",
       "deleteConfirmTitle": "Видалити клієнта {email}?",
       "deleteConfirmContent": "Клієнт буде вилучений з усіх прив'язаних вхідних, його запис трафіку буде знищено. Цю дію неможливо скасувати.",
-      "addToGroupTitle": "Додати {count} клієнт(ів) до групи",
-      "addToGroupTooltip": "Виберіть існуючу групу або введіть нову назву. Використовуйте Ungroup, щоб вилучити клієнтів із поточної групи.",
-      "groupName": "Назва групи",
-      "addToGroupSuccessToast": "{count} клієнт(ів) додано до {group}",
-      "ungroupSuccessToast": "Групу очищено у {count} клієнт(ів)",
-      "ungroup": "Розгрупувати",
-      "ungroupConfirmTitle": "Видалити {count} клієнт(ів) з їхньої групи?",
-      "ungroupConfirmContent": "Очищує мітку групи у кожного обраного клієнта. Самі клієнти зберігаються (використовуйте Delete для повного видалення).",
-      "addToGroup": "Додати до групи",
       "attach": "Прив'язати",
       "adjust": "Коригування",
       "subLinks": "Sub-посилання",
@@ -957,18 +930,6 @@
       "renewOnDayDesc": "Подовжувати цього числа кожного місяця, опівночі за часовим поясом панелі, замість інтервалу в днях. Якщо в місяці такого числа немає, подовження припаде на останній день. 0 — залишити режим інтервалу.",
       "renewsUsed": "Подовжень витрачено",
       "bulkAdTagHint": "Введіть 32-значний hex-тег для встановлення або 'none' для очищення спонсорського каналу на MTProto."
-    },
-    "groups": {},
-    "nodes": {
-      "name": "Назва",
-      "apiToken": "API Токен",
-      "apiTokenHint": "Віддалена панель показує свій токен API в Автентифікація → Токен API.",
-      "latency": "Затримка",
-      "statusValues": {},
-      "toasts": {
-        "fillRequired": "Назва, адреса, порт та токен API є обов'язковими"
-      },
-      "mtls": {}
     },
     "settings": {
       "defaultTag": "Типово",
@@ -1236,7 +1197,9 @@
         "apiTokenEmpty": "Поки немає токенів — створіть один для автентифікації ботів або віддалених панелей.",
         "apiTokenDeleteWarning": "Будь-який клієнт, що використовує цей токен, негайно втратить автентифікацію.",
         "apiTokenCreatedTitle": "Токен створено",
-        "apiTokenCreatedNotice": "Скопіюйте цей токен зараз. З міркувань безпеки він не зберігається у читабельному вигляді й більше не відображатиметься."
+        "apiTokenCreatedNotice": "Скопіюйте цей токен зараз. З міркувань безпеки він не зберігається у читабельному вигляді й більше не відображатиметься.",
+        "apiToken": "API Токен",
+        "apiTokenHint": "Віддалена панель показує свій токен API в Автентифікація → Токен API."
       },
       "toasts": {
         "modifySettings": "Параметри було змінено.",
@@ -1281,8 +1244,6 @@
       "eventOutboundDown": "Недоступне",
       "eventOutboundUp": "Доступне",
       "eventXrayCrash": "Збій",
-      "eventNodeDown": "Недоступний",
-      "eventNodeUp": "Доступний",
       "eventCPUHigh": "Високе навантаження на CPU (%)",
       "requestFailed": "Запит не вдалося виконати",
       "smtpEncryption": "Шифрування",
@@ -1586,7 +1547,51 @@
       "subIncyResolveDnsDomainDesc": "URL DoH-сервера, зазвичай закінчується на /dns-query.",
       "subIncyResolveDnsIp": "IP DoH-сервера",
       "subIncyResolveDnsIpDesc": "IP DoH-сервера для bootstrap.",
-      "subIncyGroupRouting": "Маршрутизація"
+      "subIncyGroupRouting": "Маршрутизація",
+      "exportDatabaseDesc": "",
+      "allowInsecure": "Дозволити небезпечне",
+      "allowInsecureHelp": "Пропускати перевірку TLS-сертифіката (allowInsecure / skip-cert-verify).",
+      "remarkVars": {
+        "title": "Змінні шаблону",
+        "intro": "Натисніть на змінну, щоб додати її. Вона замінюється для кожного клієнта під час генерації підписки.",
+        "preview": "Попередній перегляд",
+        "groups": {
+          "client": "Клієнт",
+          "traffic": "Трафік",
+          "time": "Час і статус",
+          "connection": "З'єднання"
+        },
+        "descEMAIL": "Email клієнта",
+        "descINBOUND": "Власна примітка вхідного (назва конфігурації)",
+        "descHOST": "Примітка хоста",
+        "descID": "UUID клієнта",
+        "descSHORT_ID": "Перші 8 символів UUID",
+        "descTELEGRAM_ID": "Telegram ID клієнта (порожньо, якщо не задано)",
+        "descSUB_ID": "ID підписки",
+        "descCOMMENT": "Коментар клієнта",
+        "descTRAFFIC_USED": "Використаний трафік (у зручному форматі)",
+        "descTRAFFIC_LEFT": "Залишок трафіку (прихований, якщо безлімітний)",
+        "descTRAFFIC_TOTAL": "Загальний трафік (прихований, якщо безлімітний)",
+        "descTRAFFIC_USED_BYTES": "Використаний трафік у байтах",
+        "descTRAFFIC_LEFT_BYTES": "Залишок трафіку у байтах",
+        "descTRAFFIC_TOTAL_BYTES": "Загальний трафік у байтах",
+        "descUP": "Вихідний трафік",
+        "descDOWN": "Вхідний трафік",
+        "descSTATUS": "active / expired / disabled / depleted",
+        "descSTATUS_EMOJI": "Статус у вигляді емодзі (✅ ⏳ 🚫)",
+        "descDAYS_LEFT": "Днів до закінчення (прихований, якщо безлімітний)",
+        "descTIME_LEFT": "Залишок часу (напр. 12d 4h 30m)",
+        "descUSAGE_PERCENTAGE": "Використаний трафік у відсотках (прихований, якщо безлімітний)",
+        "descEXPIRE_DATE": "Дата закінчення (YYYY-MM-DD)",
+        "descJALALI_EXPIRE_DATE": "Дата закінчення за календарем Jalali (YYYY/MM/DD)",
+        "descEXPIRE_UNIX": "Закінчення як мітка часу Unix (секунди)",
+        "descCREATED_UNIX": "Час створення як мітка часу Unix (секунди)",
+        "descRESET_DAYS": "Період скидання трафіку в днях",
+        "descRESET_DAY": "Число місяця, у яке подовжується доступ",
+        "descPROTOCOL": "Протокол вхідного (VLESS, VMess, Trojan, …)",
+        "descTRANSPORT": "Транспортна мережа (tcp, ws, grpc, …)",
+        "descSECURITY": "Безпека транспорту (TLS, REALITY, NONE)"
+      }
     },
     "xray": {
       "save": "Зберегти",
@@ -2093,62 +2098,9 @@
         "poolSize": "Розмір пулу"
       },
       "defaultOutbound": "Вихідний за замовчуванням",
-      "defaultOutboundDesc": "Трафік без збігу з правилами маршрутизації йде через цей вихідний (перший у списку)."
-    },
-    "hosts": {
-      "summary": {},
-      "sections": {},
-      "fields": {
-        "allowInsecure": "Дозволити небезпечне"
-      },
-      "hints": {
-        "allowInsecure": "Пропускати перевірку TLS-сертифіката (allowInsecure / skip-cert-verify)."
-      },
-      "remarkVars": {
-        "title": "Змінні шаблону",
-        "intro": "Натисніть на змінну, щоб додати її. Вона замінюється для кожного клієнта під час генерації підписки.",
-        "preview": "Попередній перегляд",
-        "groups": {
-          "client": "Клієнт",
-          "traffic": "Трафік",
-          "time": "Час і статус",
-          "connection": "З'єднання"
-        },
-        "descEMAIL": "Email клієнта",
-        "descINBOUND": "Власна примітка вхідного (назва конфігурації)",
-        "descHOST": "Примітка хоста",
-        "descID": "UUID клієнта",
-        "descSHORT_ID": "Перші 8 символів UUID",
-        "descTELEGRAM_ID": "Telegram ID клієнта (порожньо, якщо не задано)",
-        "descSUB_ID": "ID підписки",
-        "descCOMMENT": "Коментар клієнта",
-        "descTRAFFIC_USED": "Використаний трафік (у зручному форматі)",
-        "descTRAFFIC_LEFT": "Залишок трафіку (прихований, якщо безлімітний)",
-        "descTRAFFIC_TOTAL": "Загальний трафік (прихований, якщо безлімітний)",
-        "descTRAFFIC_USED_BYTES": "Використаний трафік у байтах",
-        "descTRAFFIC_LEFT_BYTES": "Залишок трафіку у байтах",
-        "descTRAFFIC_TOTAL_BYTES": "Загальний трафік у байтах",
-        "descUP": "Вихідний трафік",
-        "descDOWN": "Вхідний трафік",
-        "descSTATUS": "active / expired / disabled / depleted",
-        "descSTATUS_EMOJI": "Статус у вигляді емодзі (✅ ⏳ 🚫)",
-        "descDAYS_LEFT": "Днів до закінчення (прихований, якщо безлімітний)",
-        "descTIME_LEFT": "Залишок часу (напр. 12d 4h 30m)",
-        "descUSAGE_PERCENTAGE": "Використаний трафік у відсотках (прихований, якщо безлімітний)",
-        "descEXPIRE_DATE": "Дата закінчення (YYYY-MM-DD)",
-        "descJALALI_EXPIRE_DATE": "Дата закінчення за календарем Jalali (YYYY/MM/DD)",
-        "descEXPIRE_UNIX": "Закінчення як мітка часу Unix (секунди)",
-        "descCREATED_UNIX": "Час створення як мітка часу Unix (секунди)",
-        "descRESET_DAYS": "Період скидання трафіку в днях",
-        "descRESET_DAY": "Число місяця, у яке подовжується доступ",
-        "descPROTOCOL": "Протокол вхідного (VLESS, VMess, Trojan, …)",
-        "descTRANSPORT": "Транспортна мережа (tcp, ws, grpc, …)",
-        "descSECURITY": "Безпека транспорту (TLS, REALITY, NONE)"
-      },
-      "toasts": {
-        "badTag": "Недійсний тег",
-        "badVlessRoute": "Введіть одне число від 0 до 65535"
-      }
+      "defaultOutboundDesc": "Трафік без збігу з правилами маршрутизації йде через цей вихідний (перший у списку).",
+      "ruleName": "Назва",
+      "outboundLatency": "Затримка"
     }
   },
   "tgbot": {
@@ -2273,8 +2225,6 @@
       "eventDelayDetail": "Затримка: {{ .Delay }} мс",
       "eventXrayCrash": "Стався збій Xray",
       "eventXrayCrashError": "Помилка: {{ .Error }}",
-      "eventNodeDown": "Вузол {{ .Name }} НЕДОСТУПНИЙ",
-      "eventNodeUp": "Вузол {{ .Name }} ДОСТУПНИЙ",
       "eventLoginFallback": "Невдала спроба входу з {{ .Source }}",
       "memoryThreshold": "Використання пам'яті {{ .Percent }}% перевищує порогове значення {{ .Threshold }}%"
     },
@@ -2366,7 +2316,6 @@
       "error": "Помилка",
       "delay": "Затримка",
       "outbound": "Вихідне",
-      "node": "Вузол",
       "threshold": "Поріг",
       "reason": "Причина",
       "time": "Час",
@@ -2381,8 +2330,6 @@
     "alerts": {
       "outboundDown": "Вихідне недоступне",
       "outboundUp": "Вихідне відновлено",
-      "nodeDown": "Вузол недоступний",
-      "nodeUp": "Вузол знову в мережі",
       "xrayCrash": "Збій ядра Xray",
       "cpuHigh": "Перевищено поріг CPU",
       "memoryHigh": "Перевищено поріг пам'яті",
@@ -2428,7 +2375,6 @@
   "email": {
     "labelStatus": "Статус",
     "labelOutbound": "Вихідне з'єднання",
-    "labelNode": "Вузол",
     "labelError": "Помилка",
     "labelDelay": "Затримка",
     "labelUsername": "Ім'я користувача",

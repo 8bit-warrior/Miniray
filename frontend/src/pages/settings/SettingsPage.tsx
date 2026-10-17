@@ -126,7 +126,10 @@ export default function SettingsPage() {
   }
 
   async function onSave() {
-    if(!offlineValid){messageApi.error("离线时间不合法");return;}
+    if (!offlineValid) {
+      messageApi.error('离线时间不合法');
+      return;
+    }
     const result = AllSettingSchema.safeParse(allSetting);
     if (!result.success) {
       const issue = result.error.issues[0];
@@ -230,7 +233,13 @@ export default function SettingsPage() {
       case 'subscription-balancers':
         return <SubscriptionBalancersTab allSetting={allSetting} updateSetting={updateSetting} />;
       default:
-        return <GeneralTab allSetting={allSetting} updateSetting={updateSetting} onOfflineValidationChange={setOfflineValid} />;
+        return (
+          <GeneralTab
+            allSetting={allSetting}
+            updateSetting={updateSetting}
+            onOfflineValidationChange={setOfflineValid}
+          />
+        );
     }
   }, [activeSlug, allSetting, updateSetting, savePayload, setOfflineValid]);
 
@@ -279,7 +288,11 @@ export default function SettingsPage() {
                         <Row className="header-row">
                           <Col xs={24} sm={10} className="header-actions">
                             <Space>
-                              <Button type="primary" disabled={saveDisabled||!offlineValid} onClick={onSave}>
+                              <Button
+                                type="primary"
+                                disabled={saveDisabled || !offlineValid}
+                                onClick={onSave}
+                              >
                                 {t('pages.settings.save')}
                               </Button>
                               <Button

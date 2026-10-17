@@ -6,7 +6,6 @@ import (
 	"context"
 	"crypto/tls"
 	"embed"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -16,6 +15,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron/v3"
 
 	"github.com/8bit-warrior/Miniray/internal/amneziawgnet"
 	"github.com/8bit-warrior/Miniray/internal/config"
@@ -38,12 +43,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/web/service/tgbot"
 	"github.com/8bit-warrior/Miniray/internal/web/websocket"
 	"github.com/8bit-warrior/Miniray/internal/xray"
-
-	"github.com/gin-contrib/gzip"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
-	"github.com/robfig/cron/v3"
 )
 
 //go:embed translation/*
@@ -287,12 +286,6 @@ func (s *Server) initRouter() (*gin.Engine, error) {
 	return engine, nil
 }
 
-// Background-job cadences. Centralized here as the single tuning surface; the
-// values are unchanged from the historical hardcoded cron specs. Follow-up:
-// make these configurable via settings, add per-tick jitter to de-synchronize
-// fleet load, skip expensive jobs when no WebSocket clients are connected or
-// node/xray state is unchanged, and export per-job duration/skipped/error
-// counters.
 const (
 	cadenceXrayRunning   = "@every 1s"
 	cadenceXrayRestart   = "@every 30s"
@@ -352,11 +345,8 @@ func (s *Server) startTask(restartXray bool, loc *time.Location) {
 	// check client ips from log file every 10 sec
 	_, _ = s.cron.AddJob(cadenceClientIPScan, job.NewCheckClientIpJob())
 
-
 	// Outbound subscription auto-refresh (respects per-sub updateInterval)
 	_, _ = s.cron.AddJob(cadenceOutboundSub, job.NewOutboundSubscriptionJob())
-
-	_, _ = s.cron.AddJob(cadenceReapOrphans, job.NewReapSyncOrphansJob())
 
 	// Warm permanent routing URLs immediately and refresh them outside the
 	// latency-sensitive subscription request path.
@@ -565,24 +555,10 @@ func (s *Server) start(restartXray bool, startTgBot bool) (err error) {
 	)
 	s.cron.Start()
 
-	// Wire the inbound-runtime manager once so InboundService can route
-	// add/update/delete to either the local xray or a remote node panel.
-	// The closures bridge into XrayService (which owns the running xray
-	// process state) without forcing the runtime package to import service.
 	runtime.SetManager(runtime.NewManager(runtime.LocalDeps{
 		APIPort:        func() int { return s.xrayService.GetXrayAPIPort() },
 		SetNeedRestart: func() { s.xrayService.SetToNeedRestart() },
 	}))
-	runtime.GetManager().SetNodeEgressResolver(&s.settingService)
-	// Supply the master client certificate for nodes in mtls mode. Issued lazily
-	// from the node CA on first use; runtime stays free of a service import.
-	runtime.SetMasterClientCertProvider(func() (tls.Certificate, error) {
-		ck, err := s.settingService.EnsureMasterClientCert()
-		if err != nil {
-			return tls.Certificate{}, err
-		}
-		return tls.X509KeyPair(ck.CertPEM, ck.KeyPEM)
-	})
 
 	engine, err := s.initRouter()
 	if err != nil {
@@ -623,20 +599,6 @@ func (s *Server) start(restartXray bool, startTgBot bool) (err error) {
 		if err == nil {
 			c := &tls.Config{
 				Certificates: []tls.Certificate{cert},
-			}
-			// Opt-in node mTLS: when a trust CA is configured, request and verify
-			// client certs (VerifyClientCertIfGiven keeps browsers working). With
-			// no CA the listener is unchanged.
-			pool, perr := s.settingService.NodeMtlsClientCAPool()
-			switch {
-			case errors.Is(perr, service.ErrNodeMtlsTrustBundleInvalid):
-				logger.Error("Node mTLS is configured but its trust bundle will not parse, so client certificates are not accepted:", perr)
-			case perr != nil:
-				logger.Error("Node mTLS trust bundle could not be read, so client certificates are not accepted:", perr)
-			}
-			if pool != nil {
-				applyNodeMtls(c, pool)
-				logger.Info("Node mTLS enabled: verifying client certificates for the node API")
 			}
 			listener = network.NewAutoHttpsListener(listener)
 			listener = tls.NewListener(listener, c)

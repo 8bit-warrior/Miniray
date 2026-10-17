@@ -11,30 +11,16 @@ import (
 	"strings"
 	"testing"
 
+	miniraylogger "github.com/8bit-warrior/Miniray/internal/logger"
+
 	"github.com/gin-gonic/gin"
 	"github.com/op/go-logging"
 	xraygeodata "github.com/xtls/xray-core/common/geodata"
 	"google.golang.org/protobuf/proto"
 
-	miniraylogger "github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 	"github.com/8bit-warrior/Miniray/internal/xray/geodata"
 )
-
-func newGeodataEngine(t *testing.T) *gin.Engine {
-	t.Helper()
-	miniraylogger.InitLogger(logging.ERROR)
-	gin.SetMode(gin.TestMode)
-
-	dir := t.TempDir()
-	t.Setenv("MINIRAY_BIN_FOLDER", dir)
-	writeGeositeDB(t, dir)
-	writeGeoipDB(t, dir)
-
-	engine := gin.New()
-	NewXraySettingController(engine.Group("/panel/api"))
-	return engine
-}
 
 func writeGeositeDB(t *testing.T, dir string) {
 	t.Helper()
@@ -275,4 +261,19 @@ func TestGeodataFollowsXrayAssetLocation(t *testing.T) {
 	if files[0].Categories != 2 {
 		t.Errorf("categories = %d, want 2 — the shared asset folder should be read", files[0].Categories)
 	}
+}
+
+func newGeodataEngine(t *testing.T) *gin.Engine {
+	t.Helper()
+	miniraylogger.InitLogger(logging.ERROR)
+	gin.SetMode(gin.TestMode)
+
+	dir := t.TempDir()
+	t.Setenv("MINIRAY_BIN_FOLDER", dir)
+	writeGeositeDB(t, dir)
+	writeGeoipDB(t, dir)
+
+	engine := gin.New()
+	NewXraySettingController(engine.Group("/panel/api"))
+	return engine
 }

@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 )
 
@@ -112,24 +111,4 @@ func replaceFirst(t *testing.T, s, old, new string) string {
 		t.Fatalf("fixture no longer contains %s", old)
 	}
 	return strings.Replace(s, old, new, 1)
-}
-
-// The forward listener runs where the AmneziaWG row runs, so a node row sharing
-// a local peer's port stays legal -- the scoping every other guard here uses.
-func TestAddInboundAllowsANodeRowOnALocallyForwardedPort(t *testing.T) {
-	setupConflictDB(t)
-	seedInboundConflict(t, "awg-forward", "0.0.0.0", 51820, model.AmneziaWG, ``,
-		awgRelayWindowSettingsWithForward(t, "awg-forward", "8443"))
-
-	node := &model.Node{Name: "n1", Address: "127.0.0.1", Port: 2096, Scheme: "https", Enable: true, Status: "online"}
-	if err := database.GetDB().Create(node).Error; err != nil {
-		t.Fatalf("seed node: %v", err)
-	}
-	if _, _, err := (&InboundService{}).AddInbound(&model.Inbound{
-		Tag: "node-inbound", Enable: true, Listen: "0.0.0.0", Port: 8443,
-		Protocol: model.VLESS, StreamSettings: `{"network":"tcp"}`, Settings: `{"clients":[]}`,
-		NodeID: &node.Id,
-	}); err != nil {
-		t.Fatalf("a node row does not bind here; the create must be allowed: %v", err)
-	}
 }

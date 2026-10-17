@@ -20,8 +20,6 @@ jobs:
           mkdir -p internal/web/dist/assets
           printf '<html><body>Miniray test fixture</body></html>' > internal/web/dist/index.html
           printf '/* test fixture */' > internal/web/dist/assets/fixture.css
-      - name: Normalize generated Go syntax for compile test
-        run: gofmt -w internal/paneloffline internal/xray/supervisor_linux.go internal/xray/supervisor_windows.go internal/xray/supervisor_other.go
       - name: Compile and test Go backend
         env:
           CGO_ENABLED: '1'

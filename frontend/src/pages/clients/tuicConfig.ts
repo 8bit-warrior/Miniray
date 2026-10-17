@@ -1,4 +1,3 @@
-import type { HostEndpoint } from '@/lib/hosts/host-link';
 import { formatInboundLabel } from '@/lib/inbounds/label';
 import { preferPublicHost, resolveShareHost } from '@/lib/xray/inbound-link';
 import { normalizeTuicCongestionController } from '@/lib/tuic';
@@ -23,23 +22,18 @@ export function buildTuicClientConfig(
   inbound: InboundOption | undefined,
   host = window.location.hostname,
   publicHost = '',
-  hostEndpoint?: HostEndpoint,
 ): string {
-  const endpointHost =
-    hostEndpoint?.dest ||
-    resolveShareHost(inbound ?? {}, inbound?.nodeAddress ?? '', preferPublicHost(host, publicHost));
+  const endpointHost = resolveShareHost(inbound ?? {}, '', preferPublicHost(host, publicHost));
   const inboundName = inbound ? formatInboundLabel(inbound.tag, inbound.remark) : '';
-  const remark =
-    [inboundName, hostEndpoint?.remark, client.email].filter(Boolean).join(' - ') || 'tuic-client';
+  const remark = [inboundName, client.email].filter(Boolean).join(' - ') || 'tuic-client';
 
   // A Host's SNI/ALPN/insecure override the inbound's, as the backend buildTuicProxy does.
   const tuicServer = inbound?.tuicServer;
-  const alpn = hostEndpoint?.alpn?.length
-    ? hostEndpoint.alpn
-    : Array.isArray(tuicServer?.alpn) && tuicServer.alpn.length > 0
+  const alpn =
+    Array.isArray(tuicServer?.alpn) && tuicServer.alpn.length > 0
       ? tuicServer.alpn
       : ['h3', 'spdy/3.1'];
-  const sni = hostEndpoint?.sni || tuicServer?.sni || endpointHost;
+  const sni = tuicServer?.sni || endpointHost;
   const cc = normalizeTuicCongestionController(tuicServer?.congestion_control);
   const udpRelay = tuicServer?.udp_relay_mode || 'native';
   const reduceRtt = tuicServer?.zero_rtt_handshake ?? true;
@@ -53,7 +47,7 @@ export function buildTuicClientConfig(
     `  - name: ${yamlQuote(remark)}`,
     `    type: tuic`,
     `    server: ${endpointHost}`,
-    `    port: ${hostEndpoint?.port || inbound?.port || 8443}`,
+    `    port: ${inbound?.port || 8443}`,
     `    uuid: ${client.uuid || ''}`,
     `    password: ${yamlQuote(client.password || '')}`,
     `    alpn:`,
@@ -63,7 +57,6 @@ export function buildTuicClientConfig(
     `    udp-relay-mode: ${udpRelay}`,
     `    reduce-rtt: ${reduceRtt}`,
   ];
-  if (hostEndpoint?.allowInsecure) lines.push('    skip-cert-verify: true');
 
   return lines.join('\n');
 }

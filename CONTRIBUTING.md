@@ -88,48 +88,7 @@ Open [http://localhost:2053](http://localhost:2053) and log in as `admin` with t
 
 ### Inside VS Code
 
-The repo checks in two VS Code launch profiles in `.vscode/launch.json`: **Run miniray (Debug)** for the default SQLite setup, and **Run miniray (Postgres)** which points `MINIRAY_DB_TYPE`/`MINIRAY_DB_DSN` at a local PostgreSQL. The Postgres profile also prepends the PostgreSQL `bin` to `PATH` so the panel can find `pg_dump`/`pg_restore` (the `postgresql-client` tools used for DB backup/restore) — adjust the DSN and that path to your machine:
-
-```jsonc
-{
-  "$schema": "vscode://schemas/launch",
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Run miniray (Debug)",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "${workspaceFolder}",
-      "cwd": "${workspaceFolder}",
-      "env": {
-        "MINIRAY_DEBUG": "true",
-        "MINIRAY_DB_FOLDER": "miniray",
-        "MINIRAY_LOG_FOLDER": "miniray",
-        "MINIRAY_BIN_FOLDER": "miniray"
-      },
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "Run miniray (Postgres)",
-      "type": "go",
-      "request": "launch",
-      "mode": "auto",
-      "program": "${workspaceFolder}",
-      "cwd": "${workspaceFolder}",
-      "env": {
-        "MINIRAY_DEBUG": "true",
-        "MINIRAY_LOG_FOLDER": "miniray",
-        "MINIRAY_BIN_FOLDER": "miniray",
-        "MINIRAY_DB_TYPE": "postgres",
-        "MINIRAY_DB_DSN": "postgres://miniray:miniraypass@127.0.0.1:5432/miniray?sslmode=disable",
-        "PATH": "C:\\Program Files\\PostgreSQL\\18\\bin;${env:PATH}"
-      },
-      "console": "integratedTerminal"
-    }
-  ]
-}
-```
+Use `go run .` with the SQLite settings from `.env.example` for local development. The host installer runs the panel, Xray and protocol agent as separate systemd services.
 
 ## Working on the frontend
 
@@ -139,7 +98,7 @@ The panel UI is a **React 19 + Ant Design 6 + TypeScript** app under `frontend/`
 
 The frontend ships **three Vite bundles**, each emitted into `internal/web/dist/` and embedded into the Go binary at compile time via `embed.FS`:
 
-- **`index.html`** — the admin panel, a **single-page app**. `src/main.tsx` mounts a `react-router` `createBrowserRouter` (see `src/routes.tsx`) under the `/panel` basename; every route (`/panel`, `/panel/inbounds`, `/panel/clients`, `/panel/groups`, `/panel/nodes`, `/panel/settings`, `/panel/xray`, `/panel/api-docs`) is lazy-loaded inside a shared `PanelLayout` (sidebar + header + `<Outlet>`).
+- **`index.html`** — the admin panel, a **single-page app**. `src/main.tsx` mounts a `react-router` `createBrowserRouter` (see `src/routes.tsx`) under the `/panel` basename; every route (`/panel`, `/panel/inbounds`, `/panel/clients`, `/panel/settings`, `/panel/xray`) is lazy-loaded inside a shared `PanelLayout` (sidebar + header + `<Outlet>`).
 - **`login.html`** — the login + 2FA screen (`src/entries/login.tsx`), a standalone bundle.
 - **`subpage.html`** — the public subscription viewer (`src/entries/subpage.tsx`), a standalone bundle.
 
@@ -204,13 +163,13 @@ frontend/
 ├── tools/oxlint/          — input-number-guard.mjs (#6121/#6127 guard as a JS plugin)
 ├── vite.config.js
 ├── vitest.config.ts
-├── scripts/               — build-openapi.mjs (endpoints.ts → openapi.json)
+├── tools/build-openapi.mjs — refresh OpenAPI schemas from generated Go types
 └── src/
     ├── main.tsx           — admin SPA bootstrap (router + providers)
     ├── routes.tsx         — react-router routes mounted under /panel
     ├── entries/           — bootstrap for the standalone bundles (login, subpage)
     ├── layouts/           — PanelLayout + AppSidebar
-    ├── pages/             — one folder per route (index, inbounds, clients, groups, nodes, settings, xray, api-docs) plus login, sub
+    ├── pages/             — one folder per route (index, inbounds, clients, settings, xray) plus login, sub
     ├── components/        — cross-page React components
     ├── hooks/             — reusable hooks (useTheme, useWebSocket, useClients, useDatepicker, …)
     ├── api/               — fetch client + CSRF handling, TanStack Query provider/keys, WebSocket client
@@ -233,7 +192,7 @@ For deeper notes on the frontend toolchain see [`frontend/README.md`](frontend/R
 | `main.go` | Process entry point, CLI subcommands, signal handling |
 | `internal/web/` | Gin HTTP server, controllers, services, embedded frontend assets |
 | `frontend/` | React + Ant Design 6 + TypeScript source for the panel UI |
-| `internal/database/` | GORM models, migrations, seeders (SQLite / PostgreSQL) |
+| `internal/database/` | GORM models, migrations, seeders (SQLite) |
 | `internal/xray/` | Xray-core process lifecycle and gRPC API client |
 | `internal/sub/` | Subscription endpoints (raw, JSON, Clash) |
 | `internal/config/` | Environment-variable helpers, paths, defaults |
@@ -277,7 +236,7 @@ Input-heavy or pure logic (link builders, parsers, decoders) is also covered by 
 ```bash
 go install github.com/go-gremlins/gremlins/cmd/gremlins@latest
 gremlins unleash ./internal/sub/
-gremlins unleash -E 'server\.go|xray\.go|inbound\.go|client_bulk\.go|inbound_traffic\.go|.*_postgres_test\.go' ./internal/web/service/
+gremlins unleash -E 'server\.go|xray\.go|inbound\.go|client_bulk\.go|inbound_traffic\.go' ./internal/web/service/
 ```
 
 Treat each survivor as one of: a weak test (strengthen it), dead code (remove it), or an equivalent mutant (unkillable — leave it). Don't write a test purely to kill a mutant if it doesn't reflect real behavior.
@@ -310,8 +269,6 @@ CI runs this for you nightly (and on demand) via `.github/workflows/mutation.yml
 | `MINIRAY_BIN_FOLDER` | `bin` | Where the xray binary, geo files, and xray `config.json` live |
 | `MINIRAY_INIT_WEB_BASE_PATH` | `/` | The initial URI path for the web panel |
 | `MINIRAY_PORT` | persisted `webPort` | Runtime-only web panel listener port override (`1` through `65535`) |
-| `MINIRAY_DB_TYPE` | `sqlite` | Set to `postgres` to use PostgreSQL via `MINIRAY_DB_DSN` |
-| `MINIRAY_DB_DSN` | — | PostgreSQL DSN when `MINIRAY_DB_TYPE=postgres` |
 
 A valid `MINIRAY_PORT` takes precedence over the database-backed `webPort` for the
 current process without changing the stored setting. Unset, empty, whitespace-only,

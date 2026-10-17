@@ -1,28 +1,29 @@
 package controller
 
 import (
+	"context"
 	"errors"
-	"net/http"
-	"os/exec"
 	"fmt"
+	"net/http"
 	"os"
+	"os/exec"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/8bit-warrior/Miniray/internal/web/global"
+	"github.com/gin-gonic/gin"
+
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/util/crypto"
 	"github.com/8bit-warrior/Miniray/internal/web/entity"
+	"github.com/8bit-warrior/Miniray/internal/web/global"
 	"github.com/8bit-warrior/Miniray/internal/web/middleware"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 	"github.com/8bit-warrior/Miniray/internal/web/service/discord"
 	"github.com/8bit-warrior/Miniray/internal/web/service/email"
 	"github.com/8bit-warrior/Miniray/internal/web/service/panel"
 	"github.com/8bit-warrior/Miniray/internal/web/session"
-
-	"github.com/gin-gonic/gin"
 )
 
 // updateUserForm represents the form for updating user credentials.
@@ -403,12 +404,13 @@ func (a *SettingController) testDiscord(c *gin.Context) {
 
 // offlinePanel is an authenticated settings API endpoint. The HTTP response is
 // sent before the process closes its listener; an independent core is required.
-func (a *SettingController) offlinePanel(c *gin.Context){
- if runtime.GOOS=="linux"&&os.Getenv("MINIRAY_SEPARATE_CORE")!="1"{
-  pureJsonMsg(c,http.StatusServiceUnavailable,false,"independent core service is required");return
- }
- pureJsonMsg(c,http.StatusOK,true,"panel will go offline")
- go func(){time.Sleep(500*time.Millisecond);global.TriggerPanelOffline()}()
+func (a *SettingController) offlinePanel(c *gin.Context) {
+	if runtime.GOOS == "linux" && os.Getenv("MINIRAY_SEPARATE_CORE") != "1" {
+		pureJsonMsg(c, http.StatusServiceUnavailable, false, "independent core service is required")
+		return
+	}
+	pureJsonMsg(c, http.StatusOK, true, "panel will go offline")
+	go func() { time.Sleep(500 * time.Millisecond); global.TriggerPanelOffline() }()
 }
 
 type panelAutostartForm struct {
@@ -419,7 +421,7 @@ func getPanelAutostartState() (bool, error) {
 	if runtime.GOOS != "linux" {
 		return false, errors.New("systemd panel autostart is supported only on Linux")
 	}
-	out, err := exec.Command("systemctl", "is-enabled", "miniray.service").CombinedOutput()
+	out, err := exec.CommandContext(context.Background(), "systemctl", "is-enabled", "miniray.service").CombinedOutput()
 	switch strings.TrimSpace(string(out)) {
 	case "enabled", "enabled-runtime", "linked", "linked-runtime":
 		return true, nil

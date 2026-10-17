@@ -109,10 +109,6 @@ func (j *XrayTrafficJob) Run() {
 		j.xrayService.SetToNeedRestart()
 	}
 
-	// Derive the local online set from this poll's per-email deltas rather
-	// than the shared last_online column, which remote-node syncs also bump
-	// and would otherwise make a client active only on a remote node appear
-	// online on local inbounds.
 	movedTraffics, activeEmails, deltaActive := splitMovedClientTraffics(clientTraffics)
 	// When the core supports the online-stats API, union in connection-based
 	// onlines. Neither signal alone covers everything: an idle-but-connected
@@ -199,8 +195,7 @@ func (j *XrayTrafficJob) Run() {
 		"traffics":       traffics,
 		"clientTraffics": movedTraffics,
 		"onlineClients":  onlineClients,
-		"onlineByGuid":   j.inboundService.GetOnlineClientsByGuid(),
-		"activeInbounds": j.inboundService.GetActiveInboundsByGuid(),
+		"activeInbounds": j.inboundService.GetActiveInboundTags(),
 		"lastOnlineMap":  lastOnlineMap,
 	})
 

@@ -46,30 +46,6 @@ func TestInboundFormSaveKeepsClientRenewedWhileOpen(t *testing.T) {
 }
 
 // On a node the master's push is authoritative, lifecycle fields included.
-func TestInboundUpdateFromMasterAppliesClientLifecycle(t *testing.T) {
-	setupBulkDB(t)
-	ib := seedRenewableNeighbour(t, 23202, nil)
-	clients, err := (&InboundService{}).GetClients(ib)
-	if err != nil {
-		t.Fatalf("GetClients: %v", err)
-	}
-	for i := range clients {
-		if clients[i].Email == "x@stale" {
-			clients[i].Enable = false
-		}
-	}
-	push := *ib
-	push.Settings = clientsSettings(t, clients)
-	if _, _, err := (&InboundService{FromNodeSync: true}).UpdateInbound(&push); err != nil {
-		t.Fatalf("UpdateInbound: %v", err)
-	}
-	if x, _ := settingsClient(t, ib.Id, "x@stale"); x.Enable {
-		t.Fatal("master push disabling x@stale was ignored in settings")
-	}
-	if readClientTraffic(t, "x@stale").Enable {
-		t.Fatal("master push disabling x@stale was ignored in client_traffics")
-	}
-}
 
 // Traffic the poll adds after UpdateInbound read the row must not be written
 // back over by the edit.

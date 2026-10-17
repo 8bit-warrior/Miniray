@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"github.com/8bit-warrior/Miniray/internal/config"
@@ -53,28 +52,17 @@ const (
 )
 
 var defaultValueMap = map[string]string{
-	"xrayTemplateConfig": xrayTemplateConfig,
-	"panelOfflineEnabled": "false",
-	"panelOfflineValue": "60",
-	"panelOfflineUnit": "minute",
-	"webListen":          "",
-	"webDomain":          "",
-	"webPort":            "2053",
-	"webCertFile":        "",
-	"webKeyFile":         "",
-	"secret":             random.Seq(32),
-	"panelGuid":          uuid.NewString(),
-	"apiToken":           "",
-	// Node mTLS material (opt-in). All default empty: the CA + master client
-	// cert are minted lazily on first use, and the node-side trust CA is pasted
-	// in by the operator. Kept out of entity.AllSetting so private keys never
-	// reach the settings UI/export.
-	"nodeMtlsCaCertPem":           "",
-	"nodeMtlsCaKeyPem":            "",
-	"nodeMtlsClientCertPem":       "",
-	"nodeMtlsClientKeyPem":        "",
-	"nodeMtlsClientCertSha256":    "",
-	"nodeMtlsClientCAPem":         "",
+	"xrayTemplateConfig":          xrayTemplateConfig,
+	"panelOfflineEnabled":         "false",
+	"panelOfflineValue":           "60",
+	"panelOfflineUnit":            "minute",
+	"webListen":                   "",
+	"webDomain":                   "",
+	"webPort":                     "2053",
+	"webCertFile":                 "",
+	"webKeyFile":                  "",
+	"secret":                      random.Seq(32),
+	"apiToken":                    "",
 	"webBasePath":                 normalizeBasePath(getEnv("MINIRAY_INIT_WEB_BASE_PATH", "/")),
 	"sessionMaxAge":               "360",
 	"trustedProxyCIDRs":           DefaultTrustedProxyCIDRs,
@@ -588,26 +576,6 @@ func (s *SettingService) PanelEgressProxyURL() string {
 	return ""
 }
 
-func (s *SettingService) NodeEgressProxyURL(nodeID int) string {
-	tag := NodeEgressInboundTag(nodeID)
-	proc := XrayProcess()
-	if proc == nil || !proc.IsRunning() {
-		logger.Warning("node outbound [", tag, "] is set but Xray is not running, using a direct connection")
-		return ""
-	}
-	cfg := proc.GetConfig()
-	if cfg == nil {
-		return ""
-	}
-	for i := range cfg.InboundConfigs {
-		if cfg.InboundConfigs[i].Tag == tag {
-			return fmt.Sprintf("socks5://127.0.0.1:%d", cfg.InboundConfigs[i].Port)
-		}
-	}
-	logger.Warning("node outbound [", tag, "] is set but the egress bridge is not in the running config, using a direct connection")
-	return ""
-}
-
 // NewProxiedHTTPClient returns an HTTP client that routes the panel's own
 // outbound requests through the configured panel outbound (via the loopback
 // SOCKS bridge in the running Xray). When the feature is off or the bridge
@@ -794,24 +762,6 @@ func (s *SettingService) GetSecret() ([]byte, error) {
 		}
 	}
 	return []byte(secret), err
-}
-
-// GetPanelGuid returns this panel's stable self-identifier, persisting a
-// freshly generated UUID on first read. It is the globally stable node
-// identity used to attribute online clients and inbounds to the physical
-// node that hosts them across a chain of nodes (#4983), where per-panel
-// autoincrement node ids are meaningless one hop away.
-func (s *SettingService) GetPanelGuid() (string, error) {
-	guid, err := s.getString("panelGuid")
-	if err != nil {
-		return "", err
-	}
-	if guid == defaultValueMap["panelGuid"] {
-		if saveErr := s.saveSetting("panelGuid", guid); saveErr != nil {
-			logger.Warning("save panelGuid failed:", saveErr)
-		}
-	}
-	return guid, nil
 }
 
 func (s *SettingService) SetBasePath(basePath string) error {
@@ -2004,15 +1954,6 @@ var factoryDefaultSecretKeys = map[string]bool{
 	"discordBotToken": true,
 }
 
-/*
-GetFactoryDefaults returns the shipped default value per setting, keyed by
-the AllSetting json field name. Unlike GetDefaultSettings (which reports
-current effective values), this is defaultValueMap projected through the
-AllSetting field set: only keys that exist as an AllSetting json tag are
-returned, minus the credential fields in factoryDefaultSecretKeys. Keys
-with no AllSetting field (secret, panelGuid, the node mTLS material,
-xrayTemplateConfig) are excluded structurally rather than by deny-list.
-*/
 func (s *SettingService) GetFactoryDefaults() map[string]string {
 	result := make(map[string]string)
 	for _, field := range reflect_util.GetFields(reflect.TypeFor[entity.AllSetting]()) {
@@ -2025,4 +1966,18 @@ func (s *SettingService) GetFactoryDefaults() map[string]string {
 		}
 	}
 	return result
+}
+
+func normalizeBasePath(p string) string {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return "/"
+	}
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+	}
+	if !strings.HasSuffix(p, "/") {
+		p = p + "/"
+	}
+	return p
 }

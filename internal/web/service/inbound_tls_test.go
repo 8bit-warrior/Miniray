@@ -75,7 +75,7 @@ func TestValidateInboundTLSCertificatesIdentifiesIncompleteRow(t *testing.T) {
 func TestAddInboundRejectsMissingTLSCertificates(t *testing.T) {
 	setupConflictDB(t)
 	mgr := useTestRuntimeManager(t)
-	fake := &fakeNodeRuntime{}
+	fake := &fakeRuntime{}
 	mgr.SetLocalRuntimeOverride(fake)
 
 	inbound := &model.Inbound{
@@ -109,7 +109,7 @@ func TestAddInboundRejectsMissingTLSCertificates(t *testing.T) {
 func TestUpdateInboundRejectsMissingTLSCertificates(t *testing.T) {
 	setupConflictDB(t)
 	mgr := useTestRuntimeManager(t)
-	fake := &fakeNodeRuntime{}
+	fake := &fakeRuntime{}
 	mgr.SetLocalRuntimeOverride(fake)
 
 	seedInboundConflict(t, "tls-existing-44311", "0.0.0.0", 44311, model.VLESS,
@@ -159,7 +159,7 @@ func TestUpdateInboundAllowsUntouchedLegacyTLSCertificates(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			setupConflictDB(t)
 			mgr := useTestRuntimeManager(t)
-			mgr.SetLocalRuntimeOverride(&fakeNodeRuntime{})
+			mgr.SetLocalRuntimeOverride(&fakeRuntime{})
 
 			seedInboundConflict(t, "tls-legacy-44321", "0.0.0.0", 44321, model.VLESS, legacyStream, `{"clients":[]}`)
 			var existing model.Inbound

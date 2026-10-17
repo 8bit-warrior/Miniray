@@ -32,13 +32,11 @@ func run(root, outDir string) error {
 				"ApiToken",
 				"HistoryOfSeeders",
 				"Setting",
-				"Node",
 				"ClientReverse",
 				"Client",
 				"ClientRecord",
 				"ClientInbound",
 				"InboundFallback",
-				"Host",
 				"SubBalancer",
 			),
 			AliasAllow: setOf("Protocol"),
@@ -54,10 +52,6 @@ func run(root, outDir string) error {
 				"InboundClientIps": {
 					{Field: "Ips", Kind: KindAny},
 				},
-				"Host": {
-					{Field: "MuxParams", Kind: KindAny},
-					{Field: "SockoptParams", Kind: KindAny},
-				},
 			},
 		},
 		{
@@ -66,7 +60,6 @@ func run(root, outDir string) error {
 				"Msg",
 				"AllSetting",
 				"AllSettingView",
-				"HostGroup",
 			),
 		},
 		{
@@ -102,8 +95,6 @@ func run(root, outDir string) error {
 				"NewUUIDResponse",
 				"MLDSA65Response",
 				"MLKEM768Response",
-				"NodeMutationRequest",
-				"NodeView",
 				"ProbeResultUI",
 				"RealityScanResult",
 				"GeodataTokenIssue",
@@ -114,7 +105,7 @@ func run(root, outDir string) error {
 		},
 		{
 			Path:        resolveRel(root, "internal/web/service/panel"),
-			StructAllow: setOf("ApiTokenView", "PanelUpdateStatus", "Sponsor", "SponsorList"),
+			StructAllow: setOf("ApiTokenView", "PanelUpdateStatus"),
 		},
 		{
 			Path:        resolveRel(root, "internal/amneziawg"),

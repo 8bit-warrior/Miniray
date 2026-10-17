@@ -27,16 +27,13 @@ import { canEnableSniffing } from '@/lib/xray/protocol-capabilities';
 import { tlsCertUsesFiles } from '@/schemas/protocols/security/tls';
 import { SockoptStreamSettingsSchema } from '@/schemas/protocols/stream/sockopt';
 import { XHttpStreamSettingsSchema, XHttpXmuxSchema } from '@/schemas/protocols/stream/xhttp';
-
 const XMUX_DEFAULTS = XHttpXmuxSchema.parse({});
-
 // Plain-data adapter between the panel's stored inbound row shape and
 // the typed InboundFormValues that Form.useForm<T> carries inside
 // InboundFormModal. No dependency on the legacy Inbound/DBInbound
 // classes — the modal hands the raw row in, takes typed values out, and
 // on submit calls formValuesToWirePayload() to get a payload ready to
 // POST to /panel/api/inbounds/add or /update/:id.
-
 export interface RawInboundRow {
   port?: number;
   listen?: string;
@@ -54,7 +51,6 @@ export interface RawInboundRow {
   trafficReset?: string;
   trafficResetDay?: number;
   lastTrafficResetTime?: number;
-  nodeId?: number | null;
   shareAddrStrategy?: string;
   shareAddr?: string;
   subSortIndex?: number;
@@ -62,7 +58,6 @@ export interface RawInboundRow {
   disableFlow?: boolean;
   clientStats?: unknown;
 }
-
 // The wire payload — settings/streamSettings/sniffing arrive as JSON
 // strings, mirroring what the Go endpoints expect (xray-core wants the
 // nested config slices as strings to round-trip through its loader).
@@ -84,14 +79,12 @@ export interface WireInboundPayload {
   sniffing: string;
   tag: string;
   clientStats?: unknown;
-  nodeId?: number;
   shareAddrStrategy: ShareAddrStrategy;
   shareAddr: string;
   subSortIndex: number;
   excludeFromSub: boolean;
   disableFlow: boolean;
 }
-
 function coerceJsonObject(value: unknown): Record<string, unknown> {
   if (value == null) return {};
   if (typeof value === 'object' && !Array.isArray(value)) {
@@ -109,22 +102,18 @@ function coerceJsonObject(value: unknown): Record<string, unknown> {
     return {};
   }
 }
-
 const TRAFFIC_RESETS: TrafficReset[] = ['never', 'hourly', 'daily', 'weekly', 'monthly'];
-const SHARE_ADDR_STRATEGIES: ShareAddrStrategy[] = ['node', 'listen', 'custom'];
-
+const SHARE_ADDR_STRATEGIES: ShareAddrStrategy[] = ['listen', 'custom'];
 function coerceTrafficReset(v: unknown): TrafficReset {
   return typeof v === 'string' && (TRAFFIC_RESETS as string[]).includes(v)
     ? (v as TrafficReset)
     : 'never';
 }
-
 function coerceShareAddrStrategy(v: unknown): ShareAddrStrategy {
   return typeof v === 'string' && (SHARE_ADDR_STRATEGIES as string[]).includes(v)
     ? (v as ShareAddrStrategy)
-    : 'node';
+    : 'listen';
 }
-
 // Network values that map to a required `${network}Settings` key in
 // NetworkSettingsSchema. Older saved inbounds may be missing the per-
 // network sub-object (the legacy panel sometimes emitted streamSettings
@@ -140,7 +129,6 @@ const NETWORK_SETTINGS_KEY: Record<string, string> = {
   xhttp: 'xhttpSettings',
   hysteria: 'hysteriaSettings',
 };
-
 function healStreamNetworkKey(stream: Record<string, unknown>): void {
   if (typeof stream.method === 'string' && stream.method !== '') {
     stream.network = stream.method;
@@ -153,20 +141,20 @@ function healStreamNetworkKey(stream: Record<string, unknown>): void {
     stream[key] = {};
   }
 }
-
 function tlsCerts(stream: Record<string, unknown>): Record<string, unknown>[] {
-  const tls = stream.tlsSettings as { certificates?: unknown } | undefined;
+  const tls = stream.tlsSettings as
+    | {
+        certificates?: unknown;
+      }
+    | undefined;
   return Array.isArray(tls?.certificates) ? (tls.certificates as Record<string, unknown>[]) : [];
 }
-
 function synthesizeTlsCertUseFile(stream: Record<string, unknown>): void {
   for (const c of tlsCerts(stream)) c.useFile = tlsCertUsesFiles(c);
 }
-
 function stripTlsCertUseFile(stream: Record<string, unknown>): void {
   for (const c of tlsCerts(stream)) delete c.useFile;
 }
-
 export function rawInboundToFormValues(row: RawInboundRow): InboundFormValues {
   const protocol = (row.protocol || 'vless') as InboundSettings['protocol'];
   const rawSettings = coerceJsonObject(row.settings);
@@ -210,7 +198,6 @@ export function rawInboundToFormValues(row: RawInboundRow): InboundFormValues {
     }
   }
   const sniffing = coerceJsonObject(row.sniffing) as unknown as Sniffing;
-
   return {
     remark: row.remark ?? '',
     enable: row.enable ?? true,
@@ -226,7 +213,6 @@ export function rawInboundToFormValues(row: RawInboundRow): InboundFormValues {
     trafficReset: coerceTrafficReset(row.trafficReset),
     trafficResetDay: Math.min(31, Math.max(1, row.trafficResetDay ?? 1)),
     lastTrafficResetTime: row.lastTrafficResetTime ?? 0,
-    nodeId: row.nodeId ?? null,
     shareAddrStrategy: coerceShareAddrStrategy(row.shareAddrStrategy),
     shareAddr: row.shareAddr ?? '',
     subSortIndex: row.subSortIndex == null || row.subSortIndex === 0 ? 1 : row.subSortIndex,
@@ -236,7 +222,6 @@ export function rawInboundToFormValues(row: RawInboundRow): InboundFormValues {
     settings,
   } as InboundFormValues;
 }
-
 // Recursively strip undefined leaves from the wire payload. Empty arrays
 // and empty objects are PRESERVED — legacy XrayCommonClass.toJson() kept
 // shells like `tcpSettings: {}` so xray-core picks up its built-in
@@ -259,7 +244,6 @@ export function pruneEmpty(value: unknown): unknown {
   }
   return value;
 }
-
 // Per-protocol client field whitelist — the Zod schemas in
 // schemas/protocols/inbound/<proto>.ts define which keys a given
 // protocol's clients accept on the wire. When a global client is created
@@ -292,7 +276,6 @@ function clientSchemaForProtocol(protocol: string): z.ZodType | null {
       return null;
   }
 }
-
 export function normalizeClients(protocol: string, clients: unknown): unknown {
   const schema = clientSchemaForProtocol(protocol);
   if (!schema || !Array.isArray(clients)) return clients;
@@ -301,7 +284,6 @@ export function normalizeClients(protocol: string, clients: unknown): unknown {
     return parsed.success ? parsed.data : c;
   });
 }
-
 // Sniffing normalizer matching the legacy Sniffing.toJson(): when
 // disabled the payload is the bare `{ enabled: false }` regardless of
 // what the form holds; when enabled, only non-default fields ride.
@@ -317,7 +299,6 @@ export function normalizeSniffing(s: Sniffing | undefined): Record<string, unkno
   if (s.domainsExcluded?.length) out.domainsExcluded = s.domainsExcluded;
   return out;
 }
-
 // Drops cosmetic empty-array keys that legacy XrayCommonClass.toJson()
 // explicitly skipped (fallbacks/finalmask). Mutates the pruned settings
 // objects in place; called AFTER pruneEmpty so we can lean on the
@@ -329,21 +310,22 @@ export function dropLegacyOptionalEmpties(
   // VLESS/Trojan emit `fallbacks` only when non-empty.
   const fb = settings.fallbacks;
   if (Array.isArray(fb) && fb.length === 0) delete settings.fallbacks;
-
   if (stream) {
     dropEmptyFinalMask(stream);
-
     // Hysteria's per-client auth lives in settings.clients[*].auth; the
     // streamSettings.hysteriaSettings.auth slot is a holdover from older
     // hysteria builds and serves no purpose on the inbound side, so an
     // empty value shouldn't ride along in the JSON payload.
-    const hs = stream.hysteriaSettings as { auth?: string } | undefined;
+    const hs = stream.hysteriaSettings as
+      | {
+          auth?: string;
+        }
+      | undefined;
     if (hs && typeof hs === 'object' && (hs.auth === '' || hs.auth == null)) {
       delete hs.auth;
     }
   }
 }
-
 // An existing inbound's clients change only through the client endpoints, so
 // the edit form neither loads them nor sends them back.
 export function withoutClients(values: InboundFormValues): InboundFormValues {
@@ -351,10 +333,11 @@ export function withoutClients(values: InboundFormValues): InboundFormValues {
   delete settings.clients;
   return { ...values, settings } as InboundFormValues;
 }
-
 export function formValuesToWirePayload(
   values: InboundFormValues,
-  options: { omitClients?: boolean } = {},
+  options: {
+    omitClients?: boolean;
+  } = {},
 ): WireInboundPayload {
   const settingsPruned = (pruneEmpty(values.settings ?? {}) ?? {}) as Record<string, unknown>;
   if (options.omitClients) {
@@ -397,6 +380,5 @@ export function formValuesToWirePayload(
     excludeFromSub: values.excludeFromSub,
     disableFlow: values.disableFlow,
   };
-  if (values.nodeId != null) payload.nodeId = values.nodeId;
   return payload;
 }

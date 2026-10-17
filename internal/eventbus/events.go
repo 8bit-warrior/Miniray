@@ -1,6 +1,8 @@
 package eventbus
 
-import "time"
+import (
+	"time"
+)
 
 // EventType identifies the kind of event flowing through the bus.
 type EventType string
@@ -12,10 +14,6 @@ const (
 
 	// Xray core (local)
 	EventXrayCrash EventType = "xray.crash"
-
-	// Node health (heartbeat-driven)
-	EventNodeDown EventType = "node.down"
-	EventNodeUp   EventType = "node.up"
 
 	// System health
 	EventCPUHigh    EventType = "cpu.high"
@@ -37,16 +35,6 @@ type Event struct {
 type OutboundHealthData struct {
 	Delay int64  // last measured delay in ms, 0 if unknown
 	Error string // last error if probe failed, empty if up
-}
-
-// NodeHealthData carries heartbeat details for node events.
-type NodeHealthData struct {
-	NodeId    int
-	LatencyMs int
-	CpuPct    float64
-	MemPct    float64
-	XrayState string // "running", "stopped", etc.
-	XrayError string
 }
 
 // LoginEventData carries login attempt details.

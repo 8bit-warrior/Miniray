@@ -57,7 +57,10 @@ func TestUpdateInbound_PreservesHysteriaClientAuth(t *testing.T) {
 	update.Settings = `{"clients":[{"email":"hysteria@x","enable":true,"password":"` + password + `","auth":"` + wantAuth + `"}]}`
 
 	// Only a master's push still carries clients through an inbound save.
-	svc := &InboundService{FromNodeSync: true}
+	svc := &InboundService{}
+	if _, err := (&ClientService{}).AddInboundClient(svc, &model.Inbound{Id: update.Id, Settings: update.Settings}); err != nil {
+		t.Fatal(err)
+	}
 	if _, _, err := svc.UpdateInbound(&update); err != nil {
 		t.Fatalf("UpdateInbound: %v", err)
 	}
@@ -95,6 +98,9 @@ func TestUpdateInbound_AllowsHysteriaWithoutClients(t *testing.T) {
 	update.Remark = "updated without clients"
 
 	svc := &InboundService{}
+	if _, err := (&ClientService{}).AddInboundClient(svc, &model.Inbound{Id: update.Id, Settings: update.Settings}); err != nil {
+		t.Fatal(err)
+	}
 	if _, _, err := svc.UpdateInbound(&update); err != nil {
 		t.Fatalf("UpdateInbound: %v", err)
 	}

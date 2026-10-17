@@ -112,15 +112,11 @@
     "dashboard": "Overview",
     "inbounds": "Inbounds",
     "clients": "Clients",
-    "groups": "Groups",
-    "nodes": "Nodes",
-    "hosts": "Hosts",
     "settings": "Panel Settings",
     "xray": "Xray Configs",
     "routing": "Routing",
     "outbounds": "Outbounds",
     "apiDocs": "API Docs",
-    "sponsors": "Sponsors",
     "docs": "Documentation",
     "openMenu": "Open menu",
     "subFormats": "Sub Formats"
@@ -292,9 +288,6 @@
       "operate": "Menu",
       "enable": "Enabled",
       "remark": "Remark",
-      "node": "Node",
-      "deployTo": "Deploy to",
-      "localPanel": "Local panel",
       "fallbacks": {
         "title": "Fallbacks",
         "empty": "No fallbacks yet",
@@ -330,7 +323,6 @@
       "delAllClientsConfirmTitle": "Delete all {count} clients from \"{remark}\"?",
       "delAllClientsConfirmContent": "This removes every client from this inbound and drops their traffic records. The inbound itself is kept. This cannot be undone.",
       "attachClients": "Attach Clients To…",
-      "addClientsToGroup": "Add Clients To Group…",
       "attachClientsTitle": "Attach clients from \"{remark}\"",
       "attachClientsDesc": "Attaches the same {count} clients (same UUID/password and shared traffic) to the selected inbound(s). They stay on this inbound too.",
       "attachClientsTargets": "Target inbounds",
@@ -439,13 +431,10 @@
         "inboundCreateSuccess": "Inbound has been successfully created.",
         "bulkDeleted": "{count} inbounds deleted",
         "bulkDeletedMixed": "{ok} deleted, {failed} failed",
-        "clonedMany": "{count} inbounds cloned",
-        "clonedMixed": "{ok} cloned, {failed} failed",
         "inboundDeleteSuccess": "Inbound has been successfully deleted.",
         "inboundClientAddSuccess": "Inbound client(s) have been added.",
         "inboundClientDeleteSuccess": "Inbound client has been deleted.",
         "inboundClientUpdateSuccess": "Inbound client has been updated.",
-        "savedNodeOfflineWillSync": "Saved locally. A backing node is offline or disabled — the change will sync once it reconnects.",
         "resetAllClientTrafficSuccess": "Traffic for all clients has been reset.",
         "resetAllTrafficSuccess": "All traffic has been reset.",
         "resetInboundClientTrafficSuccess": "Traffic has been reset.",
@@ -684,7 +673,6 @@
         "disableFlow": "Disable XTLS flow",
         "disableFlowHelp": "Opt this inbound out of automatic xtls-rprx-vision injection, even when its transport is flow-capable (e.g. a tunneled XHTTP inbound with VLESS encryption). Clients keep Vision on your other capable inbounds in the same subscription. VLESS only.",
         "shareAddrStrategyOptions": {
-          "node": "Node address",
           "listen": "Inbound listen",
           "custom": "Custom"
         }
@@ -742,10 +730,7 @@
       "searchPlaceholder": "Search email, comment, sub ID, UUID, password, auth, Telegram ID…",
       "filterTitle": "Filter clients",
       "clearAllFilters": "Clear all",
-      "filters": {
-        "nodes": "Nodes",
-        "localPanel": "Local (this panel)"
-      },
+      "filters": {},
       "showingCount": "Showing {shown} of {total}",
       "sortOldest": "Oldest first",
       "sortNewest": "Newest first",
@@ -788,9 +773,6 @@
       "email": "Email",
       "emailInvalidChars": "Email cannot contain spaces, '/', '\\', or control characters",
       "subIdInvalidChars": "Subscription ID cannot contain spaces, '/', '\\', or control characters",
-      "group": "Group",
-      "groupDesc": "Logical label used to bucket related clients (e.g. team, customer, region). Filterable from the toolbar.",
-      "groupPlaceholder": "e.g. customer-a",
       "comment": "Comment",
       "traffic": "Traffic",
       "speed": "Speed",
@@ -827,15 +809,6 @@
       "resetAllTrafficsContent": "Every client's up/down counter drops to zero. Quotas and expiry are not affected. This cannot be undone.",
       "deleteConfirmTitle": "Delete client {email}?",
       "deleteConfirmContent": "This removes the client from every attached inbound and drops its traffic record. This cannot be undone.",
-      "addToGroupTitle": "Add {count} client(s) to a group",
-      "addToGroupTooltip": "Pick an existing group or type a new name. Use the Ungroup action to remove clients from their current group.",
-      "groupName": "Group name",
-      "addToGroupSuccessToast": "Added {count} client(s) to {group}",
-      "ungroupSuccessToast": "Cleared group from {count} client(s)",
-      "ungroup": "Ungroup",
-      "ungroupConfirmTitle": "Remove {count} client(s) from their group?",
-      "ungroupConfirmContent": "Clears the group label on each selected client. Clients themselves are kept (use Delete to remove them entirely).",
-      "addToGroup": "Add to group",
       "attach": "Attach",
       "adjust": "Adjust",
       "subLinks": "Sub links",
@@ -957,73 +930,6 @@
       "renewOnDayDesc": "Renew on this day of every calendar month, at midnight in the panel's time zone, instead of every N days. A month too short for the chosen day renews on its last day. 0 keeps the day-interval mode.",
       "renewsUsed": "Renewals used",
       "bulkAdTagHint": "Enter a 32-character hex tag to set, or 'none' to clear sponsor channel on MTProto inbounds."
-    },
-    "groups": {},
-    "hosts": {
-      "summary": {},
-      "sections": {},
-      "fields": {
-        "allowInsecure": "Allow insecure"
-      },
-      "hints": {
-        "allowInsecure": "Skip TLS certificate verification (allowInsecure / skip-cert-verify)."
-      },
-      "remarkVars": {
-        "title": "Template Variables",
-        "intro": "Click a variable to add it. It is replaced per client when the subscription is generated.",
-        "preview": "Preview",
-        "groups": {
-          "client": "Client",
-          "traffic": "Traffic",
-          "time": "Time & status",
-          "connection": "Connection"
-        },
-        "descEMAIL": "Client email",
-        "descINBOUND": "Inbound's own remark (the config name)",
-        "descHOST": "Host remark",
-        "descID": "Client UUID",
-        "descSHORT_ID": "First 8 characters of the UUID",
-        "descTELEGRAM_ID": "Client's Telegram ID (empty if unset)",
-        "descSUB_ID": "Subscription ID",
-        "descCOMMENT": "Client comment",
-        "descTRAFFIC_USED": "Used traffic (human readable)",
-        "descTRAFFIC_LEFT": "Remaining traffic (hidden if unlimited)",
-        "descTRAFFIC_TOTAL": "Total traffic (hidden if unlimited)",
-        "descTRAFFIC_USED_BYTES": "Used traffic in bytes",
-        "descTRAFFIC_LEFT_BYTES": "Remaining traffic in bytes",
-        "descTRAFFIC_TOTAL_BYTES": "Total traffic in bytes",
-        "descUP": "Upload traffic",
-        "descDOWN": "Download traffic",
-        "descSTATUS": "active / expired / disabled / depleted",
-        "descSTATUS_EMOJI": "Status as an emoji (✅ ⏳ 🚫)",
-        "descDAYS_LEFT": "Days until expiry (hidden if unlimited)",
-        "descTIME_LEFT": "Remaining time (e.g. 12d 4h 30m)",
-        "descUSAGE_PERCENTAGE": "Used traffic as a percentage (hidden if unlimited)",
-        "descEXPIRE_DATE": "Expiry date (YYYY-MM-DD)",
-        "descJALALI_EXPIRE_DATE": "Expiry date in the Jalali calendar (YYYY/MM/DD)",
-        "descEXPIRE_UNIX": "Expiry as a Unix timestamp (seconds)",
-        "descCREATED_UNIX": "Creation time as a Unix timestamp (seconds)",
-        "descRESET_DAYS": "Traffic reset period in days",
-        "descRESET_DAY": "Calendar renewal day of the month",
-        "descPROTOCOL": "Inbound protocol (VLESS, VMess, Trojan, …)",
-        "descTRANSPORT": "Transport network (tcp, ws, grpc, …)",
-        "descSECURITY": "Transport security (TLS, REALITY, NONE)"
-      },
-      "toasts": {
-        "badTag": "Invalid tag",
-        "badVlessRoute": "Enter a single number between 0 and 65535"
-      }
-    },
-    "nodes": {
-      "name": "Name",
-      "apiToken": "API Token",
-      "apiTokenHint": "The remote panel exposes its API token under Authentication → API Token.",
-      "latency": "Latency",
-      "statusValues": {},
-      "toasts": {
-        "fillRequired": "Name, address, port and API token are required"
-      },
-      "mtls": {}
     },
     "settings": {
       "defaultTag": "Default",
@@ -1295,7 +1201,9 @@
         "apiTokenEmpty": "No tokens yet — create one to authenticate bots or remote panels.",
         "apiTokenDeleteWarning": "Any caller using this token will stop authenticating immediately.",
         "apiTokenCreatedTitle": "Token created",
-        "apiTokenCreatedNotice": "Copy this token now. For security it is not stored in readable form and will not be shown again."
+        "apiTokenCreatedNotice": "Copy this token now. For security it is not stored in readable form and will not be shown again.",
+        "apiToken": "API Token",
+        "apiTokenHint": "The remote panel exposes its API token under Authentication → API Token."
       },
       "toasts": {
         "modifySettings": "The parameters have been changed.",
@@ -1340,8 +1248,6 @@
       "eventOutboundDown": "Down",
       "eventOutboundUp": "Up",
       "eventXrayCrash": "Crash",
-      "eventNodeDown": "Down",
-      "eventNodeUp": "Up",
       "eventCPUHigh": "CPU high (%)",
       "requestFailed": "Request failed",
       "smtpEncryption": "Encryption",
@@ -1641,7 +1547,51 @@
       "subIncyResolveDnsDomainDesc": "DoH server URL, usually ending in /dns-query.",
       "subIncyResolveDnsIp": "DoH server IP",
       "subIncyResolveDnsIpDesc": "IP of the DoH server, used for bootstrap.",
-      "subIncyGroupRouting": "Routing"
+      "subIncyGroupRouting": "Routing",
+      "exportDatabaseDesc": "",
+      "allowInsecure": "Allow insecure",
+      "allowInsecureHelp": "Skip TLS certificate verification (allowInsecure / skip-cert-verify).",
+      "remarkVars": {
+        "title": "Template Variables",
+        "intro": "Click a variable to add it. It is replaced per client when the subscription is generated.",
+        "preview": "Preview",
+        "groups": {
+          "client": "Client",
+          "traffic": "Traffic",
+          "time": "Time & status",
+          "connection": "Connection"
+        },
+        "descEMAIL": "Client email",
+        "descINBOUND": "Inbound's own remark (the config name)",
+        "descHOST": "Host remark",
+        "descID": "Client UUID",
+        "descSHORT_ID": "First 8 characters of the UUID",
+        "descTELEGRAM_ID": "Client's Telegram ID (empty if unset)",
+        "descSUB_ID": "Subscription ID",
+        "descCOMMENT": "Client comment",
+        "descTRAFFIC_USED": "Used traffic (human readable)",
+        "descTRAFFIC_LEFT": "Remaining traffic (hidden if unlimited)",
+        "descTRAFFIC_TOTAL": "Total traffic (hidden if unlimited)",
+        "descTRAFFIC_USED_BYTES": "Used traffic in bytes",
+        "descTRAFFIC_LEFT_BYTES": "Remaining traffic in bytes",
+        "descTRAFFIC_TOTAL_BYTES": "Total traffic in bytes",
+        "descUP": "Upload traffic",
+        "descDOWN": "Download traffic",
+        "descSTATUS": "active / expired / disabled / depleted",
+        "descSTATUS_EMOJI": "Status as an emoji (✅ ⏳ 🚫)",
+        "descDAYS_LEFT": "Days until expiry (hidden if unlimited)",
+        "descTIME_LEFT": "Remaining time (e.g. 12d 4h 30m)",
+        "descUSAGE_PERCENTAGE": "Used traffic as a percentage (hidden if unlimited)",
+        "descEXPIRE_DATE": "Expiry date (YYYY-MM-DD)",
+        "descJALALI_EXPIRE_DATE": "Expiry date in the Jalali calendar (YYYY/MM/DD)",
+        "descEXPIRE_UNIX": "Expiry as a Unix timestamp (seconds)",
+        "descCREATED_UNIX": "Creation time as a Unix timestamp (seconds)",
+        "descRESET_DAYS": "Traffic reset period in days",
+        "descRESET_DAY": "Calendar renewal day of the month",
+        "descPROTOCOL": "Inbound protocol (VLESS, VMess, Trojan, …)",
+        "descTRANSPORT": "Transport network (tcp, ws, grpc, …)",
+        "descSECURITY": "Transport security (TLS, REALITY, NONE)"
+      }
     },
     "xray": {
       "save": "Save",
@@ -2148,7 +2098,9 @@
         "poolSize": "Pool Size"
       },
       "defaultOutbound": "Default Outbound",
-      "defaultOutboundDesc": "Traffic that does not match any routing rule uses this outbound (Xray uses the first outbound in the list)."
+      "defaultOutboundDesc": "Traffic that does not match any routing rule uses this outbound (Xray uses the first outbound in the list).",
+      "ruleName": "Name",
+      "outboundLatency": "Latency"
     }
   },
   "tgbot": {
@@ -2273,8 +2225,6 @@
       "eventDelayDetail": "Delay: {{ .Delay }}ms",
       "eventXrayCrash": "Xray CRASHED",
       "eventXrayCrashError": "Error: {{ .Error }}",
-      "eventNodeDown": "Node {{ .Name }} is DOWN",
-      "eventNodeUp": "Node {{ .Name }} is UP",
       "eventLoginFallback": "Login failed from {{ .Source }}",
       "memoryThreshold": "Memory Load {{ .Percent }}% exceeds the threshold of {{ .Threshold }}%"
     },
@@ -2366,7 +2316,6 @@
       "error": "Error",
       "delay": "Delay",
       "outbound": "Outbound",
-      "node": "Node",
       "threshold": "Threshold",
       "reason": "Reason",
       "time": "Time",
@@ -2381,8 +2330,6 @@
     "alerts": {
       "outboundDown": "Outbound Down",
       "outboundUp": "Outbound Up",
-      "nodeDown": "Node Down",
-      "nodeUp": "Node Up",
       "xrayCrash": "Xray Core Crashed",
       "cpuHigh": "CPU Threshold Exceeded",
       "memoryHigh": "Memory Threshold Exceeded",
@@ -2428,7 +2375,6 @@
   "email": {
     "labelStatus": "Status",
     "labelOutbound": "Outbound",
-    "labelNode": "Node",
     "labelError": "Error",
     "labelDelay": "Delay",
     "labelUsername": "Username",

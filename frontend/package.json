@@ -22,9 +22,10 @@
     "test:watch": "vitest",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "gen": "npm run gen:zod",
+    "gen": "npm run gen:zod && npm run gen:api",
     "gen:zod": "cd .. && go run ./tools/openapigen",
-    "prepare": "cd .. && husky frontend/.husky || true"
+    "prepare": "cd .. && husky frontend/.husky || true",
+    "gen:api": "node tools/build-openapi.mjs"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [

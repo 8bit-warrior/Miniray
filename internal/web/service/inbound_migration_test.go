@@ -336,8 +336,8 @@ func TestMigrationRequirements_NormalizesShareAddressFields(t *testing.T) {
 	if err := db.First(&gotInvalid, invalidStrategy.Id).Error; err != nil {
 		t.Fatalf("reload invalid strategy inbound: %v", err)
 	}
-	if gotInvalid.ShareAddrStrategy != "node" || gotInvalid.ShareAddr != "edge.example.com" {
-		t.Fatalf("invalid share fields = (%q, %q), want (node, edge.example.com)", gotInvalid.ShareAddrStrategy, gotInvalid.ShareAddr)
+	if gotInvalid.ShareAddrStrategy != "listen" || gotInvalid.ShareAddr != "edge.example.com" {
+		t.Fatalf("invalid share fields = (%q, %q), want (listen, edge.example.com)", gotInvalid.ShareAddrStrategy, gotInvalid.ShareAddr)
 	}
 
 	var gotPadded model.Inbound
@@ -352,7 +352,7 @@ func TestMigrationRequirements_NormalizesShareAddressFields(t *testing.T) {
 	if err := db.First(&gotInvalidAddress, invalidAddress.Id).Error; err != nil {
 		t.Fatalf("reload invalid address inbound: %v", err)
 	}
-	if gotInvalidAddress.ShareAddrStrategy != "node" || gotInvalidAddress.ShareAddr != "" {
-		t.Fatalf("invalid address share fields = (%q, %q), want (node, empty)", gotInvalidAddress.ShareAddrStrategy, gotInvalidAddress.ShareAddr)
+	if gotInvalidAddress.ShareAddrStrategy != "listen" || gotInvalidAddress.ShareAddr != "" {
+		t.Fatalf("invalid address share fields = (%q, %q), want (listen, empty)", gotInvalidAddress.ShareAddrStrategy, gotInvalidAddress.ShareAddr)
 	}
 }

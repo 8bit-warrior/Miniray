@@ -205,7 +205,7 @@ export default function OverviewActionBar({
             {group.map((action) => (
               <Button
                 key={action.key}
-                className={action.key==="panel-offline"?"miniray-offline-button":undefined}
+                className={action.key === 'panel-offline' ? 'miniray-offline-button' : undefined}
                 type={action.primary ? undefined : 'text'}
                 color={action.primary ? 'primary' : undefined}
                 variant={action.primary ? 'outlined' : undefined}

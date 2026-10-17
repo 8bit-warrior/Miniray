@@ -20,37 +20,6 @@ func newSPAFallbackTestEngine(t *testing.T) *gin.Engine {
 	return newSPAFallbackTestEngineWithBasePath(t, "/admin-random/")
 }
 
-func newSPAFallbackTestEngineWithBasePath(t *testing.T, basePath string) *gin.Engine {
-	t.Helper()
-	gin.SetMode(gin.TestMode)
-
-	oldDistFS := distFS
-	SetDistFS(fstest.MapFS{
-		"dist/index.html": {Data: []byte(`<!doctype html><html><head></head><body>spa shell</body></html>`)},
-	})
-	t.Cleanup(func() { SetDistFS(oldDistFS) })
-
-	engine := gin.New()
-	engine.Use(sessions.Sessions("miniray", cookie.NewStore([]byte("spa-fallback-test-secret"))))
-	engine.Use(func(c *gin.Context) {
-		c.Set("base_path", basePath)
-		c.Set("I18n", func(_ locale.I18nType, key string, _ ...string) string { return key })
-		if c.GetHeader("X-Test-Login") == "1" {
-			session.SetAPIAuthUser(c, &model.User{Id: 1, Username: "test"})
-		}
-		c.Next()
-	})
-
-	ctrl := NewMINIRAYController(engine.Group(basePath))
-	engine.NoRoute(func(c *gin.Context) {
-		if ctrl.HandleNoRoutePanelSPA(c) {
-			return
-		}
-		c.AbortWithStatus(http.StatusNotFound)
-	})
-	return engine
-}
-
 func TestPanelSPAFallbackServesRootBasePath(t *testing.T) {
 	engine := newSPAFallbackTestEngineWithBasePath(t, "/")
 	req := httptest.NewRequest(http.MethodGet, "/panel/hosts", nil)
@@ -225,4 +194,35 @@ func TestPanelSPAFallbackPredicate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newSPAFallbackTestEngineWithBasePath(t *testing.T, basePath string) *gin.Engine {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+
+	oldDistFS := distFS
+	SetDistFS(fstest.MapFS{
+		"dist/index.html": {Data: []byte(`<!doctype html><html><head></head><body>spa shell</body></html>`)},
+	})
+	t.Cleanup(func() { SetDistFS(oldDistFS) })
+
+	engine := gin.New()
+	engine.Use(sessions.Sessions("miniray", cookie.NewStore([]byte("spa-fallback-test-secret"))))
+	engine.Use(func(c *gin.Context) {
+		c.Set("base_path", basePath)
+		c.Set("I18n", func(_ locale.I18nType, key string, _ ...string) string { return key })
+		if c.GetHeader("X-Test-Login") == "1" {
+			session.SetAPIAuthUser(c, &model.User{Id: 1, Username: "test"})
+		}
+		c.Next()
+	})
+
+	ctrl := NewMINIRAYController(engine.Group(basePath))
+	engine.NoRoute(func(c *gin.Context) {
+		if ctrl.HandleNoRoutePanelSPA(c) {
+			return
+		}
+		c.AbortWithStatus(http.StatusNotFound)
+	})
+	return engine
 }

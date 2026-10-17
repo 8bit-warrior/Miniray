@@ -25,9 +25,9 @@ func makeScaleClients(n int) []model.Client {
 	clients := make([]model.Client, n)
 	for i := range clients {
 		clients[i] = model.Client{
-			ID: uuid.NewString(),
-			Email: fmt.Sprintf("user-%07d@scale", i),
-			SubID: fmt.Sprintf("sub-%07d", i),
+			ID:     uuid.NewString(),
+			Email:  fmt.Sprintf("user-%07d@scale", i),
+			SubID:  fmt.Sprintf("sub-%07d", i),
 			Enable: true,
 		}
 	}

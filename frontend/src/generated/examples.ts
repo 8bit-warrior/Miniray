@@ -41,6 +41,9 @@ export const EXAMPLES: Record<string, unknown> = {
     "ldapVlessField": "",
     "outboundDownThreshold": 1,
     "pageSize": 0,
+    "panelOfflineEnabled": false,
+    "panelOfflineUnit": "minute",
+    "panelOfflineValue": 1,
     "panelOutbound": "",
     "realityScanCandidates": "",
     "remarkTemplate": "",
@@ -228,6 +231,9 @@ export const EXAMPLES: Record<string, unknown> = {
     "ldapVlessField": "",
     "outboundDownThreshold": 1,
     "pageSize": 0,
+    "panelOfflineEnabled": false,
+    "panelOfflineUnit": "minute",
+    "panelOfflineValue": 1,
     "panelOutbound": "",
     "realityScanCandidates": "",
     "remarkTemplate": "",
@@ -418,7 +424,6 @@ export const EXAMPLES: Record<string, unknown> = {
     "expiryTime": 0,
     "flow": "",
     "forwardedPorts": "",
-    "group": "",
     "id": "",
     "keepAlive": null,
     "limitIp": 0,
@@ -448,10 +453,6 @@ export const EXAMPLES: Record<string, unknown> = {
   },
   "ClientPageResponse": {
     "filtered": 47,
-    "groups": [
-      "staff",
-      "trial"
-    ],
     "items": [
       {
         "comment": "Primary device",
@@ -459,7 +460,6 @@ export const EXAMPLES: Record<string, unknown> = {
         "email": "alice@example.com",
         "enable": true,
         "expiryTime": 1735689600000,
-        "group": "staff",
         "inboundIds": [
           3,
           5
@@ -507,7 +507,6 @@ export const EXAMPLES: Record<string, unknown> = {
     "expiryTime": 0,
     "flow": "",
     "forwardedPorts": "",
-    "group": "",
     "id": 0,
     "keepAlive": 0,
     "limitHwid": 0,
@@ -559,7 +558,6 @@ export const EXAMPLES: Record<string, unknown> = {
     "email": "alice@example.com",
     "enable": true,
     "expiryTime": 1735689600000,
-    "group": "staff",
     "inboundIds": [
       3,
       5
@@ -669,101 +667,6 @@ export const EXAMPLES: Record<string, unknown> = {
     "id": 0,
     "seederName": ""
   },
-  "Host": {
-    "address": "cdn.example.com",
-    "allowInsecure": false,
-    "alpn": [
-      ""
-    ],
-    "cipherSuites": "",
-    "createdAt": 0,
-    "echConfigList": "",
-    "excludeFromSubTypes": [
-      ""
-    ],
-    "finalMask": "",
-    "fingerprint": "",
-    "groupId": "",
-    "hostHeader": "",
-    "id": 1,
-    "inboundId": 1,
-    "isDisabled": false,
-    "isHidden": false,
-    "keepSniBlank": false,
-    "mihomoIpVersion": "dual",
-    "mihomoX25519": false,
-    "muxParams": null,
-    "nodeGuids": [
-      ""
-    ],
-    "overrideSniFromAddress": false,
-    "path": "",
-    "pinnedPeerCertSha256": [
-      ""
-    ],
-    "port": 8443,
-    "remark": "cdn-front",
-    "security": "same",
-    "serverDescription": "",
-    "shuffleHost": false,
-    "sni": "",
-    "sockoptParams": null,
-    "sortOrder": 0,
-    "tags": [
-      ""
-    ],
-    "updatedAt": 0,
-    "verifyPeerCertByName": "",
-    "vlessRoute": "443"
-  },
-  "HostGroup": {
-    "allowInsecure": false,
-    "alpn": [
-      ""
-    ],
-    "cipherSuites": "",
-    "echConfigList": "",
-    "excludeFromSubTypes": [
-      ""
-    ],
-    "finalMask": "",
-    "fingerprint": "",
-    "groupId": "",
-    "hostHeader": "",
-    "hosts": [
-      ""
-    ],
-    "inboundIds": [
-      0
-    ],
-    "isDisabled": false,
-    "isHidden": false,
-    "keepSniBlank": false,
-    "mihomoIpVersion": "dual",
-    "mihomoX25519": false,
-    "muxParams": "",
-    "nodeGuids": [
-      ""
-    ],
-    "overrideSniFromAddress": false,
-    "path": "",
-    "pinnedPeerCertSha256": [
-      ""
-    ],
-    "port": 0,
-    "remark": "",
-    "security": "same",
-    "serverDescription": "",
-    "shuffleHost": false,
-    "sni": "",
-    "sockoptParams": "",
-    "sortOrder": 0,
-    "tags": [
-      ""
-    ],
-    "verifyPeerCertByName": "",
-    "vlessRoute": ""
-  },
   "HwidSlotStatus": {
     "active": true,
     "full": false,
@@ -802,14 +705,12 @@ export const EXAMPLES: Record<string, unknown> = {
     "id": 1,
     "lastTrafficResetTime": 0,
     "listen": "",
-    "nodeId": null,
-    "originNodeGuid": "",
     "port": 443,
     "protocol": "vless",
     "remark": "VLESS-443",
     "settings": null,
     "shareAddr": "",
-    "shareAddrStrategy": "node",
+    "shareAddrStrategy": "listen",
     "sniffing": null,
     "streamSettings": null,
     "subSortIndex": 1,
@@ -842,8 +743,6 @@ export const EXAMPLES: Record<string, unknown> = {
     "listen": "",
     "mtprotoDomain": "",
     "network": "",
-    "nodeAddress": "",
-    "nodeId": null,
     "port": 443,
     "protocol": "vless",
     "remark": "VLESS-443",
@@ -890,115 +789,6 @@ export const EXAMPLES: Record<string, unknown> = {
   "NewUUIDResponse": {
     "uuid": "550e8400-e29b-41d4-a716-446655440000"
   },
-  "Node": {
-    "activeCount": 23,
-    "address": "node1.example.com",
-    "allowPrivateAddress": false,
-    "basePath": "/",
-    "clientCount": 27,
-    "configDirty": false,
-    "configDirtyAt": 0,
-    "cpuPct": 23.5,
-    "createdAt": 1700000000,
-    "depletedCount": 1,
-    "disabledCount": 3,
-    "enable": true,
-    "guid": "",
-    "id": 1,
-    "inboundCount": 5,
-    "inboundSyncMode": "all",
-    "inboundTags": [
-      ""
-    ],
-    "lastError": "",
-    "lastHeartbeat": 1700000000,
-    "latencyMs": 42,
-    "memPct": 45.1,
-    "name": "de-fra-1",
-    "netDown": 2097152,
-    "netUp": 1048576,
-    "onlineCount": 3,
-    "outboundTag": "",
-    "panelVersion": "v3.x.x",
-    "parentGuid": "",
-    "pinnedCertSha256": "",
-    "port": 2053,
-    "remark": "",
-    "scheme": "https",
-    "status": "online",
-    "tlsVerifyMode": "verify",
-    "transitive": false,
-    "updatedAt": 1700000000,
-    "uptimeSecs": 86400,
-    "xrayError": "",
-    "xrayState": "",
-    "xrayVersion": "25.10.31"
-  },
-  "NodeMutationRequest": {
-    "address": "",
-    "allowPrivateAddress": false,
-    "apiToken": null,
-    "basePath": "",
-    "clearApiToken": false,
-    "enable": false,
-    "id": 0,
-    "inboundSyncMode": "all",
-    "inboundTags": [
-      ""
-    ],
-    "name": "",
-    "outboundTag": "",
-    "pinnedCertSha256": "",
-    "port": 1,
-    "remark": "",
-    "scheme": "http",
-    "tlsVerifyMode": "verify"
-  },
-  "NodeView": {
-    "activeCount": 20,
-    "address": "node.example.com",
-    "allowPrivateAddress": false,
-    "basePath": "/",
-    "clientCount": 25,
-    "configDirty": false,
-    "configDirtyAt": 0,
-    "cpuPct": 12.5,
-    "createdAt": 1700000000,
-    "depletedCount": 1,
-    "disabledCount": 2,
-    "enable": true,
-    "guid": "node-guid",
-    "hasApiToken": true,
-    "id": 1,
-    "inboundCount": 3,
-    "inboundSyncMode": "all",
-    "inboundTags": [
-      "in-443-tcp"
-    ],
-    "lastError": "",
-    "lastHeartbeat": 1700000000,
-    "latencyMs": 42,
-    "memPct": 45.2,
-    "name": "edge-1",
-    "netDown": 1048576,
-    "netUp": 2097152,
-    "onlineCount": 5,
-    "outboundTag": "direct",
-    "panelVersion": "v3.x.x",
-    "parentGuid": "",
-    "pinnedCertSha256": "",
-    "port": 2053,
-    "remark": "Primary edge",
-    "scheme": "https",
-    "status": "online",
-    "tlsVerifyMode": "verify",
-    "transitive": false,
-    "updatedAt": 1700003600,
-    "uptimeSecs": 86400,
-    "xrayError": "",
-    "xrayState": "running",
-    "xrayVersion": "25.10.31"
-  },
   "OutboundTraffics": {
     "down": 0,
     "id": 0,
@@ -1023,18 +813,6 @@ export const EXAMPLES: Record<string, unknown> = {
     "online": true,
     "tag": "inbound-51820",
     "up": 1048576
-  },
-  "ProbeResultUI": {
-    "cpuPct": 12.5,
-    "error": "",
-    "latencyMs": 42,
-    "memPct": 45.2,
-    "panelVersion": "v3.x.x",
-    "status": "online",
-    "uptimeSecs": 86400,
-    "xrayError": "",
-    "xrayState": "",
-    "xrayVersion": "25.10.31"
   },
   "RealityScanResult": {
     "alpn": "h2",
@@ -1104,39 +882,6 @@ export const EXAMPLES: Record<string, unknown> = {
     "id": 0,
     "key": "",
     "value": ""
-  },
-  "Sponsor": {
-    "enable": true,
-    "from": "2026-10-01T00:00:00Z",
-    "id": "acme-2026-10",
-    "link": "https://acme.example/?utm_source=miniray",
-    "logo": "/sponsors/logo/acme.png",
-    "name": "Acme VPS",
-    "slots": [
-      ""
-    ],
-    "text": {},
-    "title": {},
-    "until": "2026-11-01T00:00:00Z"
-  },
-  "SponsorList": {
-    "contact": "https://t.me/example",
-    "sponsors": [
-      {
-        "enable": true,
-        "from": "2026-10-01T00:00:00Z",
-        "id": "acme-2026-10",
-        "link": "https://acme.example/?utm_source=miniray",
-        "logo": "/sponsors/logo/acme.png",
-        "name": "Acme VPS",
-        "slots": [
-          ""
-        ],
-        "text": {},
-        "title": {},
-        "until": "2026-11-01T00:00:00Z"
-      }
-    ]
   },
   "SubBalancer": {
     "createdAt": 1710000000000,

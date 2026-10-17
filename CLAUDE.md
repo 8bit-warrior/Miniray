@@ -3,13 +3,11 @@
 Operational guide for AI agents working in this repo. Long-form human docs:
 `CONTRIBUTING.md` (setup, testing philosophy) and `frontend/README.md`.
 Read those before large changes. This file is the short, must-follow version.
-For a deep navigation map (request lifecycle, cron-job table, symptom → file
-index, layering rules), read `docs/architecture.md` on demand — do not guess
-file locations when it can answer in one hop.
+The README and deployment guide describe supported installation and service commands.
 
 ## Stack
 - Backend: Go 1.27 (`module github.com/8bit-warrior/Miniray`), Gin, GORM.
-  Runs Xray-core as a managed child process (`internal/xray/process.go`) and
+  Manages Xray-core through an independent systemd service on Linux, or a detached process on Windows; local development also supports a child process (`internal/xray/process.go`) and
   imports `github.com/xtls/xray-core` for config types + gRPC stats/handler/router
   API. MTProto inbounds run a second managed child — the `mtg-multi` binary
   (a multi-secret mtg fork — NOT a Go dependency; its prebuilt release binary is
@@ -33,7 +31,7 @@ file locations when it can answer in one hop.
 - `main.go` — entry point + `miniray` CLI (run, migrate, migrate-db, encrypt-tokens, setting, cert).
 - `internal/config/` — env parsing (MINIRAY_DEBUG, MINIRAY_LOG_LEVEL, MINIRAY_LOG_FOLDER,
   MINIRAY_BIN_FOLDER, MINIRAY_SKIP_HSTS, MINIRAY_PORT, MINIRAY_DB_*).
-- `internal/database/` + `internal/database/model/` — GORM schema (~24 models;
+- `internal/database/` + `internal/database/model/` — GORM schema (17 models;
   Inbound, Client, Setting, User are the core), inbound Protocol enum,
   AutoMigrate + hand-written migrations in `db.go`.
 - `internal/xray/` — Xray child-process lifecycle, config generation, gRPC API.
@@ -50,28 +48,21 @@ file locations when it can answer in one hop.
   listeners, per-peer IPv6 egress aliases.
 - `internal/pia/` — PIA WireGuard protocol client (auth, signed server list, `/addKey`).
 - `internal/sub/` — subscription server (raw / JSON / Clash).
-- `internal/eventbus/` — in-process pub/sub (outbound/node health, xray.crash,
+- `internal/eventbus/` — in-process pub/sub (outbound health, xray.crash,
   cpu.high, memory.high, login.attempt).
 - `internal/logger/`, `internal/util/` (link, crypto, sys, ldap, …),
   `internal/tunnelmonitor/` — shared infrastructure.
 - `internal/web/` — Gin server (embeds `dist/` + `translation/`).
   - `controller/` — panel + REST API handlers; OpenAPI at /panel/api/openapi.json.
-  - `service/` — business logic (InboundService, SettingService, XrayService,
-    node sync); subpackages tgbot/, discord/, email/, outbound/, panel/, integration/.
-  - `job/` — 19 cron jobs (traffic, fail2ban IP-limit, node heartbeat/sync, LDAP,
-    CPU/memory watchdogs, …); full table in `docs/architecture.md` §5.4.
+  - `service/` — business logic (InboundService, SettingService, XrayService); subpackages tgbot/, discord/, email/, outbound/, panel/, integration/.
+  - `job/` — local cron jobs (traffic, fail2ban IP-limit, LDAP and resource watchdogs).
   - `middleware/`, `entity/`, `global/`, `session/` (CSRF), `network/`,
-    `runtime/` (master/sub-node over mTLS), `websocket/`.
+    `runtime/` (local proxy mutations), `websocket/`.
   - `locale/` + `translation/` — i18n, 13 embedded locale JSON files.
 - `frontend/` — React + TS source (see `frontend/CLAUDE.md`).
 - `tools/openapigen/` — Go generator that emits frontend types + Zod/JSON schemas
-  into `frontend/src/generated/` from Go structs. The OpenAPI doc itself
-  (`frontend/public/openapi.json`) is assembled from those + `endpoints.ts` by
-  `frontend/scripts/build-openapi.mjs`.
-- `docs/` — separate Next.js/Fumadocs site (pnpm, own CI in `docs-ci.yml`,
-  outside `make verify`). Holds a THIRD independent implementation of
-  link/subscription generation in `docs/lib/xray/` — check it whenever
-  share-link or install-command output changes.
+  into `frontend/src/generated/` from Go structs. `frontend/tools/build-openapi.mjs`
+  refreshes schemas in `frontend/public/openapi.json`.
 
 ## Hard rules (non-negotiable)
 - Correct fix over small fix. Find the root cause and fix it the right way, however
@@ -91,20 +82,10 @@ file locations when it can answer in one hop.
   the *why* a name cannot hold — an invariant, an issue number, a non-obvious
   constraint. Exempt: `//go:build`, `//go:generate`, and other directives.
   HTML `<!-- -->` is fine. (A linter cannot enforce this — you must.)
-- New `g.POST`/`g.GET` in `internal/web/controller/` REQUIRES a matching entry
-  in `frontend/src/pages/api-docs/endpoints.ts`, then `make gen` (or
-  `cd frontend && npm run gen`). Hand-maintained but pinned both ways by
-  `TestRouteRegistryContract` (`internal/web/routes_contract_test.go`): a missing
-  OR stale entry fails `make test-go`. Scope: `/panel/api/*` + a few session
-  routes; sub-server routes are exempt.
-- Response examples come from Go struct `example:` tags via `tools/openapigen` —
-  never hand-write them. A new struct must be added to openapigen's `StructAllow`
-  allowlist (`tools/openapigen/main.go`) or it is silently omitted from
-  schemas/examples (and `build-openapi.mjs` then fails on the missing schema).
-- A new or renamed endpoint has a FOURTH step nothing checks: copy
-  `frontend/public/openapi.json` → `docs/public/openapi.json`, then
-  `cd docs && pnpm gen:api` to refresh the MDX under
-  `docs/content/docs/en/reference/api/`. `docs-ci.yml` fires only on `docs/**`.
+- New or changed controller routes require matching entries in
+  `frontend/public/openapi.json`. Run `make gen` after changing API structs.
+- Response examples come from Go `example:` tags via `tools/openapigen`.
+  Add API structs to its `StructAllow` allowlist; do not edit generated files.
 - A new English i18n key goes in EVERY locale JSON in `internal/web/translation/`
   (13 files) AND must be referenced from `frontend/src` or Go in the SAME commit —
   `frontend/src/test/i18n-dead-keys.test.ts` fails both ways. It is a frontend
@@ -113,8 +94,7 @@ file locations when it can answer in one hop.
 - DB / model changes require a migration in `internal/database/db.go`.
 - Every state-changing inbound/client op dispatches through `runtime.Runtime`
   (`internal/web/runtime/`) — never straight to `internal/xray/api.go`, never from
-  a controller or cron job. A direct call passes every local test and silently
-  breaks every multi-node deployment. Other layering rules: `docs/architecture.md` §8.
+  a controller or cron job. Keep DB mutations and proxy reconciliation consistent across panel and agent.
 - Conventional commits: `type(area): short imperative summary`, then a body
   explaining the why. Types in use: `fix`, `feat`, `chore`, `refactor`, `perf`,
   `docs`, `style`.
@@ -159,9 +139,8 @@ file locations when it can answer in one hop.
   `-race`); `httptest` for HTTP. Keep `database.InitDB` for reopening a file or
   migrating a hand-built legacy DB. `internal/sub`'s `initSubDB(t)` is the template.
 - Code must pass `golangci-lint run` (gofumpt + goimports formatting): `make lint`.
-- Postgres, xray-gRPC-e2e and scale tests `t.Skip` unless `MINIRAY_TEST_PG_DSN`,
-  `MINIRAY_DB_TYPE`+`MINIRAY_DB_DSN`, `XRAY_E2E_BINARY` or `MINIRAY_SCALE_TEST` is set — a
-  green `go test ./...` does not mean those paths ran.
+- Xray gRPC e2e and scale tests require `XRAY_E2E_BINARY` or `MINIRAY_SCALE_TEST`;
+  an ordinary test run skips those optional checks.
 
 ## Frontend conventions (summary; full version in frontend/CLAUDE.md)
 - Ant Design 6 only — no Tailwind/shadcn. Targeted tweaks, not rewrites.
@@ -189,10 +168,8 @@ reads as a broken repo, not a missing step. Run `make dist-stub` once; every
 
     make verify   # gen-check + lint + typecheck + test + build + build-storybook
 
-That is the *fast* gate, not all of CI. `ci.yml` also runs `make race`,
-`make vulncheck`, a live-Postgres job (where a SKIP counts as a failure) and a
-30s fuzz smoke on `FuzzParseLink`/`FuzzDecodeCertPin` — run those locally when
-you touch DB/dialect or parser code.
+The release workflow also builds four target archives and exercises the Linux
+installer on a disposable native systemd runner before publishing.
 
 Common targets: `make gen` (regenerate Zod/OpenAPI), `make lint` (Go + frontend),
 `make test` (Go `-shuffle=on` + frontend), `make race`, `make build`. See `Makefile`.

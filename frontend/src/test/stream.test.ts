@@ -1,4 +1,35 @@
 /// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
 import { describe, expect, it } from 'vitest';
 
 import { NetworkSettingsSchema } from '@/schemas/protocols';

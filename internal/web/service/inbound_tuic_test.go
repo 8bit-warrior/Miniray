@@ -200,7 +200,7 @@ func TestCheckForwardedPortsConflict_CollidesWithTuicSocksPort(t *testing.T) {
 	relayPort := tuic.SOCKSPortForInbound(tuicInbound.Id)
 
 	svc := &InboundService{}
-	ctx, err := svc.loadPortConflictContext(database.GetDB(), nil)
+	ctx, err := svc.loadPortConflictContext(database.GetDB())
 	if err != nil {
 		t.Fatalf("loadPortConflictContext: %v", err)
 	}

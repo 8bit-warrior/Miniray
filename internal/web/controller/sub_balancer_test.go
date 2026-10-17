@@ -14,16 +14,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/database/dbtest"
 )
 
-func setupSubBalancerRouter(t *testing.T) *gin.Engine {
-	t.Helper()
-	t.Setenv("MINIRAY_DB_FOLDER", t.TempDir())
-	dbtest.InitDB(t, filepath.Join(t.TempDir(), "miniray.db"))
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	NewSubBalancerController(router.Group("/panel/api"))
-	return router
-}
-
 func subBalancerPost(t *testing.T, router *gin.Engine, path, body string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
@@ -99,4 +89,14 @@ func TestSubBalancerController_UpdatePreservesEnabledWhenAbsent(t *testing.T) {
 	if bal["enabled"] != true {
 		t.Fatalf("enabled=true -> %v, want true", bal["enabled"])
 	}
+}
+
+func setupSubBalancerRouter(t *testing.T) *gin.Engine {
+	t.Helper()
+	t.Setenv("MINIRAY_DB_FOLDER", t.TempDir())
+	dbtest.InitDB(t, filepath.Join(t.TempDir(), "miniray.db"))
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	NewSubBalancerController(router.Group("/panel/api"))
+	return router
 }

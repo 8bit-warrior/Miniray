@@ -61,7 +61,7 @@ export const TypicalMonitoring: Story = {
         new AllSetting({
           discordBotEnable: true,
           discordChannelId: '123456789012345678',
-          discordEnabledEvents: 'xray.crash,node.down,cpu.high,memory.high,login.attempt',
+          discordEnabledEvents: 'xray.crash,cpu.high,memory.high,login.attempt',
           discordCpu: 85,
           discordMemory: 90,
         })
@@ -79,7 +79,7 @@ export const EverythingEnabled: Story = {
           discordBotEnable: true,
           discordChannelId: '123456789012345678',
           discordEnabledEvents:
-            'outbound.down,outbound.up,xray.crash,node.down,node.up,cpu.high,memory.high,login.attempt',
+            'outbound.down,outbound.up,xray.crash,cpu.high,memory.high,login.attempt',
           discordCpu: 70,
           discordMemory: 75,
         })

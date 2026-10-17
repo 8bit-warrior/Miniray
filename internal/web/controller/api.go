@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	"github.com/8bit-warrior/Miniray/internal/web/middleware"
 	"github.com/8bit-warrior/Miniray/internal/web/service/panel"
 	"github.com/8bit-warrior/Miniray/internal/web/service/tgbot"
 	"github.com/8bit-warrior/Miniray/internal/web/session"
-
-	"github.com/gin-gonic/gin"
 )
 
 // APIController handles the main API routes for the miniray panel, including inbounds and server management.
@@ -33,18 +33,6 @@ func NewAPIController(g *gin.RouterGroup) *APIController {
 }
 
 func (a *APIController) checkAPIAuth(c *gin.Context) {
-	// A verified client certificate (a completed mTLS handshake) authenticates
-	// the caller, equivalent to a valid bearer token. api_authed must be set so
-	// the CSRF middleware lets cert-authed mutations through.
-	if c.Request.TLS != nil && len(c.Request.TLS.VerifiedChains) > 0 {
-		if u, err := a.userService.GetFirstUser(); err == nil {
-			session.SetAPIAuthUser(c, u)
-		}
-		c.Set("api_authed", true)
-		c.Set("api_token_scope", model.ApiScopeNodeSync)
-		c.Next()
-		return
-	}
 	auth := c.GetHeader("Authorization")
 	if after, ok := strings.CutPrefix(auth, "Bearer "); ok {
 		tok := after
@@ -87,34 +75,6 @@ var monitorScopeAllow = map[string]struct{}{
 	"/server/getPanelUpdateInfo":                  {},
 }
 
-// nodeSyncScopeAllow is the node-sync route/method allowlist relative to
-// /panel/api; Gin patterns prevent concrete parameters broadening authority.
-var nodeSyncScopeAllow = map[string]map[string]struct{}{
-	"/server/status":               {http.MethodGet: {}},
-	"/inbounds/list":               {http.MethodGet: {}},
-	"/inbounds/add":                {http.MethodPost: {}},
-	"/inbounds/del/:id":            {http.MethodPost: {}},
-	"/inbounds/update/:id":         {http.MethodPost: {}},
-	"/clients/add":                 {http.MethodPost: {}},
-	"/clients/del/:email":          {http.MethodPost: {}},
-	"/clients/:email/detach":       {http.MethodPost: {}},
-	"/clients/update/:email":       {http.MethodPost: {}},
-	"/server/restartXrayService":   {http.MethodPost: {}},
-	"/server/getWebCertFiles":      {http.MethodGet: {}},
-	"/server/descendants":          {http.MethodGet: {}},
-	"/clients/resetTraffic/:email": {http.MethodPost: {}},
-	"/inbounds/resetAllTraffics":   {http.MethodPost: {}},
-	"/inbounds/:id/resetTraffic":   {http.MethodPost: {}},
-	"/clients/onlinesByGuid":       {http.MethodPost: {}},
-	"/clients/onlines":             {http.MethodPost: {}},
-	"/clients/lastOnline":          {http.MethodPost: {}},
-	"/inbounds/pushClientTraffics": {http.MethodPost: {}},
-	"/server/clientIps":            {http.MethodGet: {}, http.MethodPost: {}},
-	"/clients/clientIpsByGuid":     {http.MethodPost: {}},
-}
-
-// enforceTokenScope applies explicit allowlists to monitor and node-sync tokens.
-// Admin tokens and session-login users retain their existing behavior.
 func (a *APIController) enforceTokenScope(c *gin.Context) {
 	scopeVal, ok := c.Get("api_token_scope")
 	if !ok {
@@ -139,13 +99,6 @@ func (a *APIController) enforceTokenScope(c *gin.Context) {
 			c.Next()
 			return
 		}
-	case model.ApiScopeNodeSync:
-		if methods, allowed := nodeSyncScopeAllow[rel]; allowed {
-			if _, allowedMethod := methods[c.Request.Method]; allowedMethod {
-				c.Next()
-				return
-			}
-		}
 	default:
 		deny()
 		return
@@ -168,9 +121,6 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	api := g.Group("/panel/api")
 	api.Use(a.checkAPIAuth)
 	api.Use(a.enforceTokenScope)
-	// Decode + verify the node config envelope (zstd + X-Config-Sha256) and
-	// advertise support, before CSRF/handlers read the body.
-	api.Use(middleware.ConfigEnvelopeMiddleware())
 	api.Use(middleware.CSRFMiddleware())
 
 	api.GET("/openapi.json", ServeOpenAPISpec)
@@ -185,8 +135,6 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	// Server API
 	server := api.Group("/server")
 	a.serverController = NewServerController(server)
-
-
 
 	// Settings + Xray config management live under the API surface too, so the
 	// same API token drives them. Paths are /panel/api/setting/* and

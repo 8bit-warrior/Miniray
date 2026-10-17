@@ -1,6 +1,36 @@
 /// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
 import { describe, expect, it } from 'vitest';
-
 import { formValuesToWirePayload } from '@/lib/xray/inbound-form-adapter';
 import { formValuesToWirePayload as outboundToWire } from '@/lib/xray/outbound-form-adapter';
 import {
@@ -15,13 +45,11 @@ import { InboundFormSchema } from '@/schemas/forms/inbound-form';
 import { HappyEyeballsSchema } from '@/schemas/protocols/stream/sockopt';
 import type { InboundFormValues } from '@/schemas/forms/inbound-form';
 import { XHttpXmuxSchema, XMUX_FRESH_DEFAULTS } from '@/schemas/protocols/stream/xhttp';
-
 describe('validateRealityTarget', () => {
   it('accepts host:port and bare port', () => {
     expect(validateRealityTarget('play.google.com:443')).toBeUndefined();
     expect(validateRealityTarget('443')).toBeUndefined();
   });
-
   it('rejects host without port', () => {
     expect(validateRealityTarget('play.google.com')).toBe(
       'pages.inbounds.form.realityTargetNeedsPort',
@@ -29,7 +57,6 @@ describe('validateRealityTarget', () => {
     expect(validateRealityTarget('')).toBe('pages.inbounds.form.realityTargetRequired');
   });
 });
-
 describe('validateRealityClientVer', () => {
   it('accepts empty (not set) and core-style versions', () => {
     expect(validateRealityClientVer('')).toBeUndefined();
@@ -39,13 +66,11 @@ describe('validateRealityClientVer', () => {
     expect(validateRealityClientVer('26.3')).toBeUndefined();
     expect(validateRealityClientVer('0.0.255')).toBeUndefined();
   });
-
   it('rejects untrimmed values because the save path ships them verbatim', () => {
     expect(validateRealityClientVer('26.3.27 ')).toBe('pages.inbounds.form.clientVerInvalid');
     expect(validateRealityClientVer(' 26.3.27')).toBe('pages.inbounds.form.clientVerInvalid');
     expect(validateRealityClientVer(' ')).toBe('pages.inbounds.form.clientVerInvalid');
   });
-
   it('rejects what the core parser rejects', () => {
     expect(validateRealityClientVer('26.3.27.1')).toBe('pages.inbounds.form.clientVerInvalid');
     expect(validateRealityClientVer('26.3.256')).toBe('pages.inbounds.form.clientVerInvalid');
@@ -55,7 +80,6 @@ describe('validateRealityClientVer', () => {
     expect(validateRealityClientVer('-1.0.0')).toBe('pages.inbounds.form.clientVerInvalid');
   });
 });
-
 describe('validateRealityMaxClientVer', () => {
   it('accepts an empty max, an empty min, and a valid range', () => {
     expect(validateRealityMaxClientVer('', '26.3.27')).toBeUndefined();
@@ -63,7 +87,6 @@ describe('validateRealityMaxClientVer', () => {
     expect(validateRealityMaxClientVer('26.3.27', '26.3.27')).toBeUndefined();
     expect(validateRealityMaxClientVer('27.1.2', '26.3.27')).toBeUndefined();
   });
-
   it('rejects a max below the min, the stale-placeholder trap included', () => {
     expect(validateRealityMaxClientVer('25.9.11', '26.3.27')).toBe(
       'pages.inbounds.form.maxClientVerBelowMin',
@@ -72,14 +95,12 @@ describe('validateRealityMaxClientVer', () => {
       'pages.inbounds.form.maxClientVerBelowMin',
     );
   });
-
   it('pads short versions like the core does before comparing', () => {
     expect(validateRealityMaxClientVer('26', '26.0.0')).toBeUndefined();
     expect(validateRealityMaxClientVer('26', '26.3')).toBe(
       'pages.inbounds.form.maxClientVerBelowMin',
     );
   });
-
   it('reports format errors before range errors and skips a malformed min', () => {
     expect(validateRealityMaxClientVer('25.9', 'not-a-version')).toBeUndefined();
     expect(validateRealityMaxClientVer('nope', '26.3.27')).toBe(
@@ -87,7 +108,6 @@ describe('validateRealityMaxClientVer', () => {
     );
   });
 });
-
 describe('normalizeXhttpForWire stream-one', () => {
   it('drops packet-up and stream-up-only fields on inbound', () => {
     const out = normalizeXhttpForWire(
@@ -105,7 +125,6 @@ describe('normalizeXhttpForWire stream-one', () => {
       },
       'inbound',
     );
-
     expect(out).toMatchObject({
       path: '/app',
       host: 'play.google.com',
@@ -119,7 +138,6 @@ describe('normalizeXhttpForWire stream-one', () => {
     expect(out).not.toHaveProperty('enableXmux');
     expect(out).not.toHaveProperty('headers');
   });
-
   it('preserves non-default scMinPostsIntervalMs on inbound for subscriptions', () => {
     const out = normalizeXhttpForWire(
       {
@@ -130,10 +148,8 @@ describe('normalizeXhttpForWire stream-one', () => {
       },
       'inbound',
     );
-
     expect(out.scMinPostsIntervalMs).toBe('50-150');
   });
-
   it('strips empty scMinPostsIntervalMs on inbound', () => {
     const out = normalizeXhttpForWire(
       {
@@ -144,10 +160,8 @@ describe('normalizeXhttpForWire stream-one', () => {
       },
       'inbound',
     );
-
     expect(out).not.toHaveProperty('scMinPostsIntervalMs');
   });
-
   it('keeps xmux on outbound stream-one', () => {
     const out = normalizeXhttpForWire(
       {
@@ -159,11 +173,9 @@ describe('normalizeXhttpForWire stream-one', () => {
       },
       'outbound',
     );
-
     expect(out.xmux).toEqual({ maxConcurrency: '16-32' });
     expect(out).not.toHaveProperty('scMaxEachPostBytes');
   });
-
   it('keeps inbound xmux when enableXmux is on (stored for subscription extra; stripped from xray config on Go side)', () => {
     const out = normalizeXhttpForWire(
       {
@@ -174,11 +186,9 @@ describe('normalizeXhttpForWire stream-one', () => {
       },
       'inbound',
     );
-
     expect(out).not.toHaveProperty('enableXmux');
     expect(out.xmux).toEqual({ maxConcurrency: '16-32' });
   });
-
   it('drops inbound xmux when enableXmux is off', () => {
     const out = normalizeXhttpForWire(
       {
@@ -189,11 +199,9 @@ describe('normalizeXhttpForWire stream-one', () => {
       },
       'inbound',
     );
-
     expect(out).not.toHaveProperty('enableXmux');
     expect(out).not.toHaveProperty('xmux');
   });
-
   // xray-core rejects a config with both maxConnections and maxConcurrency.
   it('drops maxConcurrency when maxConnections is set (xray-core exclusivity)', () => {
     const out = normalizeXhttpForWire(
@@ -205,13 +213,11 @@ describe('normalizeXhttpForWire stream-one', () => {
       },
       'inbound',
     );
-
     const xmux = out.xmux as Record<string, unknown>;
     expect(xmux).not.toHaveProperty('maxConcurrency');
     expect(xmux.maxConnections).toBe(4);
     expect(xmux.hKeepAlivePeriod).toBe(30);
   });
-
   it('keeps maxConcurrency when maxConnections is 0/unset', () => {
     const out = normalizeXhttpForWire(
       {
@@ -221,12 +227,10 @@ describe('normalizeXhttpForWire stream-one', () => {
       },
       'outbound',
     );
-
     const xmux = out.xmux as Record<string, unknown>;
     expect(xmux.maxConcurrency).toBe('16-32');
     expect(xmux.maxConnections).toBe(0);
   });
-
   it('applies xmux exclusivity on the outbound side too', () => {
     const out = normalizeXhttpForWire(
       {
@@ -236,21 +240,17 @@ describe('normalizeXhttpForWire stream-one', () => {
       },
       'outbound',
     );
-
     const xmux = out.xmux as Record<string, unknown>;
     expect(xmux).not.toHaveProperty('maxConcurrency');
     expect(xmux.maxConnections).toBe('8');
   });
-
   it('bare schema defaults keep only one exclusive xmux strategy non-zero', () => {
     expect(XHttpXmuxSchema.parse({}).maxConnections).toBe(0);
     expect(XHttpXmuxSchema.parse({}).maxConcurrency).toBe('16-32');
   });
-
   it('XMUX_FRESH_DEFAULTS seeds the core maxConnections fallback without a competing maxConcurrency', () => {
     expect(XMUX_FRESH_DEFAULTS.maxConnections).toBe(3);
     expect(XMUX_FRESH_DEFAULTS.maxConcurrency).toBe('');
-
     const out = normalizeXhttpForWire(
       {
         path: '/app',
@@ -260,13 +260,11 @@ describe('normalizeXhttpForWire stream-one', () => {
       },
       'outbound',
     );
-
     const xmux = out.xmux as Record<string, unknown>;
     expect(xmux.maxConnections).toBe(3);
     expect(xmux.maxConcurrency).toBe('');
   });
 });
-
 describe('normalizeSockoptForWire', () => {
   it('omits doc-example defaults that throttle throughput', () => {
     const out = normalizeSockoptForWire({
@@ -279,13 +277,11 @@ describe('normalizeSockoptForWire', () => {
       tproxy: 'off',
       mark: 0,
     });
-
     expect(out).toEqual({
       tcpFastOpen: true,
       tcpcongestion: 'bbr',
     });
   });
-
   it('preserves happyEyeballs on freedom-style outbound', () => {
     const out = normalizeSockoptForWire({
       domainStrategy: 'UseIP',
@@ -296,31 +292,25 @@ describe('normalizeSockoptForWire', () => {
         maxConcurrentTry: 4,
       },
     });
-
     expect(out?.happyEyeballs).toMatchObject({
       tryDelayMs: 150,
       prioritizeIPv6: true,
     });
     expect(out?.domainStrategy).toBe('UseIP');
   });
-
   it('keeps a freshly toggled happyEyeballs (schema defaults) across the wire round trip', () => {
     const out = normalizeSockoptForWire({
       happyEyeballs: HappyEyeballsSchema.parse({}),
     });
-
     expect(out?.happyEyeballs).toEqual({ tryDelayMs: 250 });
   });
-
   it('keeps an explicit tryDelayMs of 0 so it cannot rehydrate as the 250 default', () => {
     const out = normalizeSockoptForWire({
       happyEyeballs: { tryDelayMs: 0, prioritizeIPv6: true, interleave: 1, maxConcurrentTry: 4 },
     });
-
     expect(out?.happyEyeballs).toEqual({ tryDelayMs: 0, prioritizeIPv6: true });
   });
 });
-
 describe('normalizeStreamSettingsForWire reality', () => {
   it('preserves the nested client settings on inbound (share links read publicKey from there)', () => {
     const out = normalizeStreamSettingsForWire(
@@ -341,7 +331,6 @@ describe('normalizeStreamSettingsForWire reality', () => {
       },
       { side: 'inbound' },
     );
-
     const reality = out.realitySettings as Record<string, unknown>;
     expect(reality.target).toBe('play.google.com:443');
     expect(reality.privateKey).toBe('priv');
@@ -349,7 +338,6 @@ describe('normalizeStreamSettingsForWire reality', () => {
     expect(settings.publicKey).toBe('pub');
     expect(settings.spiderX).toBe('/');
   });
-
   it('passes client realitySettings through unchanged on outbound', () => {
     const out = normalizeStreamSettingsForWire(
       {
@@ -365,14 +353,12 @@ describe('normalizeStreamSettingsForWire reality', () => {
       },
       { side: 'outbound' },
     );
-
     const reality = out.realitySettings as Record<string, unknown>;
     expect(reality.publicKey).toBe('pub');
     expect(reality.serverName).toBe('play.google.com');
     expect(reality.spiderX).toBe('/x');
   });
 });
-
 describe('normalizeStreamSettingsForWire tls', () => {
   it('drops empty uTLS fingerprints from inbound and outbound TLS shapes', () => {
     const out = normalizeStreamSettingsForWire(
@@ -389,7 +375,6 @@ describe('normalizeStreamSettingsForWire tls', () => {
       },
       { side: 'inbound' },
     );
-
     const tls = out.tlsSettings as Record<string, unknown>;
     const settings = tls.settings as Record<string, unknown>;
     expect(tls).not.toHaveProperty('fingerprint');
@@ -397,7 +382,6 @@ describe('normalizeStreamSettingsForWire tls', () => {
     expect(settings.echConfigList).toBe('');
   });
 });
-
 describe('inbound formValuesToWirePayload integration', () => {
   it('emits lean stream-one xhttp + sockopt on save', () => {
     const values = {
@@ -413,7 +397,6 @@ describe('inbound formValuesToWirePayload integration', () => {
       total: 0,
       trafficReset: 'never',
       lastTrafficResetTime: 0,
-      nodeId: null,
       protocol: 'vless',
       settings: {
         clients: [{ id: '7eeb09ed-ae97-400d-a1ce-2485fb904407', email: 'n' }],
@@ -447,20 +430,17 @@ describe('inbound formValuesToWirePayload integration', () => {
         },
       },
     } as InboundFormValues;
-
     const payload = formValuesToWirePayload(values);
     const stream = JSON.parse(payload.streamSettings) as Record<string, unknown>;
     const xhttp = stream.xhttpSettings as Record<string, unknown>;
     const sockopt = stream.sockopt as Record<string, unknown>;
     const reality = stream.realitySettings as Record<string, unknown>;
-
     expect(xhttp).not.toHaveProperty('scMaxEachPostBytes');
     expect(sockopt).not.toHaveProperty('tcpWindowClamp');
     expect(sockopt.tcpFastOpen).toBe(true);
     const realitySettings = reality.settings as Record<string, unknown>;
     expect(realitySettings.publicKey).toBe('pub');
   });
-
   it('accepts Hysteria TLS with uTLS None and omits fingerprint on save', () => {
     const values = {
       remark: 'hy2',
@@ -475,7 +455,6 @@ describe('inbound formValuesToWirePayload integration', () => {
       total: 0,
       trafficReset: 'never',
       lastTrafficResetTime: 0,
-      nodeId: null,
       protocol: 'hysteria',
       settings: { version: 2, clients: [] },
       streamSettings: {
@@ -495,18 +474,15 @@ describe('inbound formValuesToWirePayload integration', () => {
         },
       },
     };
-
     const parsed = InboundFormSchema.safeParse(values);
     expect(parsed.success).toBe(true);
     if (!parsed.success) throw parsed.error;
-
     const payload = formValuesToWirePayload(parsed.data);
     const stream = JSON.parse(payload.streamSettings) as Record<string, unknown>;
     const tls = stream.tlsSettings as Record<string, unknown>;
     const settings = tls.settings as Record<string, unknown>;
     expect(settings).not.toHaveProperty('fingerprint');
   });
-
   it('preserves non-default scMinPostsIntervalMs in packet-up inbound wire payload for subscriptions', () => {
     const values = {
       remark: 't',
@@ -521,7 +497,6 @@ describe('inbound formValuesToWirePayload integration', () => {
       total: 0,
       trafficReset: 'never',
       lastTrafficResetTime: 0,
-      nodeId: null,
       protocol: 'vless',
       settings: {
         clients: [{ id: '7eeb09ed-ae97-400d-a1ce-2485fb904407', email: 'n' }],
@@ -546,18 +521,14 @@ describe('inbound formValuesToWirePayload integration', () => {
         sockopt: {},
       },
     };
-
     const parsed = InboundFormSchema.safeParse(values);
     expect(parsed.success).toBe(true);
     if (!parsed.success) throw parsed.error;
-
     const payload = formValuesToWirePayload(parsed.data);
     const stream = JSON.parse(payload.streamSettings) as Record<string, unknown>;
     const xhttp = stream.xhttpSettings as Record<string, unknown>;
-
     expect(xhttp.scMinPostsIntervalMs).toBe('50-150');
   });
-
   it('strips default scMinPostsIntervalMs=30 from inbound wire payload', () => {
     const values = {
       remark: 't',
@@ -572,7 +543,6 @@ describe('inbound formValuesToWirePayload integration', () => {
       total: 0,
       trafficReset: 'never',
       lastTrafficResetTime: 0,
-      nodeId: null,
       protocol: 'vless',
       settings: {
         clients: [{ id: '7eeb09ed-ae97-400d-a1ce-2485fb904407', email: 'n' }],
@@ -597,19 +567,15 @@ describe('inbound formValuesToWirePayload integration', () => {
         sockopt: {},
       },
     };
-
     const parsed = InboundFormSchema.safeParse(values);
     expect(parsed.success).toBe(true);
     if (!parsed.success) throw parsed.error;
-
     const payload = formValuesToWirePayload(parsed.data);
     const stream = JSON.parse(payload.streamSettings) as Record<string, unknown>;
     const xhttp = stream.xhttpSettings as Record<string, unknown>;
-
     expect(xhttp).not.toHaveProperty('scMinPostsIntervalMs');
   });
 });
-
 describe('freedom outbound sockopt wire payload', () => {
   it('preserves happyEyeballs on direct freedom outbound', () => {
     const wire = outboundToWire({
@@ -628,7 +594,6 @@ describe('freedom outbound sockopt wire payload', () => {
         },
       },
     } as Parameters<typeof outboundToWire>[0]);
-
     expect(wire.streamSettings).toMatchObject({
       sockopt: {
         domainStrategy: 'UseIP',

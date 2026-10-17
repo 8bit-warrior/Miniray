@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/8bit-warrior/Miniray/internal/database/model"
@@ -76,25 +75,5 @@ func TestUpdateInboundMtprotoUnchangedDoesNotRestart(t *testing.T) {
 
 	t.Run("remarkOnlyEditKeepsProcess", func(t *testing.T) {
 		saveAndAssertKept(t, func(ib *model.Inbound) { ib.Remark = "renamed while users stay connected" })
-	})
-
-	t.Run("rekeyedSecretRestartsProcess", func(t *testing.T) {
-		update := *loadInboundByTag(t, "mt-apply")
-		update.Settings = strings.Replace(update.Settings, mtprotoTestSecretA, mtprotoTestSecretD, 1)
-		if !strings.Contains(update.Settings, mtprotoTestSecretD) {
-			t.Fatal("fixture must contain the re-keyed secret")
-		}
-		// Clients reach an inbound save only as a master's push to its node.
-		_, needRestart, err := (&InboundService{FromNodeSync: true}).UpdateInbound(&update)
-		if err != nil {
-			t.Fatalf("UpdateInbound: %v", err)
-		}
-		if needRestart {
-			t.Fatal("an mtproto secret change must not request an xray restart")
-		}
-		waitForSpawns(t, pidFile, 2)
-		if got := readMtgConfig(t, seeded.Id); !strings.Contains(got, mtprotoTestSecretD) {
-			t.Fatalf("restarted config must carry the new secret:\n%s", got)
-		}
 	})
 }

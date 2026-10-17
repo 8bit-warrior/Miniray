@@ -18,9 +18,12 @@ import (
 	"time"
 	_ "unsafe"
 
+	"github.com/joho/godotenv"
+	"github.com/op/go-logging"
+
 	"github.com/8bit-warrior/Miniray/internal/amneziawgnet"
 	"github.com/8bit-warrior/Miniray/internal/config"
-	"github.com/8bit-warrior/Miniray/internal/crypto/nodetoken"
+	"github.com/8bit-warrior/Miniray/internal/crypto/secretcodec"
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/mtproto"
@@ -36,9 +39,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 	"github.com/8bit-warrior/Miniray/internal/web/service/panel"
 	"github.com/8bit-warrior/Miniray/internal/web/service/tgbot"
-
-	"github.com/joho/godotenv"
-	"github.com/op/go-logging"
 )
 
 // cliFallbackTokenName is the single token the CLI regenerates, so `-getApiToken`
@@ -48,35 +48,6 @@ const cliFallbackTokenName = "cli-fallback"
 // installTokenName is minted once on a panel with no tokens and is deliberately
 // not the rotated slot, so the credential the installer recorded keeps working.
 const installTokenName = "install"
-
-// initNodeTokenCrypto loads the process codec, preferring the key file over
-// the environment and failing closed when an enabled policy lacks a key.
-func initNodeTokenCrypto() error {
-	mode, err := nodetoken.ParseMode(config.GetNodeTokenEncryptionMode())
-	if err != nil {
-		return err
-	}
-	if mode == nodetoken.ModeOff {
-		c, _ := nodetoken.NewCodec(nodetoken.ModeOff, nil)
-		nodetoken.Init(c)
-		return nil
-	}
-	ring, ferr := (nodetoken.FileKeySource{Path: config.GetNodeTokenKeyFile()}).Load()
-	if ferr != nil {
-		var eerr error
-		if ring, eerr = (nodetoken.EnvKeySource{Var: config.GetNodeTokenKeyEnv()}).Load(); eerr != nil {
-			return fmt.Errorf("load node-token key: file: %w; env: %w", ferr, eerr)
-		}
-	}
-	c, err := nodetoken.NewCodec(mode, ring)
-	if err != nil {
-		return err
-	}
-	nodetoken.Init(c)
-	// The CLI runs before package logger initialization, so use log.Printf.
-	log.Printf("node-token encryption enabled (mode=%s, active-key=%s)", config.GetNodeTokenEncryptionMode(), c.ActiveKeyID())
-	return nil
-}
 
 // runWebServer initializes and starts the web server for the miniray panel.
 // offlineSignal is only sent by the internal shutdown hook.
@@ -116,10 +87,6 @@ func runWebServer() {
 				logger.Warning("pprof server stopped: ", err)
 			}
 		}()
-	}
-
-	if err := initNodeTokenCrypto(); err != nil {
-		log.Fatalf("Error initializing node-token encryption: %v", err)
 	}
 
 	err := database.InitDB(config.GetDBPath())
@@ -391,26 +358,6 @@ func updateTgbotSetting(tgBotToken string, tgBotChatid string, tgBotRuntime stri
 	}
 }
 
-// encryptNodeTokens re-encrypts stored tokens after enablement or rotation.
-// It requires migration|required mode and a configured key.
-func encryptNodeTokens() {
-	_ = godotenv.Load()
-	if err := initNodeTokenCrypto(); err != nil {
-		fmt.Println("node-token encryption init failed:", err)
-		os.Exit(1)
-	}
-	if err := database.InitDB(config.GetDBPath()); err != nil {
-		fmt.Println("database initialization failed:", err)
-		os.Exit(1)
-	}
-	changed, skipped, err := (&service.NodeService{}).MigrateNodeTokensToActiveKey()
-	if err != nil {
-		fmt.Println("token migration failed:", err)
-		os.Exit(1)
-	}
-	fmt.Printf("node-token migration complete: %d re-encrypted, %d already current/skipped\n", changed, skipped)
-}
-
 // updateSetting updates various panel settings including port, credentials, base path, listen IP, and two-factor authentication.
 func updateSetting(port int, username string, password string, webBasePath string, listenIP string, resetTwoFactor bool) error {
 	err := database.InitDB(config.GetDBPath())
@@ -627,7 +574,37 @@ func loadServiceEnvFile() {
 
 // main is the entry point of the miniray application.
 // It parses command-line arguments to run the web server, migrate database, or update settings.
+func initCredentialCrypto() error {
+	mode, err := secretcodec.ParseMode(config.GetSecretEncryptionMode())
+	if err != nil {
+		return err
+	}
+	if mode == secretcodec.ModeOff {
+		c, _ := secretcodec.NewCodec(secretcodec.ModeOff, nil)
+		secretcodec.Init(c)
+		return nil
+	}
+	ring, ferr := (secretcodec.FileKeySource{Path: config.GetSecretKeyFile()}).Load()
+	if ferr != nil {
+		var eerr error
+		if ring, eerr = (secretcodec.EnvKeySource{Var: config.GetSecretKeyEnv()}).Load(); eerr != nil {
+			return fmt.Errorf("load credential key: file: %w; env: %w", ferr, eerr)
+		}
+	}
+	c, err := secretcodec.NewCodec(mode, ring)
+	if err != nil {
+		return err
+	}
+	secretcodec.Init(c)
+	// The CLI runs before package logger initialization, so use log.Printf.
+	log.Printf("credential encryption enabled (mode=%s, active-key=%s)", config.GetSecretEncryptionMode(), c.ActiveKeyID())
+	return nil
+}
+
 func main() {
+	if err := initCredentialCrypto(); err != nil {
+		log.Fatal(err)
+	}
 	loadServiceEnvFile()
 
 	if len(os.Args) < 2 {
@@ -691,7 +668,7 @@ func main() {
 	settingCmd.BoolVar(&getCert, "getCert", false, "Display current certificate settings")
 	settingCmd.BoolVar(&getApiToken, "getApiToken", false, "Print an API token for CLI use, regenerating it and invalidating the previous one; on a panel with no tokens yet it mints one instead")
 	settingCmd.StringVar(&tokenName, "tokenName", "", "Name of the token -getApiToken acts on (default: "+cliFallbackTokenName+", or "+installTokenName+" on a panel with no tokens)")
-	settingCmd.StringVar(&tokenScope, "tokenScope", "", "Scope of the token -getApiToken issues: admin, monitor or node-sync (default: the scope of the token it replaces, or admin for a new one)")
+	settingCmd.StringVar(&tokenScope, "tokenScope", "", "Scope of the token -getApiToken issues: admin or monitor (default: the scope of the token it replaces, or admin for a new one)")
 	settingCmd.StringVar(&webCertFile, "webCert", "", "Set path to public key file for panel")
 	settingCmd.StringVar(&webKeyFile, "webCertKey", "", "Set path to private key file for panel")
 	settingCmd.StringVar(&tgbottoken, "tgbottoken", "", "Set token for Telegram bot")
@@ -757,8 +734,6 @@ func main() {
 		runWebServer()
 	case "migrate":
 		migrateDb()
-	case "encrypt-tokens":
-		encryptNodeTokens()
 	case "migrate-db":
 		if err := migrateDbCmd.Parse(os.Args[2:]); err != nil {
 			fmt.Println(err)
@@ -860,7 +835,6 @@ Commands:
     initial-password  print the generated first-login password (root only)
     migrate        migrate from other/old miniray
     migrate-db     SQLite <-> .dump (--dump/--restore)
-    encrypt-tokens encrypt node bearer tokens with the configured active key
     setting        set settings
 `
 }
@@ -870,9 +844,7 @@ func runProxyAgent() {
 		log.Fatal("proxy agent requires Linux systemd with MINIRAY_SEPARATE_CORE=1")
 	}
 	logger.InitLogger(logging.INFO)
-	if err := initNodeTokenCrypto(); err != nil {
-		log.Fatal(err)
-	}
+
 	if err := database.InitDB(config.GetDBPath()); err != nil {
 		log.Fatal(err)
 	}
@@ -913,7 +885,7 @@ func runProxyAgent() {
 			xrayService.ApplyPendingRestart()
 		case <-trafficTicker.C:
 			xrayWatchdog.Run()
-			if exec.Command("systemctl", "is-active", "--quiet", "miniray.service").Run() != nil {
+			if exec.CommandContext(context.Background(), "systemctl", "is-active", "--quiet", "miniray.service").Run() != nil {
 				xrayTrafficJob.Run()
 				ipLimitJob.Run()
 			}

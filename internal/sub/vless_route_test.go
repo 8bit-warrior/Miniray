@@ -34,10 +34,10 @@ func TestApplyVlessRoute(t *testing.T) {
 }
 
 func TestHostVlessRoute(t *testing.T) {
-	if got := hostVlessRoute(map[string]any{"vlessRoute": "443"}); got != "443" {
-		t.Fatalf(`hostVlessRoute = %q, want "443"`, got)
+	if got := externalProxyVlessRoute(map[string]any{"vlessRoute": "443"}); got != "443" {
+		t.Fatalf(`externalProxyVlessRoute = %q, want "443"`, got)
 	}
-	if got := hostVlessRoute(map[string]any{}); got != "" {
-		t.Fatalf(`hostVlessRoute(missing) = %q, want ""`, got)
+	if got := externalProxyVlessRoute(map[string]any{}); got != "" {
+		t.Fatalf(`externalProxyVlessRoute(missing) = %q, want ""`, got)
 	}
 }

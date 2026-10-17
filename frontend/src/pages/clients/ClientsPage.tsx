@@ -24,7 +24,6 @@ import {
   Table,
   Tag,
   Tooltip,
-  Typography,
   message,
 } from 'antd';
 import type { ColumnsType, TableProps } from 'antd/es/table';
@@ -46,21 +45,17 @@ import {
   SearchOutlined,
   SortAscendingOutlined,
   StopOutlined,
-  TagsOutlined,
   TeamOutlined,
   UploadOutlined,
   UsergroupAddOutlined,
   UsergroupDeleteOutlined,
 } from '@ant-design/icons';
 import { activateOnKey } from '@/utils/a11y';
-
 import { useTheme } from '@/hooks/useTheme';
 import { formatInboundLabel } from '@/lib/inbounds/label';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useClients } from '@/hooks/useClients';
-import { useNodesQuery } from '@/api/queries/useNodesQuery';
-import { useHostsQuery } from '@/api/queries/useHostsQuery';
 import { useDatepicker } from '@/hooks/useDatepicker';
 import type {
   ClientRecord,
@@ -87,7 +82,6 @@ const ClientBulkAddModal = lazy(() => import('./ClientBulkAddModal'));
 const ClientBulkAdjustModal = lazy(() => import('./ClientBulkAdjustModal'));
 const FilterDrawer = lazy(() => import('./FilterDrawer'));
 const SubLinksModal = lazy(() => import('./SubLinksModal'));
-const BulkAddToGroupModal = lazy(() => import('./BulkAddToGroupModal'));
 const BulkAttachInboundsModal = lazy(() => import('./BulkAttachInboundsModal'));
 const BulkDetachInboundsModal = lazy(() => import('./BulkDetachInboundsModal'));
 const TextModal = lazy(() => import('@/components/feedback/TextModal'));
@@ -96,50 +90,9 @@ import { ClientInboundChips, ClientRowActions } from './RowCells';
 import { emptyFilters, activeFilterCount } from './filters';
 import type { ClientFilters } from './filters';
 import './ClientsPage.css';
-
 const FILTER_STATE_KEY = 'clientsFilterState';
 const DISABLED_PAGE_SIZE = 200;
 const DEFAULT_TABLE_PAGE_SIZE = 25;
-
-function UngroupIcon() {
-  return (
-    <span
-      style={{
-        position: 'relative',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '1em',
-        height: '1em',
-      }}
-    >
-      <TagsOutlined />
-      <span
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-        }}
-      >
-        <span
-          style={{
-            display: 'block',
-            width: '125%',
-            height: '1.5px',
-            background: 'currentColor',
-            transform: 'rotate(-45deg)',
-            borderRadius: '1px',
-          }}
-        />
-      </span>
-    </span>
-  );
-}
-
 // The server sends exact counters but caps the email arrays behind them, so a
 // panel with thousands of depleted clients neither ships nor renders them all.
 // The trailing chip reports what the popover left out.
@@ -154,7 +107,6 @@ function ClientEmailList({ emails, total }: { emails: string[]; total: number })
     </div>
   );
 }
-
 interface SummaryStatProps {
   title: string;
   value: number;
@@ -163,7 +115,6 @@ interface SummaryStatProps {
   selected?: boolean;
   onSelect: () => void;
 }
-
 function SummaryStat({ title, value, prefix, emails, selected, onSelect }: SummaryStatProps) {
   const stat = (
     <div
@@ -188,9 +139,7 @@ function SummaryStat({ title, value, prefix, emails, selected, onSelect }: Summa
     </Popover>
   );
 }
-
 type Bucket = 'active' | 'deactive' | 'depleted' | 'expiring';
-
 interface PersistedFilterState {
   searchKey: string;
   filters: ClientFilters;
@@ -200,7 +149,6 @@ interface PersistedFilterState {
   // to ask for, which serialises two round trips on every load.
   pageSize: number | null;
 }
-
 const INBOUND_PROTOCOL_COLORS: Record<string, string> = {
   vless: 'blue',
   vmess: 'geekblue',
@@ -219,7 +167,6 @@ const INBOUND_CHIP_LIMIT = 1;
 // A shared empty array keeps the memoised chip cell from seeing a fresh prop for
 // every unattached client on every render.
 const EMPTY_INBOUND_IDS: number[] = [];
-
 function readFilterState(): PersistedFilterState {
   try {
     const raw = JSON.parse(localStorage.getItem(FILTER_STATE_KEY) || '{}');
@@ -232,8 +179,6 @@ function readFilterState(): PersistedFilterState {
         buckets: Array.isArray(fromRaw.buckets) ? fromRaw.buckets : [],
         protocols: Array.isArray(fromRaw.protocols) ? fromRaw.protocols : [],
         inboundIds: Array.isArray(fromRaw.inboundIds) ? fromRaw.inboundIds : [],
-        nodeIds: Array.isArray(fromRaw.nodeIds) ? fromRaw.nodeIds : [],
-        groups: Array.isArray(fromRaw.groups) ? fromRaw.groups : [],
       },
       sort: typeof raw.sort === 'string' ? raw.sort : '',
       pageSize: typeof raw.pageSize === 'number' && raw.pageSize > 0 ? raw.pageSize : null,
@@ -242,12 +187,10 @@ function readFilterState(): PersistedFilterState {
     return { searchKey: '', filters: emptyFilters(), sort: '', pageSize: null };
   }
 }
-
 function gbToBytes(gb: number | undefined): number {
   if (!gb || gb <= 0) return 0;
   return Math.round(gb * 1024 * 1024 * 1024);
 }
-
 const SORT_OPTIONS: {
   value: string;
   column: string;
@@ -309,14 +252,11 @@ const SORT_OPTIONS: {
     labelKey: 'pages.clients.sortExpiringSoonest',
   },
 ];
-
 const DEFAULT_SORT = SORT_OPTIONS[0];
-
 function sortValueFor(column: string | null, order: 'ascend' | 'descend' | null): string {
   if (!column || !order) return DEFAULT_SORT.value;
   return `${column}:${order}`;
 }
-
 export default function ClientsPage() {
   const { t } = useTranslation();
   const { isDark, isUltra, antdThemeConfig } = useTheme();
@@ -327,13 +267,11 @@ export default function ClientsPage() {
   useEffect(() => {
     setMessageInstance(messageApi);
   }, [messageApi]);
-
   const {
     clients,
     total,
     filtered,
     summary,
-    allGroups,
     setQuery,
     inbounds,
     onlines,
@@ -353,8 +291,6 @@ export default function ClientsPage() {
     bulkAdjust,
     bulkEnable,
     bulkDisable,
-    bulkAddToGroup,
-    bulkRemoveFromGroup,
     attach,
     setExternalLinks,
     bulkAttach,
@@ -373,25 +309,10 @@ export default function ClientsPage() {
     refresh,
     hydrate,
   } = useClients();
-
   useWebSocket({
     traffic: applyTrafficEvent,
     client_stats: applyClientStatsEvent,
   });
-
-  // Node list for the Nodes filter; the section only renders when the panel
-  // actually manages nodes (#4997).
-  const { nodes } = useNodesQuery();
-  // Tunnel configs advertise these Hosts, so an empty list must mean "no hosts"
-  // and not "not loaded yet" — the page gate waits for it.
-  const {
-    hosts,
-    fetched: hostsFetched,
-    fetchError: hostsFetchError,
-    refetch: refetchHosts,
-  } = useHostsQuery();
-  const hostsError = hosts.length > 0 ? '' : hostsFetchError;
-
   const [togglingEmail, setTogglingEmail] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
@@ -411,11 +332,9 @@ export default function ClientsPage() {
   const [bulkAddOpen, setBulkAddOpen] = useState(false);
   const [bulkAdjustOpen, setBulkAdjustOpen] = useState(false);
   const [subLinksOpen, setSubLinksOpen] = useState(false);
-  const [bulkGroupOpen, setBulkGroupOpen] = useState(false);
   const [bulkAttachOpen, setBulkAttachOpen] = useState(false);
   const [bulkDetachOpen, setBulkDetachOpen] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-
   const [textOpen, setTextOpen] = useState(false);
   const [textTitle, setTextTitle] = useState('');
   const [textContent, setTextContent] = useState('');
@@ -428,7 +347,6 @@ export default function ClientsPage() {
   const [promptHandler, setPromptHandler] = useState<
     ((value: string) => Promise<boolean | void> | boolean | void) | null
   >(null);
-
   const initial = readFilterState();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -438,7 +356,6 @@ export default function ClientsPage() {
   );
   const [filters, setFilters] = useState<ClientFilters>(initial.filters);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
-
   const initialSort = SORT_OPTIONS.find((o) => o.value === initial.sort) ?? DEFAULT_SORT;
   const [sortColumn, setSortColumn] = useState<string | null>(initialSort.column);
   const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(initialSort.order);
@@ -459,7 +376,6 @@ export default function ClientsPage() {
   // keystroke; the search box still feels instant locally.
   const [debouncedSearch, setDebouncedSearch] = useState(searchKey);
   const [prevLocationKey, setPrevLocationKey] = useState(location.key);
-
   if (location.key !== prevLocationKey) {
     setPrevLocationKey(location.key);
     if (searchParam !== null) {
@@ -467,7 +383,6 @@ export default function ClientsPage() {
       setDebouncedSearch(searchParam);
     }
   }
-
   useEffect(() => {
     localStorage.setItem(
       FILTER_STATE_KEY,
@@ -480,33 +395,16 @@ export default function ClientsPage() {
       }),
     );
   }, [searchKey, filters, sortColumn, sortOrder, resolvedPageSize]);
-
   useEffect(() => {
     const handle = window.setTimeout(() => setDebouncedSearch(searchKey), 300);
     return () => window.clearTimeout(handle);
   }, [searchKey]);
-
   useEffect(() => {
     // Reset to page 1 whenever a filter or sort changes — otherwise an empty
     // result set on a high page number leaves the user staring at "no clients".
     setCurrentPage(1);
   }, [debouncedSearch, filters, sortColumn, sortOrder]);
-
-  // The node filter maps onto inbound ids client-side (#4997): the paging API
-  // already accepts an inbound CSV, so nodes never have to reach the backend.
-  // Sentinel 0 = "local panel" (inbounds without a nodeId).
-  const effectiveInboundCsv = useMemo(() => {
-    if (!filters.nodeIds.length) return filters.inboundIds.join(',');
-    const nodeSet = new Set(filters.nodeIds);
-    const nodeInboundIds = inbounds.filter((ib) => nodeSet.has(ib.nodeId ?? 0)).map((ib) => ib.id);
-    const pool = filters.inboundIds.length
-      ? nodeInboundIds.filter((id) => filters.inboundIds.includes(id))
-      : nodeInboundIds;
-    // Nothing matches the selected nodes: send an impossible id so the filter
-    // yields an honest empty result instead of being silently ignored.
-    return pool.length ? pool.join(',') : '-1';
-  }, [filters.nodeIds, filters.inboundIds, inbounds]);
-
+  const effectiveInboundCsv = filters.inboundIds.join(',');
   useEffect(() => {
     // With no remembered size and no settings yet, any query we build would be a
     // guess, and issuing it costs a full server round trip that is thrown away as
@@ -526,7 +424,6 @@ export default function ClientsPage() {
       autoRenew: filters.autoRenew || undefined,
       hasTgId: filters.hasTgId || undefined,
       hasComment: filters.hasComment || undefined,
-      group: filters.groups.join(',') || undefined,
       sort: sortColumn || undefined,
       order: sortOrder || undefined,
     });
@@ -541,9 +438,7 @@ export default function ClientsPage() {
     sortColumn,
     sortOrder,
   ]);
-
   const activeCount = activeFilterCount(filters);
-
   // Row handlers take an email and look the row up here at call time. Keying
   // them on the record object instead would defeat the memoised cells: every
   // traffic push replaces the row object of every client whose counters moved,
@@ -555,34 +450,23 @@ export default function ClientsPage() {
     for (const c of clients) map.set(c.email, c);
     return map;
   }, [clients]);
-
   const onlineSet = useMemo(() => new Set(onlines || []), [onlines]);
   const inboundsById = useMemo(() => {
     const out: Record<number, InboundOption> = {};
     for (const ib of inbounds) out[ib.id] = ib;
     return out;
   }, [inbounds]);
-
   const protocolOptions = useMemo(() => {
     const values = new Set<string>(
       (inbounds || []).map((i) => i.protocol).filter((x): x is string => !!x),
     );
     return [...values].sort();
   }, [inbounds]);
-
-  const groupOptions = useMemo(() => {
-    const values = new Set<string>(allGroups);
-    for (const g of filters.groups) values.add(g);
-    return [...values].sort((a, b) => a.localeCompare(b));
-  }, [allGroups, filters.groups]);
-
   const isOnline = useCallback((email: string) => !!email && onlineSet.has(email), [onlineSet]);
-
   function inboundLabel(id: number) {
     const ib = inboundsById[id];
     return formatInboundLabel(ib?.tag, ib?.remark);
   }
-
   const clientBucket = useCallback(
     (row: ClientRecord | null | undefined): Bucket | null => {
       if (!row) return null;
@@ -602,7 +486,6 @@ export default function ClientsPage() {
     },
     [expireDiff, trafficDiff],
   );
-
   function bucketBadgeStatus(bucket: Bucket | null): 'success' | 'warning' | 'error' | 'default' {
     switch (bucket) {
       case 'depleted':
@@ -615,17 +498,14 @@ export default function ClientsPage() {
         return 'default';
     }
   }
-
   // The list page renders rows the server already sorted, filtered, and
   // paginated. Local filtering is gone — keep the variable name so the rest
   // of the file (table dataSource, mobile cards, select-all) doesn't need
   // a rename.
   const filteredClients = clients;
-
   // Sort is server-side now; the page already arrives in the requested
   // order, so we just hand it through.
   const sortedClients = filteredClients;
-
   function remainingLabel(row: ClientRecord) {
     const total = row.totalGB || 0;
     if (total <= 0) return '∞';
@@ -633,7 +513,6 @@ export default function ClientsPage() {
     const r = total - used;
     return r > 0 ? SizeFormatter.sizeFormat(r) : '0';
   }
-
   function remainingColor(row: ClientRecord): string {
     const total = row.totalGB || 0;
     if (total <= 0) return 'purple';
@@ -643,7 +522,6 @@ export default function ClientsPage() {
     if (ratio >= 0.85) return 'orange';
     return 'green';
   }
-
   function expiryLabel(row: ClientRecord) {
     if (!row.expiryTime) return '∞';
     if (row.expiryTime < 0) {
@@ -652,7 +530,6 @@ export default function ClientsPage() {
     }
     return IntlUtil.formatDate(row.expiryTime, datepicker);
   }
-
   function expiryRelative(row: ClientRecord) {
     if (!row.expiryTime) return '';
     if (row.expiryTime < 0) {
@@ -661,7 +538,6 @@ export default function ClientsPage() {
     }
     return IntlUtil.formatRelativeTime(row.expiryTime);
   }
-
   function expiryColor(row: ClientRecord): string {
     if (!row.expiryTime) return 'purple';
     if (row.expiryTime < 0) return 'blue';
@@ -670,7 +546,6 @@ export default function ClientsPage() {
     if (row.expiryTime - now < 86400 * 1000 * 3) return 'orange';
     return 'green';
   }
-
   async function onToggleEnable(row: ClientRecord, next: boolean) {
     setTogglingEmail(row.email);
     try {
@@ -682,7 +557,6 @@ export default function ClientsPage() {
       setTogglingEmail(null);
     }
   }
-
   function onAdd() {
     setFormMode('add');
     setEditingClient(null);
@@ -691,7 +565,6 @@ export default function ClientsPage() {
     setEditingTunnelAllowedIPs({});
     setFormOpen(true);
   }
-
   const onEdit = useCallback(
     async (email: string) => {
       const row = rowsByEmail.current.get(email);
@@ -710,7 +583,6 @@ export default function ClientsPage() {
     },
     [hydrate],
   );
-
   const onDelete = useCallback(
     (email: string) => {
       const row = rowsByEmail.current.get(email);
@@ -729,7 +601,6 @@ export default function ClientsPage() {
     },
     [modal, t, remove, messageApi],
   );
-
   const onResetTraffic = useCallback(
     (email: string) => {
       const row = rowsByEmail.current.get(email);
@@ -750,7 +621,6 @@ export default function ClientsPage() {
     },
     [modal, t, resetTraffic, messageApi],
   );
-
   const onShowInfo = useCallback(
     async (email: string) => {
       const row = rowsByEmail.current.get(email);
@@ -762,7 +632,6 @@ export default function ClientsPage() {
     },
     [hydrate],
   );
-
   const onShowQr = useCallback(
     async (email: string) => {
       const row = rowsByEmail.current.get(email);
@@ -774,24 +643,21 @@ export default function ClientsPage() {
     },
     [hydrate],
   );
-
   const [refreshing, setRefreshing] = useState(false);
   const onRefreshClick = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refresh(), refetchHosts()]);
+      await Promise.all([refresh()]);
     } finally {
       setRefreshing(false);
     }
-  }, [refresh, refetchHosts]);
-
+  }, [refresh]);
   const openText = useCallback((opts: { title: string; content: string; fileName?: string }) => {
     setTextTitle(opts.title);
     setTextContent(opts.content);
     setTextFileName(opts.fileName || '');
     setTextOpen(true);
   }, []);
-
   const openPrompt = useCallback(
     (opts: {
       title: string;
@@ -807,7 +673,6 @@ export default function ClientsPage() {
     },
     [t],
   );
-
   const onPromptConfirm = useCallback(
     async (value: string) => {
       if (!promptHandler) {
@@ -824,7 +689,6 @@ export default function ClientsPage() {
     },
     [promptHandler],
   );
-
   function onResetAllTraffics() {
     modal.confirm({
       title: t('pages.clients.resetAllTrafficsTitle'),
@@ -838,7 +702,6 @@ export default function ClientsPage() {
       },
     });
   }
-
   function onDelDepleted() {
     modal.confirm({
       title: t('pages.clients.delDepletedConfirmTitle'),
@@ -855,7 +718,6 @@ export default function ClientsPage() {
       },
     });
   }
-
   function onDeleteOrphans() {
     modal.confirm({
       title: t('pages.clients.delOrphansConfirmTitle'),
@@ -872,7 +734,6 @@ export default function ClientsPage() {
       },
     });
   }
-
   async function onExportClients() {
     const items = await exportClients();
     if (!items) return;
@@ -882,7 +743,6 @@ export default function ClientsPage() {
       fileName: 'clients-export.json',
     });
   }
-
   function onImportClients() {
     openPrompt({
       title: t('pages.clients.importClients'),
@@ -907,28 +767,6 @@ export default function ClientsPage() {
       },
     });
   }
-
-  function onBulkUngroup() {
-    const emails = [...selectedRowKeys];
-    if (emails.length === 0) return;
-    modal.confirm({
-      title: t('pages.clients.ungroupConfirmTitle', { count: emails.length }),
-      content: t('pages.clients.ungroupConfirmContent'),
-      okText: t('confirm'),
-      okType: 'danger',
-      cancelText: t('cancel'),
-      onOk: async () => {
-        const msg = await bulkRemoveFromGroup(emails);
-        if (msg?.success) {
-          setSelectedRowKeys([]);
-          const affected =
-            (msg.obj as { affected?: number } | undefined)?.affected ?? emails.length;
-          messageApi.success(t('pages.clients.ungroupSuccessToast', { count: affected }));
-        }
-      },
-    });
-  }
-
   function onBulkSetEnable(enable: boolean) {
     const emails = [...selectedRowKeys];
     if (emails.length === 0) return;
@@ -970,7 +808,6 @@ export default function ClientsPage() {
       },
     });
   }
-
   function onBulkDelete() {
     const emails = [...selectedRowKeys];
     if (emails.length === 0) return;
@@ -999,12 +836,20 @@ export default function ClientsPage() {
       },
     });
   }
-
   const onSave = useCallback(
     async (
-      payload: Record<string, unknown> | { client: Record<string, unknown>; inboundIds: number[] },
+      payload:
+        | Record<string, unknown>
+        | {
+            client: Record<string, unknown>;
+            inboundIds: number[];
+          },
       meta:
-        | { isEdit: false; email: string; externalLinks: ExternalLinkInput[] }
+        | {
+            isEdit: false;
+            email: string;
+            externalLinks: ExternalLinkInput[];
+          }
         | {
             isEdit: true;
             email: string;
@@ -1024,7 +869,11 @@ export default function ClientsPage() {
       }
       const updateMsg = await update(meta.email, payload);
       if (!updateMsg?.success) return updateMsg;
-      const rawEmail = (payload as { email?: unknown }).email;
+      const rawEmail = (
+        payload as {
+          email?: unknown;
+        }
+      ).email;
       const emailKey =
         typeof rawEmail === 'string' && rawEmail.trim() ? rawEmail.trim() : meta.email;
       if (Array.isArray(meta.attach) && meta.attach.length > 0) {
@@ -1042,19 +891,16 @@ export default function ClientsPage() {
     },
     [create, update, attach, detach, setExternalLinks],
   );
-
   const pageClass = useMemo(() => {
     const classes = ['clients-page'];
     if (isDark) classes.push('is-dark');
     if (isUltra) classes.push('is-ultra');
     return classes.join(' ');
   }, [isDark, isUltra]);
-
   const onTableChange: NonNullable<TableProps<ClientRecord>['onChange']> = (pag) => {
     if (pag?.current) setCurrentPage(pag.current);
     if (pag?.pageSize) setPageSizeChoice(pag.pageSize);
   };
-
   const columns = useMemo<ColumnsType<ClientRecord>>(
     () => [
       {
@@ -1133,30 +979,6 @@ export default function ClientsPage() {
         ),
       },
       {
-        title: t('pages.clients.group'),
-        key: 'group',
-        width: 130,
-        hidden: allGroups.length === 0,
-        render: (_v, record) => {
-          if (!record.group) return <Typography.Text type="secondary">—</Typography.Text>;
-          const isActive = filters.groups.includes(record.group);
-          return (
-            <Tag
-              color="geekblue"
-              style={{ margin: 0, cursor: 'pointer', opacity: isActive ? 0.6 : 1 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isActive) {
-                  setFilters({ ...filters, groups: [...filters.groups, record.group!] });
-                }
-              }}
-            >
-              {record.group}
-            </Tag>
-          );
-        },
-      },
-      {
         title: t('pages.clients.attachedInbounds'),
         key: 'inboundIds',
         width: 170,
@@ -1229,13 +1051,11 @@ export default function ClientsPage() {
       isOnline,
       inboundsById,
       filters,
-      allGroups,
       datepicker,
       trafficDiff,
       clientSpeed,
     ],
   );
-
   const tablePagination = {
     current: currentPage,
     pageSize: tablePageSize,
@@ -1245,12 +1065,10 @@ export default function ClientsPage() {
     hideOnSinglePage: filtered <= tablePageSize,
     showTotal: (n: number) => `${n}`,
   };
-
   const rowSelection = {
     selectedRowKeys,
     onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]),
   };
-
   function toggleSelect(email: string, checked: boolean) {
     setSelectedRowKeys((prev) => {
       const next = new Set(prev);
@@ -1259,25 +1077,20 @@ export default function ClientsPage() {
       return Array.from(next);
     });
   }
-
   function selectAll(checked: boolean) {
     setSelectedRowKeys(checked ? filteredClients.map((c) => c.email) : []);
   }
-
   const allSelected =
     filteredClients.length > 0 && selectedRowKeys.length === filteredClients.length;
   const someSelected =
     selectedRowKeys.length > 0 && selectedRowKeys.length < filteredClients.length;
-
   const isOnlyBucket = (bucket: string) =>
     filters.buckets.length === 1 && filters.buckets[0] === bucket;
-
   // Clicking the card that is already the sole status filter clears it again.
   function selectBucket(bucket: string | null) {
     const buckets = bucket && !isOnlyBucket(bucket) ? [bucket] : [];
     setFilters({ ...filters, buckets });
   }
-
   function clearOneFilter<K extends keyof ClientFilters>(key: K) {
     if (key === 'expiryFrom' || key === 'expiryTo') {
       setFilters({ ...filters, expiryFrom: undefined, expiryTo: undefined });
@@ -1289,7 +1102,6 @@ export default function ClientsPage() {
     }
     setFilters({ ...filters, [key]: emptyFilters()[key] });
   }
-
   return (
     <ConfigProvider theme={antdThemeConfig}>
       {messageContextHolder}
@@ -1299,19 +1111,14 @@ export default function ClientsPage() {
 
         <Layout className="content-shell">
           <Layout.Content id="content-layout" className="content-area">
-            <Spin
-              spinning={!fetched || !hostsFetched}
-              delay={200}
-              description={t('loading')}
-              size="large"
-            >
-              {!fetched || !hostsFetched ? (
+            <Spin spinning={!fetched || !true} delay={200} description={t('loading')} size="large">
+              {!fetched || !true ? (
                 <div className="loading-spacer" />
-              ) : fetchError || hostsError ? (
+              ) : fetchError || '' ? (
                 <Result
                   status="error"
                   title={t('somethingWentWrong')}
-                  subTitle={fetchError || hostsError}
+                  subTitle={fetchError || ''}
                   extra={
                     <Button type="primary" loading={refreshing} onClick={onRefreshClick}>
                       {t('refresh')}
@@ -1428,19 +1235,6 @@ export default function ClientsPage() {
                                         label: t('pages.clients.detach'),
                                         danger: true,
                                         onClick: () => setBulkDetachOpen(true),
-                                      },
-                                      {
-                                        key: 'addToGroup',
-                                        icon: <TagsOutlined />,
-                                        label: t('pages.clients.addToGroup'),
-                                        onClick: () => setBulkGroupOpen(true),
-                                      },
-                                      {
-                                        key: 'ungroup',
-                                        icon: <UngroupIcon />,
-                                        label: t('pages.clients.ungroup'),
-                                        danger: true,
-                                        onClick: onBulkUngroup,
                                       },
                                       { type: 'divider' as const },
                                       {
@@ -1629,21 +1423,7 @@ export default function ClientsPage() {
                               {inboundLabel(id)}
                             </Tag>
                           ))}
-                          {filters.groups.map((g) => (
-                            <Tag
-                              key={`g-${g}`}
-                              closable
-                              color="geekblue"
-                              onClose={() =>
-                                setFilters({
-                                  ...filters,
-                                  groups: filters.groups.filter((x) => x !== g),
-                                })
-                              }
-                            >
-                              {t('pages.clients.group')}: {g}
-                            </Tag>
-                          ))}
+
                           {(filters.expiryFrom || filters.expiryTo) && (
                             <Tag
                               closable
@@ -1899,7 +1679,6 @@ export default function ClientsPage() {
             tunnelAllowedIPs={editingTunnelAllowedIPs}
             inbounds={inbounds}
             tgBotEnable={tgBotEnable}
-            groups={allGroups}
             save={onSave}
             resetTraffic={resetTraffic}
             onOpenChange={setFormOpen}
@@ -1913,7 +1692,6 @@ export default function ClientsPage() {
             tunnelAllowedIPs={viewingTunnelAllowedIPs}
             isOnline={infoClient ? isOnline(infoClient.email) : false}
             subSettings={subSettings}
-            hosts={hosts}
             onOpenChange={setInfoOpen}
           />
         </LazyMount>
@@ -1924,7 +1702,6 @@ export default function ClientsPage() {
             inboundsById={inboundsById}
             tunnelAllowedIPs={viewingTunnelAllowedIPs}
             subSettings={subSettings}
-            hosts={hosts}
             onOpenChange={setQrOpen}
           />
         </LazyMount>
@@ -1932,7 +1709,6 @@ export default function ClientsPage() {
           <ClientBulkAddModal
             open={bulkAddOpen}
             inbounds={inbounds}
-            groups={allGroups}
             onOpenChange={setBulkAddOpen}
             onSaved={() => setBulkAddOpen(false)}
           />
@@ -1968,22 +1744,7 @@ export default function ClientsPage() {
             onOpenChange={setSubLinksOpen}
           />
         </LazyMount>
-        <LazyMount when={bulkGroupOpen}>
-          <BulkAddToGroupModal
-            open={bulkGroupOpen}
-            count={selectedRowKeys.length}
-            groups={allGroups}
-            onOpenChange={setBulkGroupOpen}
-            onSubmit={async (group) => {
-              const msg = await bulkAddToGroup([...selectedRowKeys], group);
-              if (msg?.success) {
-                setSelectedRowKeys([]);
-                return (msg.obj as { affected?: number } | undefined) ?? { affected: 0 };
-              }
-              return null;
-            }}
-          />
-        </LazyMount>
+
         <LazyMount when={bulkAttachOpen}>
           <BulkAttachInboundsModal
             open={bulkAttachOpen}
@@ -2024,8 +1785,6 @@ export default function ClientsPage() {
             onChange={setFilters}
             inbounds={inbounds}
             protocols={protocolOptions}
-            groups={groupOptions}
-            nodes={nodes}
           />
         </LazyMount>
         <LazyMount when={textOpen}>
@@ -2054,7 +1813,6 @@ export default function ClientsPage() {
     </ConfigProvider>
   );
 }
-
 function bucketChipLabel(b: string, t: (k: string) => string): string {
   switch (b) {
     case 'active':

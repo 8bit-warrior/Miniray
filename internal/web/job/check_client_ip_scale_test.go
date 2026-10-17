@@ -66,28 +66,6 @@ func scaleJobSizes(t *testing.T, def ...int) []int {
 	return out
 }
 
-func resetScaleJobTables(t *testing.T, db *gorm.DB) {
-	t.Helper()
-	if config.GetDBKind() == "postgres" {
-		if err := db.Exec("TRUNCATE TABLE inbounds, clients, client_inbounds RESTART IDENTITY CASCADE").Error; err != nil {
-			t.Fatalf("truncate: %v", err)
-		}
-	} else {
-		for _, tbl := range []string{"inbounds", "clients", "client_inbounds"} {
-			if err := db.Exec("DELETE FROM " + tbl).Error; err != nil {
-				t.Fatalf("delete %s: %v", tbl, err)
-			}
-		}
-		db.Exec("DELETE FROM sqlite_sequence")
-	}
-	if err := db.Where("1 = 1").Delete(&model.InboundClientIps{}).Error; err != nil {
-		t.Fatalf("clear inbound client ips: %v", err)
-	}
-	if err := db.Where("1 = 1").Delete(&model.NodeClientIp{}).Error; err != nil {
-		t.Fatalf("clear node client ips: %v", err)
-	}
-}
-
 // seedScaleIPDataset seeds n clients across numInbounds inbounds. Every client
 // in the LAST inbound carries limitIp=3 (and 0 elsewhere), so hasLimitIp pays
 // its full scan cost before finding a hit, and the returned emails all resolve
@@ -223,5 +201,24 @@ func TestCheckClientIpScale(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func resetScaleJobTables(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	if config.GetDBKind() == "postgres" {
+		if err := db.Exec("TRUNCATE TABLE inbounds, clients, client_inbounds RESTART IDENTITY CASCADE").Error; err != nil {
+			t.Fatalf("truncate: %v", err)
+		}
+	} else {
+		for _, tbl := range []string{"inbounds", "clients", "client_inbounds"} {
+			if err := db.Exec("DELETE FROM " + tbl).Error; err != nil {
+				t.Fatalf("delete %s: %v", tbl, err)
+			}
+		}
+		db.Exec("DELETE FROM sqlite_sequence")
+	}
+	if err := db.Where("1 = 1").Delete(&model.InboundClientIps{}).Error; err != nil {
+		t.Fatalf("clear inbound client ips: %v", err)
 	}
 }

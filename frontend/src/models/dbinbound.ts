@@ -1,9 +1,7 @@
 import dayjs, { type Dayjs } from 'dayjs';
 import { ObjectUtil, NumberFormatter, SizeFormatter } from '@/utils';
 import { Protocols } from '@/schemas/primitives';
-
 export type RawJsonField = string | Record<string, unknown> | unknown[];
-
 export interface ClientStats {
   email: string;
   up: number;
@@ -14,12 +12,10 @@ export interface ClientStats {
   inboundId?: number;
   reset?: number;
 }
-
 export interface FallbackParentRef {
   masterId: number;
   path: string;
 }
-
 export type DBInboundInit = Partial<{
   id: number;
   userId: number;
@@ -40,16 +36,13 @@ export type DBInboundInit = Partial<{
   tag: string;
   sniffing: RawJsonField;
   clientStats: ClientStats[];
-  nodeId: number | null;
   shareAddrStrategy: string;
   shareAddr: string;
   subSortIndex: number;
   excludeFromSub: boolean;
   disableFlow: boolean;
-  originNodeGuid: string;
   fallbackParent: FallbackParentRef | null;
 }>;
-
 export function coerceInboundJsonField(value: unknown): Record<string, unknown> {
   if (value == null) return {};
   if (typeof value === 'object' && !Array.isArray(value)) {
@@ -68,7 +61,6 @@ export function coerceInboundJsonField(value: unknown): Record<string, unknown> 
     return {};
   }
 }
-
 export class DBInbound {
   id: number;
   userId: number;
@@ -81,7 +73,6 @@ export class DBInbound {
   trafficReset: string;
   trafficResetDay: number;
   lastTrafficResetTime: number;
-
   listen: string;
   port: number;
   protocol: string;
@@ -90,17 +81,13 @@ export class DBInbound {
   tag: string;
   sniffing: RawJsonField;
   clientStats: ClientStats[];
-  nodeId: number | null;
   shareAddrStrategy: string;
   shareAddr: string;
   subSortIndex: number;
   excludeFromSub: boolean;
   disableFlow: boolean;
-  originNodeGuid: string;
   fallbackParent: FallbackParentRef | null;
-
   private _clientStatsMap: Map<string, ClientStats> | null = null;
-
   constructor(data?: DBInboundInit) {
     this.id = 0;
     this.userId = 0;
@@ -113,7 +100,6 @@ export class DBInbound {
     this.trafficReset = 'never';
     this.trafficResetDay = 1;
     this.lastTrafficResetTime = 0;
-
     this.listen = '';
     this.port = 0;
     this.protocol = '';
@@ -122,72 +108,56 @@ export class DBInbound {
     this.tag = '';
     this.sniffing = '';
     this.clientStats = [];
-    this.nodeId = null;
-    this.shareAddrStrategy = 'node';
+    this.shareAddrStrategy = 'listen';
     this.shareAddr = '';
     this.subSortIndex = 1;
     this.excludeFromSub = false;
     this.disableFlow = false;
-    this.originNodeGuid = '';
     this.fallbackParent = null;
     if (data == null) {
       return;
     }
     ObjectUtil.cloneProps(this, data);
   }
-
   get totalGB(): number {
     return NumberFormatter.toFixed(this.total / SizeFormatter.ONE_GB, 2);
   }
-
   set totalGB(gb: number) {
     this.total = NumberFormatter.toFixed(gb * SizeFormatter.ONE_GB, 0);
   }
-
   get isVMess() {
     return this.protocol === Protocols.VMESS;
   }
-
   get isVLess() {
     return this.protocol === Protocols.VLESS;
   }
-
   get isTrojan() {
     return this.protocol === Protocols.TROJAN;
   }
-
   get isSS() {
     return this.protocol === Protocols.SHADOWSOCKS;
   }
-
   get isMixed() {
     return this.protocol === Protocols.MIXED;
   }
-
   get isHTTP() {
     return this.protocol === Protocols.HTTP;
   }
-
   get isWireguard() {
     return this.protocol === Protocols.WIREGUARD;
   }
-
   get isAmneziawg() {
     return this.protocol === Protocols.AMNEZIAWG;
   }
-
   get isHysteria() {
     return this.protocol === Protocols.HYSTERIA;
   }
-
   get isTuic() {
     return this.protocol === Protocols.TUIC;
   }
-
   get isTunnel() {
     return this.protocol === Protocols.TUNNEL;
   }
-
   get address(): string {
     let address = location.hostname;
     if (!ObjectUtil.isEmpty(this.listen) && this.listen !== '0.0.0.0') {
@@ -195,14 +165,12 @@ export class DBInbound {
     }
     return address;
   }
-
   get _expiryTime(): Dayjs | null {
     if (this.expiryTime === 0) {
       return null;
     }
     return dayjs(this.expiryTime);
   }
-
   set _expiryTime(t: Dayjs | null | undefined) {
     if (t == null) {
       this.expiryTime = 0;
@@ -210,21 +178,17 @@ export class DBInbound {
       this.expiryTime = t.valueOf();
     }
   }
-
   get isExpiry(): boolean {
     return this.expiryTime < new Date().getTime();
   }
-
   invalidateCache(): void {
     this._clientStatsMap = null;
   }
-
   toJSON(): Record<string, unknown> {
     const out: Record<string, unknown> = { ...(this as unknown as Record<string, unknown>) };
     delete out._clientStatsMap;
     return out;
   }
-
   getClientStats(email: string): ClientStats | undefined {
     if (!this._clientStatsMap) {
       this._clientStatsMap = new Map();

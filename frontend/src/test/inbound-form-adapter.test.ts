@@ -1,6 +1,36 @@
 /// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
+/// <reference types="vite/client" />
 import { describe, expect, it } from 'vitest';
-
 import {
   rawInboundToFormValues,
   formValuesToWirePayload,
@@ -10,17 +40,14 @@ import { DBInbound, type DBInboundInit } from '@/models/dbinbound';
 import { InboundDbFieldsSchema, InboundFormSchema } from '@/schemas/forms/inbound-form';
 import { normalizeXhttpForWire } from '@/lib/xray/stream-wire-normalize';
 import { SockoptStreamSettingsSchema } from '@/schemas/protocols/stream/sockopt';
-
 // Round-trip: raw DB row → InboundFormValues → wire payload, asserting
 // that the JSON-stringified settings/streamSettings/sniffing in the
 // payload deserialize back to the same data the raw row carried.
-
 interface FixtureCase {
   name: string;
   row: RawInboundRow;
   expectedProtocol: string;
 }
-
 const vlessRow: RawInboundRow = {
   id: 7,
   port: 12345,
@@ -30,13 +57,12 @@ const vlessRow: RawInboundRow = {
   enable: true,
   up: 1024,
   down: 2048,
-  total: 1_000_000_000,
+  total: 1000000000,
   expiryTime: 0,
   trafficReset: 'monthly',
   trafficResetDay: 15,
   lastTrafficResetTime: 0,
   tag: 'inbound-1',
-  nodeId: null,
   settings: {
     clients: [
       {
@@ -70,8 +96,9 @@ const vlessRow: RawInboundRow = {
     ipsExcluded: [],
     domainsExcluded: [],
   },
-} as RawInboundRow & { id: number };
-
+} as RawInboundRow & {
+  id: number;
+};
 const cases: FixtureCase[] = [
   { name: 'vless tcp none', row: vlessRow, expectedProtocol: 'vless' },
   {
@@ -95,7 +122,6 @@ const cases: FixtureCase[] = [
     expectedProtocol: 'vless',
   },
 ];
-
 describe('rawInboundToFormValues', () => {
   for (const { name, row, expectedProtocol } of cases) {
     it(`maps ${name}`, () => {
@@ -109,18 +135,16 @@ describe('rawInboundToFormValues', () => {
       if (name === 'empty stream settings drop to undefined') {
         expect(values.streamSettings).toBeUndefined();
       }
-      expect(values.shareAddrStrategy).toBe('node');
+      expect(values.shareAddrStrategy).toBe('listen');
       expect(values.shareAddr).toBe('');
     });
   }
-
   it('produces values that the InboundFormSchema accepts', () => {
     const values = rawInboundToFormValues(vlessRow);
     const result = InboundFormSchema.safeParse(values);
     expect(result.success).toBe(true);
   });
 });
-
 // Regression: wireguard (UDP-only) and tunnel (dokodemo-door) have no
 // user-selectable transport, so the modal submits streamSettings WITHOUT a
 // `network` key — just `security`, plus `sockopt` for tunnel's TProxy. The
@@ -137,7 +161,6 @@ describe('transportless streamSettings (wireguard / tunnel)', () => {
     });
     expect(result.success).toBe(true);
   });
-
   it('accepts tunnel with sockopt.tproxy and no network', () => {
     const result = InboundFormSchema.safeParse({
       port: 12345,
@@ -152,13 +175,14 @@ describe('transportless streamSettings (wireguard / tunnel)', () => {
     if (result.success) {
       const stream = result.data.streamSettings as {
         network?: unknown;
-        sockopt?: { tproxy?: string };
+        sockopt?: {
+          tproxy?: string;
+        };
       };
       expect(stream.network).toBeUndefined();
       expect(stream.sockopt?.tproxy).toBe('tproxy');
     }
   });
-
   it('fills sockopt schema defaults for a stored inbound missing tproxy (#5956)', () => {
     const values = rawInboundToFormValues({
       port: 443,
@@ -171,12 +195,14 @@ describe('transportless streamSettings (wireguard / tunnel)', () => {
       }),
     });
     const stream = values.streamSettings as {
-      sockopt?: { tproxy?: string; tcpFastOpen?: boolean };
+      sockopt?: {
+        tproxy?: string;
+        tcpFastOpen?: boolean;
+      };
     };
     expect(stream.sockopt?.tproxy).toBe('off');
     expect(stream.sockopt?.tcpFastOpen).toBe(true);
   });
-
   it('still rejects a present-but-invalid network value', () => {
     const result = InboundFormSchema.safeParse({
       port: 12345,
@@ -187,36 +213,29 @@ describe('transportless streamSettings (wireguard / tunnel)', () => {
     expect(result.success).toBe(false);
   });
 });
-
 describe('formValuesToWirePayload', () => {
   it('stringifies settings/streamSettings/sniffing with empty-array/default pruning', () => {
     const values = rawInboundToFormValues(vlessRow);
     const payload = formValuesToWirePayload(values);
-
     expect(typeof payload.settings).toBe('string');
     expect(typeof payload.streamSettings).toBe('string');
     expect(typeof payload.sniffing).toBe('string');
-
     // Empty arrays like `fallbacks: []` drop out of the payload to match
     // the legacy panel's minimal JSON.
     const parsedSettings = JSON.parse(payload.settings);
     const { fallbacks: _f, ...expectedSettings } = vlessRow.settings as Record<string, unknown>;
     expect(parsedSettings).toEqual(expectedSettings);
-
     expect(JSON.parse(payload.streamSettings)).toEqual(vlessRow.streamSettings);
-
     // Disabled sniffing collapses to the bare `{ enabled: false }`
     // regardless of which destOverride/metadataOnly/etc. defaults the
     // form carries.
     expect(JSON.parse(payload.sniffing)).toEqual({ enabled: false });
   });
-
   it('emits empty string for absent streamSettings', () => {
     const values = rawInboundToFormValues({ ...vlessRow, streamSettings: '' });
     const payload = formValuesToWirePayload(values);
     expect(payload.streamSettings).toBe('');
   });
-
   it('emits empty sniffing for mtproto (mtg-served, not Xray)', () => {
     const values = rawInboundToFormValues({
       ...vlessRow,
@@ -227,19 +246,11 @@ describe('formValuesToWirePayload', () => {
     expect(payload.protocol).toBe('mtproto');
     expect(payload.sniffing).toBe('');
   });
-
   it('omits nodeId when null', () => {
-    const values = rawInboundToFormValues({ ...vlessRow, nodeId: null });
+    const values = rawInboundToFormValues({ ...vlessRow });
     const payload = formValuesToWirePayload(values);
     expect('nodeId' in payload).toBe(false);
   });
-
-  it('includes nodeId when set', () => {
-    const values = rawInboundToFormValues({ ...vlessRow, nodeId: 42 });
-    const payload = formValuesToWirePayload(values);
-    expect(payload.nodeId).toBe(42);
-  });
-
   it('round-trips share address strategy fields', () => {
     const values = rawInboundToFormValues({
       ...vlessRow,
@@ -250,7 +261,6 @@ describe('formValuesToWirePayload', () => {
     expect(payload.shareAddrStrategy).toBe('custom');
     expect(payload.shareAddr).toBe('edge.example.test');
   });
-
   it('round-trips top-level fields through raw → values → payload → values', () => {
     // settings/streamSettings/sniffing don't round-trip byte-equal because
     // the wire payload prunes empty arrays and collapses disabled sniffing
@@ -275,7 +285,6 @@ describe('formValuesToWirePayload', () => {
       trafficReset: payload.trafficReset,
       trafficResetDay: payload.trafficResetDay,
       lastTrafficResetTime: payload.lastTrafficResetTime,
-      nodeId: payload.nodeId ?? null,
     });
     expect(replay.protocol).toBe(original.protocol);
     expect(replay.port).toBe(original.port);
@@ -286,35 +295,29 @@ describe('formValuesToWirePayload', () => {
     expect(replay.trafficResetDay).toBe(original.trafficResetDay);
     expect(replay.streamSettings).toEqual(original.streamSettings);
   });
-
   it('defaults a missing monthly reset day to the first', () => {
     expect(
       rawInboundToFormValues({ ...vlessRow, trafficResetDay: undefined }).trafficResetDay,
     ).toBe(1);
   });
 });
-
 describe('excludeFromSub', () => {
   it('DBInbound constructor preserves excludeFromSub from the API row', () => {
     expect(new DBInbound({ excludeFromSub: true }).excludeFromSub).toBe(true);
     expect(new DBInbound({ excludeFromSub: false }).excludeFromSub).toBe(false);
   });
-
   it('DBInbound defaults excludeFromSub to false when the API omits it', () => {
     expect(new DBInbound({ protocol: 'vless' }).excludeFromSub).toBe(false);
     expect(new DBInbound().excludeFromSub).toBe(false);
   });
-
   it('rawInboundToFormValues reads excludeFromSub and defaults to false', () => {
     expect(rawInboundToFormValues({ ...vlessRow, excludeFromSub: true }).excludeFromSub).toBe(true);
     expect(rawInboundToFormValues(vlessRow).excludeFromSub).toBe(false);
   });
-
   it('formValuesToWirePayload includes excludeFromSub', () => {
     const values = rawInboundToFormValues({ ...vlessRow, excludeFromSub: true });
     expect(formValuesToWirePayload(values).excludeFromSub).toBe(true);
   });
-
   it('excludeFromSub survives raw → DBInbound → values → payload (the edit round-trip)', () => {
     const db = new DBInbound({ ...vlessRow, excludeFromSub: true } as unknown as DBInboundInit);
     const values = rawInboundToFormValues(db as unknown as RawInboundRow);
@@ -322,28 +325,23 @@ describe('excludeFromSub', () => {
     expect(payload.excludeFromSub).toBe(true);
   });
 });
-
 describe('disableFlow', () => {
   it('DBInbound constructor preserves disableFlow from the API row', () => {
     expect(new DBInbound({ disableFlow: true }).disableFlow).toBe(true);
     expect(new DBInbound({ disableFlow: false }).disableFlow).toBe(false);
   });
-
   it('DBInbound defaults disableFlow to false when the API omits it', () => {
     expect(new DBInbound({ protocol: 'vless' }).disableFlow).toBe(false);
     expect(new DBInbound().disableFlow).toBe(false);
   });
-
   it('rawInboundToFormValues reads disableFlow and defaults to false', () => {
     expect(rawInboundToFormValues({ ...vlessRow, disableFlow: true }).disableFlow).toBe(true);
     expect(rawInboundToFormValues(vlessRow).disableFlow).toBe(false);
   });
-
   it('formValuesToWirePayload includes disableFlow', () => {
     const values = rawInboundToFormValues({ ...vlessRow, disableFlow: true });
     expect(formValuesToWirePayload(values).disableFlow).toBe(true);
   });
-
   it('disableFlow survives raw → DBInbound → values → payload (the edit round-trip)', () => {
     const db = new DBInbound({ ...vlessRow, disableFlow: true } as unknown as DBInboundInit);
     const values = rawInboundToFormValues(db as unknown as RawInboundRow);
@@ -351,46 +349,39 @@ describe('disableFlow', () => {
     expect(payload.disableFlow).toBe(true);
   });
 });
-
 describe('subSortIndex', () => {
   it('rawInboundToFormValues defaults to 1 when field is absent', () => {
     const values = rawInboundToFormValues({ ...vlessRow, subSortIndex: undefined });
     expect(values.subSortIndex).toBe(1);
   });
-
   it('rawInboundToFormValues preserves positives and negatives; maps 0/absent to 1', () => {
     expect(rawInboundToFormValues({ ...vlessRow, subSortIndex: 5 }).subSortIndex).toBe(5);
     expect(rawInboundToFormValues({ ...vlessRow, subSortIndex: 0 }).subSortIndex).toBe(1);
     expect(rawInboundToFormValues({ ...vlessRow, subSortIndex: -10 }).subSortIndex).toBe(-10);
   });
-
   it('formValuesToWirePayload includes subSortIndex in the payload', () => {
     const values = rawInboundToFormValues({ ...vlessRow, subSortIndex: 3 });
     const payload = formValuesToWirePayload(values);
     expect(payload.subSortIndex).toBe(3);
   });
-
   it('subSortIndex round-trips through raw → values → payload', () => {
     const values = rawInboundToFormValues({ ...vlessRow, subSortIndex: 42 });
     const payload = formValuesToWirePayload(values);
     const replay = rawInboundToFormValues({ ...vlessRow, subSortIndex: payload.subSortIndex });
     expect(replay.subSortIndex).toBe(42);
   });
-
   it('InboundDbFieldsSchema accepts integers including negatives and defaults to 1', () => {
     // Reject for the RIGHT reason: the issue must be about subSortIndex, not some
     // unrelated field — otherwise a schema that rejects everything would pass.
     const nonInt = InboundDbFieldsSchema.partial().safeParse({ subSortIndex: 1.5 });
     expect(nonInt.success).toBe(false);
     if (!nonInt.success) expect(nonInt.error.issues[0]?.path).toContain('subSortIndex');
-
     expect(InboundDbFieldsSchema.partial().safeParse({ subSortIndex: 0 }).success).toBe(true);
     expect(InboundDbFieldsSchema.partial().safeParse({ subSortIndex: -1 }).success).toBe(true);
     expect(InboundDbFieldsSchema.partial().safeParse({ subSortIndex: 5 }).success).toBe(true);
     expect(InboundDbFieldsSchema.parse({}).subSortIndex).toBe(1);
   });
 });
-
 describe('legacy xhttp session keys on edit (#5621)', () => {
   const legacyXhttpRow: RawInboundRow = {
     ...vlessRow,
@@ -405,7 +396,6 @@ describe('legacy xhttp session keys on edit (#5621)', () => {
       },
     },
   };
-
   it('rawInboundToFormValues lifts sessionPlacement/sessionKey onto the renamed keys', () => {
     const values = rawInboundToFormValues(legacyXhttpRow);
     const xhttp = (values.streamSettings as unknown as Record<string, Record<string, unknown>>)
@@ -417,7 +407,6 @@ describe('legacy xhttp session keys on edit (#5621)', () => {
     expect(xhttp.path).toBe('/xh');
     expect(xhttp.xPaddingBytes).toBe('100-1000');
   });
-
   it('formValuesToWirePayload never emits the legacy key names', () => {
     const values = rawInboundToFormValues(legacyXhttpRow);
     const payload = formValuesToWirePayload(values);
@@ -427,7 +416,6 @@ describe('legacy xhttp session keys on edit (#5621)', () => {
     expect(stream.xhttpSettings.sessionIDPlacement).toBe('cookie');
     expect(stream.xhttpSettings.sessionIDKey).toBe('x_session');
   });
-
   it('normalizeXhttpForWire lifts stale legacy keys that bypassed the schema', () => {
     const out = normalizeXhttpForWire(
       { sessionPlacement: 'header', sessionKey: 'x_raw' },
@@ -439,7 +427,6 @@ describe('legacy xhttp session keys on edit (#5621)', () => {
     expect(out.sessionKey).toBeUndefined();
   });
 });
-
 describe('xhttp xmux maxConcurrency survives a load/re-save round-trip', () => {
   const xmuxRow: RawInboundRow = {
     ...vlessRow,
@@ -453,7 +440,6 @@ describe('xhttp xmux maxConcurrency survives a load/re-save round-trip', () => {
       },
     },
   };
-
   it('rawInboundToFormValues does not resurrect a non-zero maxConnections', () => {
     const values = rawInboundToFormValues(xmuxRow);
     const xhttp = (values.streamSettings as unknown as Record<string, Record<string, unknown>>)
@@ -463,7 +449,6 @@ describe('xhttp xmux maxConcurrency survives a load/re-save round-trip', () => {
     expect(xmux.maxConcurrency).toBe('1-2');
     expect(xmux.maxConnections).toBe(0);
   });
-
   it('formValuesToWirePayload keeps maxConcurrency on an unedited re-save', () => {
     const values = rawInboundToFormValues(xmuxRow);
     const payload = formValuesToWirePayload(values);

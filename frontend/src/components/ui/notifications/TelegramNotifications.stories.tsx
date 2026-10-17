@@ -61,7 +61,7 @@ export const TypicalMonitoring: Story = {
         new AllSetting({
           tgBotEnable: true,
           tgBotChatId: '123456789',
-          tgEnabledEvents: 'xray.crash,node.down,cpu.high,memory.high,login.attempt',
+          tgEnabledEvents: 'xray.crash,cpu.high,memory.high,login.attempt',
           tgCpu: 85,
           tgMemory: 90,
         })
@@ -78,7 +78,7 @@ export const EverythingEnabled: Story = {
         new AllSetting({
           tgBotEnable: true,
           tgEnabledEvents:
-            'outbound.down,outbound.up,xray.crash,node.down,node.up,cpu.high,memory.high,login.attempt',
+            'outbound.down,outbound.up,xray.crash,cpu.high,memory.high,login.attempt',
           tgCpu: 70,
           tgMemory: 75,
         })

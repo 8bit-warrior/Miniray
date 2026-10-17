@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/8bit-warrior/Miniray/internal/crypto/nodetoken"
+	"github.com/8bit-warrior/Miniray/internal/crypto/secretcodec"
 	piaprotocol "github.com/8bit-warrior/Miniray/internal/pia"
 	"github.com/8bit-warrior/Miniray/internal/util/wireguard"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
@@ -234,7 +234,7 @@ func piaTagPart(s string, stripDomain bool) string {
 }
 
 func (s *PiaService) saveStored(stored piaStored) error {
-	enc, err := nodetoken.EncryptBound(piaTokenAAD, stored.Token)
+	enc, err := secretcodec.EncryptBound(piaTokenAAD, stored.Token)
 	if err != nil {
 		return err
 	}
@@ -259,15 +259,15 @@ func (s *PiaService) loadStored() (*piaStored, error) {
 	if atRest == "" {
 		return &stored, nil
 	}
-	if nodetoken.IsEncrypted(atRest) && !nodetoken.Enabled() {
-		return nil, piaprotocol.NewError(piaprotocol.CodeTokenRejected, "The PIA token is encrypted but NODE_TOKEN_ENCRYPTION is off. Sign in again.")
+	if secretcodec.IsEncrypted(atRest) && !secretcodec.Enabled() {
+		return nil, piaprotocol.NewError(piaprotocol.CodeTokenRejected, "The PIA token is encrypted but SECRET_ENCRYPTION is off. Sign in again.")
 	}
-	plain, err := nodetoken.DecryptBound(piaTokenAAD, atRest)
+	plain, err := secretcodec.DecryptBound(piaTokenAAD, atRest)
 	if err != nil {
 		return nil, err
 	}
 	stored.Token = plain
-	if nodetoken.Enabled() && (!nodetoken.IsEncrypted(atRest) || !nodetoken.Active().EncryptedWithActive(atRest)) {
+	if secretcodec.Enabled() && (!secretcodec.IsEncrypted(atRest) || !secretcodec.Active().EncryptedWithActive(atRest)) {
 		if err := s.saveStored(stored); err != nil {
 			return nil, err
 		}

@@ -5,16 +5,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/dbtest"
-	"github.com/8bit-warrior/Miniray/internal/database/model"
-	"github.com/8bit-warrior/Miniray/internal/util/crypto"
 	"github.com/8bit-warrior/Miniray/internal/web/locale"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 	"github.com/8bit-warrior/Miniray/internal/web/service/discord"
@@ -53,39 +49,6 @@ func TestValidateRegex(t *testing.T) {
 				t.Fatalf("body = %s, want %s", resp.Body.String(), needle)
 			}
 		})
-	}
-}
-
-func TestAPITokenMutationRoutesEnforceExpectedScope(t *testing.T) {
-	t.Setenv("MINIRAY_DB_FOLDER", t.TempDir())
-	dbtest.InitDB(t, filepath.Join(t.TempDir(), "miniray.db"))
-	row := &model.ApiToken{Name: "route-scope", Token: crypto.HashTokenSHA256("token"), Enabled: true, Scope: model.ApiScopeNodeSync}
-	if err := database.GetDB().Create(row).Error; err != nil {
-		t.Fatalf("seed token: %v", err)
-	}
-
-	gin.SetMode(gin.TestMode)
-	router := gin.New()
-	NewSettingController(router.Group("/panel/api"))
-	for _, path := range []string{
-		"/panel/api/setting/apiTokens/delete/" + strconv.Itoa(row.Id),
-		"/panel/api/setting/apiTokens/setEnabled/" + strconv.Itoa(row.Id),
-	} {
-		body := `{"expectedScope":"admin","enabled":false}`
-		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
-		req.Header.Set("Content-Type", "application/json")
-		resp := httptest.NewRecorder()
-		router.ServeHTTP(resp, req)
-		if !strings.Contains(resp.Body.String(), `"success":false`) {
-			t.Fatalf("%s accepted wrong expected scope: %s", path, resp.Body.String())
-		}
-	}
-	var stored model.ApiToken
-	if err := database.GetDB().First(&stored, row.Id).Error; err != nil {
-		t.Fatalf("token was deleted by wrong scope: %v", err)
-	}
-	if !stored.Enabled {
-		t.Fatal("token was disabled by wrong scope")
 	}
 }
 

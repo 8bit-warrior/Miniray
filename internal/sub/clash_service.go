@@ -70,9 +70,6 @@ func (s *SubClashService) getClash(subId string, host string, legacy bool) (stri
 			continue
 		}
 		subReq.projectThroughFallbackMaster(inbound)
-		if hostEps := subReq.hostEndpoints(inbound, "clash"); len(hostEps) > 0 {
-			injectExternalProxy(inbound, hostEps)
-		}
 		for _, client := range clients {
 			if client.Enable {
 				hasEnabledClient = true
@@ -85,8 +82,6 @@ func (s *SubClashService) getClash(subId string, host string, legacy bool) (stri
 		if ext.Enable {
 			hasEnabledClient = true
 		}
-		// Count the client even when no proxy comes out of this link, so the
-		// quota header does not shrink because a node is unrepresentable in Clash.
 		seenEmails[ext.Email] = struct{}{}
 		if !ext.Active {
 			hasInactiveExternal = true
@@ -329,9 +324,7 @@ func fallbackProxyName(proxy map[string]any, idx int) string {
 
 func (s *SubClashService) getProxies(subReq *SubService, inbound *model.Inbound, client model.Client, host string) []map[string]any {
 	stream := s.streamData(inbound.StreamSettings)
-	// For node-managed inbounds the Clash proxy "server" must be the
-	// node's address, not the request host. resolveInboundAddress handles
-	// the node→subscriber-host fallback chain.
+	subReq.prepareExternalProxies(stream, inbound, "clash")
 	defaultDest := subReq.resolveInboundAddress(inbound)
 	if defaultDest == "" {
 		defaultDest = host
@@ -347,7 +340,6 @@ func (s *SubClashService) getProxies(subReq *SubService, inbound *model.Inbound,
 		}}
 	}
 	delete(stream, "externalProxy")
-	network, _ := stream["network"].(string)
 
 	proxies := make([]map[string]any, 0, len(externalProxies))
 	for _, ep := range externalProxies {
@@ -357,7 +349,6 @@ func (s *SubClashService) getProxies(subReq *SubService, inbound *model.Inbound,
 		}
 		// Expand the host's {{VAR}} remark template for this client (no-op for
 		// the synthetic/legacy entry) before it becomes the proxy name.
-		subReq.renderHostRemark(inbound, client, extPrxy, network)
 		workingInbound := *inbound
 		// A Clash "server" is a bare host, not a URI authority, and the custom
 		// share address stores IPv6 literals bracketed.
@@ -386,7 +377,7 @@ func (s *SubClashService) getProxies(subReq *SubService, inbound *model.Inbound,
 		if hasExternalProxy {
 			applyExternalProxyTLSToStream(extPrxy, workingStream, security)
 		}
-		applyHostStreamOverrides(extPrxy, workingStream)
+		applyExternalProxyStreamOverrides(extPrxy, workingStream)
 
 		proxy := s.buildProxy(subReq, &workingInbound, client, workingStream, extPrxy)
 		if len(proxy) > 0 {
@@ -418,7 +409,6 @@ func (s *SubClashService) buildProxy(subReq *SubService, inbound *model.Inbound,
 	}
 
 	network, _ := stream["network"].(string)
-
 	proxy := map[string]any{
 		"name":   subReq.endpointRemark(inbound, client.Email, ep, network),
 		"server": inbound.Listen,
@@ -437,7 +427,7 @@ func (s *SubClashService) buildProxy(subReq *SubService, inbound *model.Inbound,
 		proxy["cipher"] = normalizeVmessSecurity(client.Security)
 	case model.VLESS:
 		proxy["type"] = "vless"
-		proxy["uuid"] = applyVlessRoute(client.ID, hostVlessRoute(ep))
+		proxy["uuid"] = applyVlessRoute(client.ID, externalProxyVlessRoute(ep))
 		inboundSettings := subReq.linkSettings(inbound)
 		streamSecurity, _ := stream["security"].(string)
 		if client.Flow != "" && !inbound.DisableFlow && vlessFlowAllowed(network, streamSecurity, inboundSettings) {
@@ -1288,8 +1278,6 @@ func mergeClashRulesYAML(base map[string]any, raw string) error {
 	return nil
 }
 
-// mergeRemoteClashRules lets remote update only the route graph (see
-// remoteClashAllowedKey) and never mutates remote: cached documents are shared.
 func mergeRemoteClashRules(base map[string]any, remote map[string]any) error {
 	if len(remote) == 0 {
 		return fmt.Errorf("remote Clash routing source must be a YAML map")

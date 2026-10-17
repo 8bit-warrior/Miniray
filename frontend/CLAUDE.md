@@ -41,7 +41,7 @@ The `@` import alias maps to `src/`.
   only as a layout wrapper. Complex shared config editors (FinalMask / Sniffing /
   Sockopt) remain AntD-`Form` islands wrapped as value/onChange adapters in
   `src/lib/xray/forms/fields/`, bound via a `Controller`.
-- New `g.POST`/`g.GET` route => add it to `src/pages/api-docs/endpoints.ts`,
+- New `g.POST`/`g.GET` route => update `public/openapi.json`,
   then `npm run gen`.
 - i18n strings live in `internal/web/translation/<locale>.json`, NOT under
   `frontend/`, and are shared with the Go backend. A new English key must be
@@ -63,7 +63,7 @@ Only standalone bundles (login/subpage) need a new `.html` + `src/entries/*` +
 - `npm run dev` (HMR on :5173, proxies to the Go panel on :2053 — start Go first).
 - `npm run typecheck` / `npm run lint` / `npm run test` / `npm run build`.
 - `npm run gen` = `gen:zod` (Go → `src/generated/`) + `gen:api`
-  (`build-openapi.mjs` → `public/openapi.json`).
+  (`tools/build-openapi.mjs` refreshes `public/openapi.json`).
 - `npm run storybook` (workbench on :6006) / `npm run build-storybook` (CI
   compile-checks every story). Reusable `src/components/` get a co-located
   `<Component>.stories.tsx` with `tags: ['autodocs']`; document props via

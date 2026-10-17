@@ -112,15 +112,11 @@
     "dashboard": "Trạng thái hệ thống",
     "inbounds": "Inbound",
     "clients": "Khách hàng",
-    "groups": "Nhóm",
-    "nodes": "Nút",
     "settings": "Cài đặt bảng điều khiển",
     "xray": "Cấu hình Xray",
     "routing": "Định tuyến",
     "outbounds": "Outbound",
     "apiDocs": "Tài liệu API",
-    "sponsors": "Nhà tài trợ",
-    "hosts": "Hosts",
     "docs": "Tài liệu",
     "openMenu": "Mở menu",
     "subFormats": "Sub Formats"
@@ -292,9 +288,6 @@
       "operate": "Menu",
       "enable": "Kích hoạt",
       "remark": "Chú thích",
-      "node": "Node",
-      "deployTo": "Triển khai tới",
-      "localPanel": "Panel cục bộ",
       "fallbacks": {
         "title": "Fallbacks",
         "empty": "Chưa có fallback nào",
@@ -330,7 +323,6 @@
       "delAllClientsConfirmTitle": "Xóa toàn bộ {count} khách hàng khỏi \"{remark}\"?",
       "delAllClientsConfirmContent": "Xóa mọi khách hàng khỏi inbound này và hủy bản ghi lưu lượng của họ. Bản thân inbound vẫn được giữ lại. Hành động này không thể hoàn tác.",
       "attachClients": "Gắn client vào…",
-      "addClientsToGroup": "Thêm client vào nhóm…",
       "attachClientsTitle": "Gắn client từ «{remark}»",
       "attachClientsDesc": "Gắn cùng {count} client (cùng UUID/mật khẩu và lưu lượng chung) vào các inbound đã chọn. Họ vẫn ở trên inbound này.",
       "attachClientsTargets": "Inbound đích",
@@ -438,13 +430,10 @@
         "inboundCreateSuccess": "Đã tạo thành công kết nối inbound",
         "bulkDeleted": "Đã xóa {count} inbound",
         "bulkDeletedMixed": "Đã xóa {ok}, thất bại {failed}",
-        "clonedMany": "Đã nhân bản {count} inbound",
-        "clonedMixed": "Đã nhân bản {ok}, thất bại {failed}",
         "inboundDeleteSuccess": "Đã xóa thành công kết nối inbound",
         "inboundClientAddSuccess": "Đã thêm client inbound",
         "inboundClientDeleteSuccess": "Đã xóa client inbound",
         "inboundClientUpdateSuccess": "Đã cập nhật client inbound",
-        "savedNodeOfflineWillSync": "Đã lưu cục bộ. Một nút hỗ trợ đang ngoại tuyến hoặc bị tắt — thay đổi sẽ được đồng bộ khi kết nối lại.",
         "resetAllClientTrafficSuccess": "Đã đặt lại toàn bộ lưu lượng client",
         "resetAllTrafficSuccess": "Đã đặt lại toàn bộ lưu lượng",
         "resetInboundClientTrafficSuccess": "Đã đặt lại lưu lượng",
@@ -682,7 +671,6 @@
         "disableFlow": "Tắt luồng XTLS",
         "disableFlowHelp": "Loại inbound này khỏi việc tự động thêm xtls-rprx-vision, ngay cả khi transport của nó hỗ trợ flow (ví dụ một inbound XHTTP đi qua tunnel với mã hóa VLESS). Client vẫn giữ Vision trên các inbound tương thích khác trong cùng subscription. Chỉ dành cho VLESS.",
         "shareAddrStrategyOptions": {
-          "node": "Địa chỉ node",
           "listen": "Địa chỉ listen inbound",
           "custom": "Tùy chỉnh"
         },
@@ -742,10 +730,7 @@
       "searchPlaceholder": "Tìm email, ghi chú, sub ID, UUID, mật khẩu, auth, Telegram ID…",
       "filterTitle": "Lọc client",
       "clearAllFilters": "Xóa tất cả",
-      "filters": {
-        "nodes": "Nút",
-        "localPanel": "Cục bộ (bảng này)"
-      },
+      "filters": {},
       "showingCount": "Hiển thị {shown} trên {total}",
       "sortOldest": "Cũ nhất trước",
       "sortNewest": "Mới nhất trước",
@@ -788,9 +773,6 @@
       "email": "Email",
       "emailInvalidChars": "Email không được chứa khoảng trắng, '/', '\\' hoặc ký tự điều khiển",
       "subIdInvalidChars": "ID đăng ký không được chứa khoảng trắng, '/', '\\' hoặc ký tự điều khiển",
-      "group": "Nhóm",
-      "groupDesc": "Nhãn logic để gom các client liên quan (nhóm, khách hàng, khu vực). Có thể lọc từ thanh công cụ.",
-      "groupPlaceholder": "ví dụ customer-a",
       "comment": "Ghi chú",
       "traffic": "Lưu lượng",
       "speed": "Tốc độ",
@@ -827,15 +809,6 @@
       "resetAllTrafficsContent": "Bộ đếm gửi/nhận của mỗi khách hàng về 0. Hạn mức và thời hạn không bị ảnh hưởng. Không thể hoàn tác.",
       "deleteConfirmTitle": "Xóa khách hàng {email}?",
       "deleteConfirmContent": "Hành động này gỡ khách hàng khỏi mọi inbound đã gắn và xóa bản ghi lưu lượng. Không thể hoàn tác.",
-      "addToGroupTitle": "Thêm {count} client vào một nhóm",
-      "addToGroupTooltip": "Chọn nhóm có sẵn hoặc nhập tên mới. Dùng Ungroup để xóa client khỏi nhóm hiện tại.",
-      "groupName": "Tên nhóm",
-      "addToGroupSuccessToast": "Đã thêm {count} client vào {group}",
-      "ungroupSuccessToast": "Đã xóa nhóm khỏi {count} client",
-      "ungroup": "Bỏ nhóm",
-      "ungroupConfirmTitle": "Xóa {count} client khỏi nhóm của họ?",
-      "ungroupConfirmContent": "Xóa nhãn nhóm trên mỗi client đã chọn. Bản thân client được giữ lại (dùng Delete để xóa hoàn toàn).",
-      "addToGroup": "Thêm vào nhóm",
       "attach": "Gắn",
       "adjust": "Điều chỉnh",
       "subLinks": "Liên kết sub",
@@ -957,18 +930,6 @@
       "renewOnDayDesc": "Gia hạn vào ngày này của mỗi tháng dương lịch, lúc nửa đêm theo múi giờ của bảng điều khiển, thay vì mỗi N ngày. Tháng không có ngày đã chọn sẽ gia hạn vào ngày cuối cùng của tháng. 0 giữ nguyên chế độ khoảng cách theo ngày.",
       "renewsUsed": "Số lần gia hạn đã dùng",
       "bulkAdTagHint": "Nhập thẻ hex 32 ký tự để đặt hoặc 'none' để xóa kênh tài trợ trên MTProto."
-    },
-    "groups": {},
-    "nodes": {
-      "name": "Tên",
-      "apiToken": "Token API",
-      "apiTokenHint": "Panel từ xa hiển thị token API tại Bảo mật → Token API.",
-      "latency": "Độ trễ",
-      "statusValues": {},
-      "toasts": {
-        "fillRequired": "Tên, địa chỉ, cổng và token API là bắt buộc"
-      },
-      "mtls": {}
     },
     "settings": {
       "defaultTag": "Mặc định",
@@ -1236,7 +1197,9 @@
         "apiTokenEmpty": "Chưa có token nào — tạo một token để xác thực bot hoặc panel từ xa.",
         "apiTokenDeleteWarning": "Mọi client đang dùng token này sẽ ngừng xác thực ngay lập tức.",
         "apiTokenCreatedTitle": "Đã tạo token",
-        "apiTokenCreatedNotice": "Hãy sao chép token này ngay bây giờ. Vì lý do bảo mật, token không được lưu ở dạng đọc được và sẽ không hiển thị lại."
+        "apiTokenCreatedNotice": "Hãy sao chép token này ngay bây giờ. Vì lý do bảo mật, token không được lưu ở dạng đọc được và sẽ không hiển thị lại.",
+        "apiToken": "Token API",
+        "apiTokenHint": "Panel từ xa hiển thị token API tại Bảo mật → Token API."
       },
       "toasts": {
         "modifySettings": "Các tham số đã được thay đổi.",
@@ -1281,8 +1244,6 @@
       "eventOutboundDown": "Ngừng hoạt động",
       "eventOutboundUp": "Hoạt động",
       "eventXrayCrash": "Sự cố",
-      "eventNodeDown": "Ngừng hoạt động",
-      "eventNodeUp": "Hoạt động",
       "eventCPUHigh": "CPU cao (%)",
       "requestFailed": "Yêu cầu thất bại",
       "smtpEncryption": "Mã hóa",
@@ -1586,7 +1547,51 @@
       "subIncyResolveDnsDomainDesc": "URL máy chủ DoH, thường kết thúc bằng /dns-query.",
       "subIncyResolveDnsIp": "IP máy chủ DoH",
       "subIncyResolveDnsIpDesc": "IP máy chủ DoH để khởi tạo.",
-      "subIncyGroupRouting": "Định tuyến"
+      "subIncyGroupRouting": "Định tuyến",
+      "exportDatabaseDesc": "",
+      "allowInsecure": "Cho phép không an toàn",
+      "allowInsecureHelp": "Bỏ qua xác minh chứng chỉ TLS (allowInsecure / skip-cert-verify).",
+      "remarkVars": {
+        "title": "Biến mẫu",
+        "intro": "Nhấp vào một biến để thêm. Biến được thay thế cho từng client khi tạo đăng ký.",
+        "preview": "Xem trước",
+        "groups": {
+          "client": "Khách hàng",
+          "traffic": "Lưu lượng",
+          "time": "Thời gian & trạng thái",
+          "connection": "Kết nối"
+        },
+        "descEMAIL": "Email khách hàng",
+        "descINBOUND": "Ghi chú của chính inbound (tên cấu hình)",
+        "descHOST": "Ghi chú host",
+        "descID": "UUID khách hàng",
+        "descSHORT_ID": "8 ký tự đầu của UUID",
+        "descTELEGRAM_ID": "ID Telegram của khách hàng (rỗng nếu chưa đặt)",
+        "descSUB_ID": "ID đăng ký",
+        "descCOMMENT": "Bình luận khách hàng",
+        "descTRAFFIC_USED": "Lưu lượng đã dùng (dễ đọc)",
+        "descTRAFFIC_LEFT": "Lưu lượng còn lại (ẩn nếu không giới hạn)",
+        "descTRAFFIC_TOTAL": "Tổng lưu lượng (ẩn nếu không giới hạn)",
+        "descTRAFFIC_USED_BYTES": "Lưu lượng đã dùng tính bằng byte",
+        "descTRAFFIC_LEFT_BYTES": "Lưu lượng còn lại tính bằng byte",
+        "descTRAFFIC_TOTAL_BYTES": "Tổng lưu lượng tính bằng byte",
+        "descUP": "Lưu lượng tải lên",
+        "descDOWN": "Lưu lượng tải xuống",
+        "descSTATUS": "active / expired / disabled / depleted",
+        "descSTATUS_EMOJI": "Trạng thái dạng biểu tượng cảm xúc (✅ ⏳ 🚫)",
+        "descDAYS_LEFT": "Số ngày đến khi hết hạn (ẩn nếu không giới hạn)",
+        "descTIME_LEFT": "Thời gian còn lại (ví dụ 12d 4h 30m)",
+        "descUSAGE_PERCENTAGE": "Lưu lượng đã dùng tính theo phần trăm (ẩn nếu không giới hạn)",
+        "descEXPIRE_DATE": "Ngày hết hạn (YYYY-MM-DD)",
+        "descJALALI_EXPIRE_DATE": "Ngày hết hạn theo lịch Jalali (YYYY/MM/DD)",
+        "descEXPIRE_UNIX": "Hết hạn dạng dấu thời gian Unix (giây)",
+        "descCREATED_UNIX": "Thời điểm tạo dạng dấu thời gian Unix (giây)",
+        "descRESET_DAYS": "Chu kỳ đặt lại lưu lượng tính theo ngày",
+        "descRESET_DAY": "Ngày trong tháng để gia hạn",
+        "descPROTOCOL": "Giao thức inbound (VLESS, VMess, Trojan, …)",
+        "descTRANSPORT": "Mạng truyền tải (tcp, ws, grpc, …)",
+        "descSECURITY": "Bảo mật truyền tải (TLS, REALITY, NONE)"
+      }
     },
     "xray": {
       "importRules": "Nhập quy tắc",
@@ -2093,62 +2098,9 @@
         "poolSize": "Kích thước bể bơi"
       },
       "defaultOutbound": "Outbound mặc định",
-      "defaultOutboundDesc": "Lưu lượng không khớp quy tắc định tuyến dùng outbound này (mục đầu danh sách)."
-    },
-    "hosts": {
-      "summary": {},
-      "sections": {},
-      "fields": {
-        "allowInsecure": "Cho phép không an toàn"
-      },
-      "hints": {
-        "allowInsecure": "Bỏ qua xác minh chứng chỉ TLS (allowInsecure / skip-cert-verify)."
-      },
-      "remarkVars": {
-        "title": "Biến mẫu",
-        "intro": "Nhấp vào một biến để thêm. Biến được thay thế cho từng client khi tạo đăng ký.",
-        "preview": "Xem trước",
-        "groups": {
-          "client": "Khách hàng",
-          "traffic": "Lưu lượng",
-          "time": "Thời gian & trạng thái",
-          "connection": "Kết nối"
-        },
-        "descEMAIL": "Email khách hàng",
-        "descINBOUND": "Ghi chú của chính inbound (tên cấu hình)",
-        "descHOST": "Ghi chú host",
-        "descID": "UUID khách hàng",
-        "descSHORT_ID": "8 ký tự đầu của UUID",
-        "descTELEGRAM_ID": "ID Telegram của khách hàng (rỗng nếu chưa đặt)",
-        "descSUB_ID": "ID đăng ký",
-        "descCOMMENT": "Bình luận khách hàng",
-        "descTRAFFIC_USED": "Lưu lượng đã dùng (dễ đọc)",
-        "descTRAFFIC_LEFT": "Lưu lượng còn lại (ẩn nếu không giới hạn)",
-        "descTRAFFIC_TOTAL": "Tổng lưu lượng (ẩn nếu không giới hạn)",
-        "descTRAFFIC_USED_BYTES": "Lưu lượng đã dùng tính bằng byte",
-        "descTRAFFIC_LEFT_BYTES": "Lưu lượng còn lại tính bằng byte",
-        "descTRAFFIC_TOTAL_BYTES": "Tổng lưu lượng tính bằng byte",
-        "descUP": "Lưu lượng tải lên",
-        "descDOWN": "Lưu lượng tải xuống",
-        "descSTATUS": "active / expired / disabled / depleted",
-        "descSTATUS_EMOJI": "Trạng thái dạng biểu tượng cảm xúc (✅ ⏳ 🚫)",
-        "descDAYS_LEFT": "Số ngày đến khi hết hạn (ẩn nếu không giới hạn)",
-        "descTIME_LEFT": "Thời gian còn lại (ví dụ 12d 4h 30m)",
-        "descUSAGE_PERCENTAGE": "Lưu lượng đã dùng tính theo phần trăm (ẩn nếu không giới hạn)",
-        "descEXPIRE_DATE": "Ngày hết hạn (YYYY-MM-DD)",
-        "descJALALI_EXPIRE_DATE": "Ngày hết hạn theo lịch Jalali (YYYY/MM/DD)",
-        "descEXPIRE_UNIX": "Hết hạn dạng dấu thời gian Unix (giây)",
-        "descCREATED_UNIX": "Thời điểm tạo dạng dấu thời gian Unix (giây)",
-        "descRESET_DAYS": "Chu kỳ đặt lại lưu lượng tính theo ngày",
-        "descRESET_DAY": "Ngày trong tháng để gia hạn",
-        "descPROTOCOL": "Giao thức inbound (VLESS, VMess, Trojan, …)",
-        "descTRANSPORT": "Mạng truyền tải (tcp, ws, grpc, …)",
-        "descSECURITY": "Bảo mật truyền tải (TLS, REALITY, NONE)"
-      },
-      "toasts": {
-        "badTag": "Tag không hợp lệ",
-        "badVlessRoute": "Nhập một số duy nhất từ 0 đến 65535"
-      }
+      "defaultOutboundDesc": "Lưu lượng không khớp quy tắc định tuyến dùng outbound này (mục đầu danh sách).",
+      "ruleName": "Tên",
+      "outboundLatency": "Độ trễ"
     }
   },
   "tgbot": {
@@ -2273,8 +2225,6 @@
       "eventDelayDetail": "Độ trễ: {{ .Delay }}ms",
       "eventXrayCrash": "Xray GẶP SỰ CỐ",
       "eventXrayCrashError": "Lỗi: {{ .Error }}",
-      "eventNodeDown": "Node {{ .Name }} đã NGỪNG HOẠT ĐỘNG",
-      "eventNodeUp": "Node {{ .Name }} đã HOẠT ĐỘNG",
       "eventLoginFallback": "Đăng nhập thất bại từ {{ .Source }}",
       "memoryThreshold": "Sử dụng bộ nhớ {{ .Percent }}% vượt quá ngưỡng {{ .Threshold }}%"
     },
@@ -2366,7 +2316,6 @@
       "error": "Lỗi",
       "delay": "Độ trễ",
       "outbound": "Outbound",
-      "node": "Nút",
       "threshold": "Ngưỡng",
       "reason": "Lý do",
       "time": "Thời gian",
@@ -2381,8 +2330,6 @@
     "alerts": {
       "outboundDown": "Outbound ngừng hoạt động",
       "outboundUp": "Outbound hoạt động trở lại",
-      "nodeDown": "Nút ngừng hoạt động",
-      "nodeUp": "Nút hoạt động trở lại",
       "xrayCrash": "Lõi Xray bị sập",
       "cpuHigh": "Vượt ngưỡng CPU",
       "memoryHigh": "Vượt ngưỡng bộ nhớ",
@@ -2428,7 +2375,6 @@
   "email": {
     "labelStatus": "Trạng thái",
     "labelOutbound": "Outbound",
-    "labelNode": "Node",
     "labelError": "Lỗi",
     "labelDelay": "Độ trễ",
     "labelUsername": "Tên đăng nhập",

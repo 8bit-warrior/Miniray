@@ -112,15 +112,11 @@
     "dashboard": "Visão Geral",
     "inbounds": "Entradas",
     "clients": "Clientes",
-    "groups": "Grupos",
-    "nodes": "Nós",
     "settings": "Configurações do Painel",
     "xray": "Configurações Xray",
     "routing": "Roteamento",
     "outbounds": "Saídas",
     "apiDocs": "Documentação da API",
-    "sponsors": "Patrocinadores",
-    "hosts": "Hosts",
     "docs": "Documentação",
     "openMenu": "Abrir menu",
     "subFormats": "Sub Formats"
@@ -292,9 +288,6 @@
       "operate": "Menu",
       "enable": "Ativado",
       "remark": "Observação",
-      "node": "Nó",
-      "deployTo": "Implantar em",
-      "localPanel": "Painel local",
       "fallbacks": {
         "title": "Fallbacks",
         "empty": "Ainda sem fallbacks",
@@ -330,7 +323,6 @@
       "delAllClientsConfirmTitle": "Excluir todos os {count} clientes de \"{remark}\"?",
       "delAllClientsConfirmContent": "Remove todos os clientes deste inbound e descarta seus registros de tráfego. O inbound em si é mantido. Esta ação não pode ser desfeita.",
       "attachClients": "Associar clientes a…",
-      "addClientsToGroup": "Adicionar clientes ao grupo…",
       "attachClientsTitle": "Associar clientes de «{remark}»",
       "attachClientsDesc": "Associa os mesmos {count} cliente(s) (mesmo UUID/senha e tráfego compartilhado) à(s) entrada(s) selecionada(s). Permanecem nesta entrada também.",
       "attachClientsTargets": "Entradas de destino",
@@ -438,13 +430,10 @@
         "inboundCreateSuccess": "Entrada criada com sucesso",
         "bulkDeleted": "{count} inbounds excluídos",
         "bulkDeletedMixed": "{ok} excluídos, {failed} com falha",
-        "clonedMany": "{count} inbounds clonados",
-        "clonedMixed": "{ok} clonados, {failed} com falha",
         "inboundDeleteSuccess": "Entrada excluída com sucesso",
         "inboundClientAddSuccess": "Cliente(s) de entrada adicionado(s)",
         "inboundClientDeleteSuccess": "Cliente de entrada excluído",
         "inboundClientUpdateSuccess": "Cliente de entrada atualizado",
-        "savedNodeOfflineWillSync": "Salvo localmente. Um nó de apoio está offline ou desativado — a alteração será sincronizada assim que reconectar.",
         "resetAllClientTrafficSuccess": "Todo o tráfego do cliente foi reiniciado",
         "resetAllTrafficSuccess": "Todo o tráfego foi reiniciado",
         "resetInboundClientTrafficSuccess": "O tráfego foi reiniciado",
@@ -682,7 +671,6 @@
         "disableFlow": "Desativar o flow XTLS",
         "disableFlowHelp": "Exclui este inbound da injeção automática de xtls-rprx-vision, mesmo quando o transporte suporta flow (ex.: um inbound XHTTP tunelado com criptografia VLESS). Os clientes mantêm o Vision nos seus outros inbounds compatíveis da mesma assinatura. Somente VLESS.",
         "shareAddrStrategyOptions": {
-          "node": "Endereço do nó",
           "listen": "Endereço de escuta do inbound",
           "custom": "Personalizada"
         },
@@ -742,10 +730,7 @@
       "searchPlaceholder": "Buscar email, comentário, sub ID, UUID, senha, auth, Telegram ID…",
       "filterTitle": "Filtrar clientes",
       "clearAllFilters": "Limpar tudo",
-      "filters": {
-        "nodes": "Nós",
-        "localPanel": "Local (este painel)"
-      },
+      "filters": {},
       "showingCount": "Mostrando {shown} de {total}",
       "sortOldest": "Mais antigos primeiro",
       "sortNewest": "Mais novos primeiro",
@@ -788,9 +773,6 @@
       "email": "Email",
       "emailInvalidChars": "O e-mail não pode conter espaços, '/', '\\' ou caracteres de controle",
       "subIdInvalidChars": "O ID de assinatura não pode conter espaços, '/', '\\' ou caracteres de controle",
-      "group": "Grupo",
-      "groupDesc": "Rótulo lógico para agrupar clientes relacionados (ex.: equipe, cliente, região). Filtrável pela barra de ferramentas.",
-      "groupPlaceholder": "ex.: customer-a",
       "comment": "Comentário",
       "traffic": "Tráfego",
       "speed": "Velocidade",
@@ -827,15 +809,6 @@
       "resetAllTrafficsContent": "Os contadores de envio/recebimento de cada cliente vão a zero. Cota e expiração não são afetadas. Não é possível desfazer.",
       "deleteConfirmTitle": "Excluir o cliente {email}?",
       "deleteConfirmContent": "Isto remove o cliente de cada inbound associado e descarta o registro de tráfego. Não é possível desfazer.",
-      "addToGroupTitle": "Adicionar {count} cliente(s) a um grupo",
-      "addToGroupTooltip": "Escolha um grupo existente ou digite um novo nome. Use Ungroup para remover clientes do grupo atual.",
-      "groupName": "Nome do grupo",
-      "addToGroupSuccessToast": "{count} cliente(s) adicionado(s) a {group}",
-      "ungroupSuccessToast": "Grupo limpo de {count} cliente(s)",
-      "ungroup": "Desagrupar",
-      "ungroupConfirmTitle": "Remover {count} cliente(s) do grupo?",
-      "ungroupConfirmContent": "Limpa o rótulo de grupo de cada cliente selecionado. Os clientes em si são mantidos (use Delete para remover completamente).",
-      "addToGroup": "Adicionar ao grupo",
       "attach": "Associar",
       "adjust": "Ajustar",
       "subLinks": "Links de assinatura",
@@ -957,18 +930,6 @@
       "renewOnDayDesc": "Renova neste dia de cada mês do calendário, à meia-noite no fuso horário do painel, em vez de a cada N dias. Se o mês for curto demais para o dia escolhido, renova no último dia dele. 0 mantém o modo de intervalo em dias.",
       "renewsUsed": "Renovações usadas",
       "bulkAdTagHint": "Insira uma tag hexadecimal de 32 caracteres para definir ou 'none' para limpar no MTProto."
-    },
-    "groups": {},
-    "nodes": {
-      "name": "Nome",
-      "apiToken": "Token API",
-      "apiTokenHint": "O painel remoto exibe o token da API em Autenticação → Token da API.",
-      "latency": "Latência",
-      "statusValues": {},
-      "toasts": {
-        "fillRequired": "Nome, endereço, porta e token da API são obrigatórios"
-      },
-      "mtls": {}
     },
     "settings": {
       "defaultTag": "Padrão",
@@ -1236,7 +1197,9 @@
         "apiTokenEmpty": "Nenhum token ainda — crie um para autenticar bots ou painéis remotos.",
         "apiTokenDeleteWarning": "Qualquer cliente usando este token deixará de se autenticar imediatamente.",
         "apiTokenCreatedTitle": "Token criado",
-        "apiTokenCreatedNotice": "Copie este token agora. Por segurança, ele não é armazenado de forma legível e não será exibido novamente."
+        "apiTokenCreatedNotice": "Copie este token agora. Por segurança, ele não é armazenado de forma legível e não será exibido novamente.",
+        "apiToken": "Token API",
+        "apiTokenHint": "O painel remoto exibe o token da API em Autenticação → Token da API."
       },
       "toasts": {
         "modifySettings": "Os parâmetros foram alterados.",
@@ -1281,8 +1244,6 @@
       "eventOutboundDown": "Inativo",
       "eventOutboundUp": "Ativo",
       "eventXrayCrash": "Falha",
-      "eventNodeDown": "Inativo",
-      "eventNodeUp": "Ativo",
       "eventCPUHigh": "CPU alta (%)",
       "requestFailed": "Falha na requisição",
       "smtpEncryption": "Criptografia",
@@ -1586,7 +1547,51 @@
       "subIncyResolveDnsDomainDesc": "URL do servidor DoH, geralmente terminando em /dns-query.",
       "subIncyResolveDnsIp": "IP do servidor DoH",
       "subIncyResolveDnsIpDesc": "IP do servidor DoH para bootstrap.",
-      "subIncyGroupRouting": "Roteamento"
+      "subIncyGroupRouting": "Roteamento",
+      "exportDatabaseDesc": "",
+      "allowInsecure": "Permitir inseguro",
+      "allowInsecureHelp": "Ignorar a verificação do certificado TLS (allowInsecure / skip-cert-verify).",
+      "remarkVars": {
+        "title": "Variáveis de Modelo",
+        "intro": "Clique em uma variável para adicioná-la. Ela é substituída por cliente quando a assinatura é gerada.",
+        "preview": "Pré-visualização",
+        "groups": {
+          "client": "Cliente",
+          "traffic": "Tráfego",
+          "time": "Tempo e status",
+          "connection": "Conexão"
+        },
+        "descEMAIL": "Email do cliente",
+        "descINBOUND": "Observação da própria entrada (nome da configuração)",
+        "descHOST": "Observação do host",
+        "descID": "UUID do cliente",
+        "descSHORT_ID": "Primeiros 8 caracteres do UUID",
+        "descTELEGRAM_ID": "ID do Telegram do cliente (vazio se não definido)",
+        "descSUB_ID": "ID da assinatura",
+        "descCOMMENT": "Comentário do cliente",
+        "descTRAFFIC_USED": "Tráfego usado (legível por humanos)",
+        "descTRAFFIC_LEFT": "Tráfego restante (oculto se ilimitado)",
+        "descTRAFFIC_TOTAL": "Tráfego total (oculto se ilimitado)",
+        "descTRAFFIC_USED_BYTES": "Tráfego usado em bytes",
+        "descTRAFFIC_LEFT_BYTES": "Tráfego restante em bytes",
+        "descTRAFFIC_TOTAL_BYTES": "Tráfego total em bytes",
+        "descUP": "Tráfego de upload",
+        "descDOWN": "Tráfego de download",
+        "descSTATUS": "ativo / expirado / desativado / esgotado",
+        "descSTATUS_EMOJI": "Status como emoji (✅ ⏳ 🚫)",
+        "descDAYS_LEFT": "Dias até a expiração (oculto se ilimitado)",
+        "descTIME_LEFT": "Tempo restante (ex.: 12d 4h 30m)",
+        "descUSAGE_PERCENTAGE": "Tráfego usado como porcentagem (oculto se ilimitado)",
+        "descEXPIRE_DATE": "Data de expiração (AAAA-MM-DD)",
+        "descJALALI_EXPIRE_DATE": "Data de expiração no calendário Jalali (AAAA/MM/DD)",
+        "descEXPIRE_UNIX": "Expiração como timestamp Unix (segundos)",
+        "descCREATED_UNIX": "Data de criação como timestamp Unix (segundos)",
+        "descRESET_DAYS": "Período de redefinição de tráfego em dias",
+        "descRESET_DAY": "Dia do mês em que é renovado",
+        "descPROTOCOL": "Protocolo da entrada (VLESS, VMess, Trojan, …)",
+        "descTRANSPORT": "Rede de transporte (tcp, ws, grpc, …)",
+        "descSECURITY": "Segurança do transporte (TLS, REALITY, NONE)"
+      }
     },
     "xray": {
       "importRules": "Importar regras",
@@ -2093,62 +2098,9 @@
         "poolSize": "Tamanho do Pool"
       },
       "defaultOutbound": "Saída padrão",
-      "defaultOutboundDesc": "Tráfego sem regra de roteamento usa esta saída (a primeira da lista)."
-    },
-    "hosts": {
-      "summary": {},
-      "sections": {},
-      "fields": {
-        "allowInsecure": "Permitir inseguro"
-      },
-      "hints": {
-        "allowInsecure": "Ignorar a verificação do certificado TLS (allowInsecure / skip-cert-verify)."
-      },
-      "remarkVars": {
-        "title": "Variáveis de Modelo",
-        "intro": "Clique em uma variável para adicioná-la. Ela é substituída por cliente quando a assinatura é gerada.",
-        "preview": "Pré-visualização",
-        "groups": {
-          "client": "Cliente",
-          "traffic": "Tráfego",
-          "time": "Tempo e status",
-          "connection": "Conexão"
-        },
-        "descEMAIL": "Email do cliente",
-        "descINBOUND": "Observação da própria entrada (nome da configuração)",
-        "descHOST": "Observação do host",
-        "descID": "UUID do cliente",
-        "descSHORT_ID": "Primeiros 8 caracteres do UUID",
-        "descTELEGRAM_ID": "ID do Telegram do cliente (vazio se não definido)",
-        "descSUB_ID": "ID da assinatura",
-        "descCOMMENT": "Comentário do cliente",
-        "descTRAFFIC_USED": "Tráfego usado (legível por humanos)",
-        "descTRAFFIC_LEFT": "Tráfego restante (oculto se ilimitado)",
-        "descTRAFFIC_TOTAL": "Tráfego total (oculto se ilimitado)",
-        "descTRAFFIC_USED_BYTES": "Tráfego usado em bytes",
-        "descTRAFFIC_LEFT_BYTES": "Tráfego restante em bytes",
-        "descTRAFFIC_TOTAL_BYTES": "Tráfego total em bytes",
-        "descUP": "Tráfego de upload",
-        "descDOWN": "Tráfego de download",
-        "descSTATUS": "ativo / expirado / desativado / esgotado",
-        "descSTATUS_EMOJI": "Status como emoji (✅ ⏳ 🚫)",
-        "descDAYS_LEFT": "Dias até a expiração (oculto se ilimitado)",
-        "descTIME_LEFT": "Tempo restante (ex.: 12d 4h 30m)",
-        "descUSAGE_PERCENTAGE": "Tráfego usado como porcentagem (oculto se ilimitado)",
-        "descEXPIRE_DATE": "Data de expiração (AAAA-MM-DD)",
-        "descJALALI_EXPIRE_DATE": "Data de expiração no calendário Jalali (AAAA/MM/DD)",
-        "descEXPIRE_UNIX": "Expiração como timestamp Unix (segundos)",
-        "descCREATED_UNIX": "Data de criação como timestamp Unix (segundos)",
-        "descRESET_DAYS": "Período de redefinição de tráfego em dias",
-        "descRESET_DAY": "Dia do mês em que é renovado",
-        "descPROTOCOL": "Protocolo da entrada (VLESS, VMess, Trojan, …)",
-        "descTRANSPORT": "Rede de transporte (tcp, ws, grpc, …)",
-        "descSECURITY": "Segurança do transporte (TLS, REALITY, NONE)"
-      },
-      "toasts": {
-        "badTag": "Tag inválida",
-        "badVlessRoute": "Insira um único número entre 0 e 65535"
-      }
+      "defaultOutboundDesc": "Tráfego sem regra de roteamento usa esta saída (a primeira da lista).",
+      "ruleName": "Nome",
+      "outboundLatency": "Latência"
     }
   },
   "tgbot": {
@@ -2273,8 +2225,6 @@
       "eventDelayDetail": "Latência: {{ .Delay }}ms",
       "eventXrayCrash": "O Xray FALHOU",
       "eventXrayCrashError": "Erro: {{ .Error }}",
-      "eventNodeDown": "O nó {{ .Name }} está INATIVO",
-      "eventNodeUp": "O nó {{ .Name }} está ATIVO",
       "eventLoginFallback": "Falha de login a partir de {{ .Source }}",
       "memoryThreshold": "Uso de memória {{ .Percent }}% excede o limite de {{ .Threshold }}%"
     },
@@ -2366,7 +2316,6 @@
       "error": "Erro",
       "delay": "Atraso",
       "outbound": "Saída",
-      "node": "Nó",
       "threshold": "Limite",
       "reason": "Motivo",
       "time": "Horário",
@@ -2381,8 +2330,6 @@
     "alerts": {
       "outboundDown": "Saída fora do ar",
       "outboundUp": "Saída restabelecida",
-      "nodeDown": "Nó fora do ar",
-      "nodeUp": "Nó restabelecido",
       "xrayCrash": "O núcleo Xray travou",
       "cpuHigh": "Limite de CPU excedido",
       "memoryHigh": "Limite de memória excedido",
@@ -2428,7 +2375,6 @@
   "email": {
     "labelStatus": "Status",
     "labelOutbound": "Outbound",
-    "labelNode": "Nó",
     "labelError": "Erro",
     "labelDelay": "Latência",
     "labelUsername": "Nome de usuário",

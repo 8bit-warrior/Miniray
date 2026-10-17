@@ -15,9 +15,6 @@ export type Protocol = z.infer<typeof ProtocolSchema>;
 export const addrFamilySchema = z.number().int();
 export type addrFamily = z.infer<typeof addrFamilySchema>;
 
-export const staticEgressResolverSchema = z.string();
-export type staticEgressResolver = z.infer<typeof staticEgressResolverSchema>;
-
 export const trafficLocalApplyActionSchema = z.number().int();
 export type trafficLocalApplyAction = z.infer<typeof trafficLocalApplyActionSchema>;
 
@@ -65,6 +62,9 @@ export const AllSettingSchema = z.object({
   ldapVlessField: z.string(),
   outboundDownThreshold: z.number().int().min(1).max(100),
   pageSize: z.number().int().min(0).max(1000),
+  panelOfflineEnabled: z.boolean(),
+  panelOfflineUnit: z.enum(['minute', 'hour', 'day']),
+  panelOfflineValue: z.number().int().min(1).max(525600),
   panelOutbound: z.string(),
   realityScanCandidates: z.string(),
   remarkTemplate: z.string(),
@@ -254,6 +254,9 @@ export const AllSettingViewSchema = z.object({
   ldapVlessField: z.string(),
   outboundDownThreshold: z.number().int().min(1).max(100),
   pageSize: z.number().int().min(0).max(1000),
+  panelOfflineEnabled: z.boolean(),
+  panelOfflineUnit: z.enum(['minute', 'hour', 'day']),
+  panelOfflineValue: z.number().int().min(1).max(525600),
   panelOutbound: z.string(),
   realityScanCandidates: z.string(),
   remarkTemplate: z.string(),
@@ -435,7 +438,6 @@ export const ClientSchema = z.object({
   expiryTime: z.number().int(),
   flow: z.string().optional(),
   forwardedPorts: z.string().optional(),
-  group: z.string().optional(),
   id: z.string().optional(),
   keepAlive: z.number().int().nullable().optional(),
   limitIp: z.number().int(),
@@ -469,7 +471,6 @@ export type ClientInbound = z.infer<typeof ClientInboundSchema>;
 
 export const ClientPageResponseSchema = z.object({
   filtered: z.number().int(),
-  groups: z.array(z.string()),
   items: z.array(z.lazy(() => ClientSlimSchema)),
   page: z.number().int(),
   pageSize: z.number().int(),
@@ -489,7 +490,6 @@ export const ClientRecordSchema = z.object({
   expiryTime: z.number().int(),
   flow: z.string(),
   forwardedPorts: z.string(),
-  group: z.string(),
   id: z.number().int(),
   keepAlive: z.number().int(),
   limitHwid: z.number().int(),
@@ -549,7 +549,6 @@ export const ClientSlimSchema = z.object({
   email: z.string(),
   enable: z.boolean(),
   expiryTime: z.number().int(),
-  group: z.string().optional(),
   inboundIds: z.array(z.number().int()),
   limitHwid: z.number().int(),
   limitIp: z.number().int(),
@@ -659,81 +658,6 @@ export const HistoryOfSeedersSchema = z.object({
 });
 export type HistoryOfSeeders = z.infer<typeof HistoryOfSeedersSchema>;
 
-export const HostSchema = z.object({
-  address: z.string(),
-  allowInsecure: z.boolean(),
-  alpn: z.array(z.string()),
-  cipherSuites: z.string(),
-  createdAt: z.number().int(),
-  echConfigList: z.string(),
-  excludeFromSubTypes: z.array(z.string()),
-  finalMask: z.string(),
-  fingerprint: z.string(),
-  groupId: z.string(),
-  hostHeader: z.string(),
-  id: z.number().int(),
-  inboundId: z.number().int(),
-  isDisabled: z.boolean(),
-  isHidden: z.boolean(),
-  keepSniBlank: z.boolean(),
-  mihomoIpVersion: z.enum(['dual', 'ipv4', 'ipv6', 'ipv4-prefer', 'ipv6-prefer']),
-  mihomoX25519: z.boolean(),
-  muxParams: z.unknown(),
-  nodeGuids: z.array(z.string()).optional(),
-  overrideSniFromAddress: z.boolean(),
-  path: z.string(),
-  pinnedPeerCertSha256: z.array(z.string()),
-  port: z.number().int().min(0).max(65535),
-  remark: z.string().max(256),
-  security: z.enum(['same', 'tls', 'none', 'reality']),
-  serverDescription: z.string().max(64),
-  shuffleHost: z.boolean(),
-  sni: z.string(),
-  sockoptParams: z.unknown(),
-  sortOrder: z.number().int(),
-  tags: z.array(z.string()),
-  updatedAt: z.number().int(),
-  verifyPeerCertByName: z.string(),
-  vlessRoute: z.string(),
-});
-export type Host = z.infer<typeof HostSchema>;
-
-export const HostGroupSchema = z.object({
-  allowInsecure: z.boolean(),
-  alpn: z.array(z.string()),
-  cipherSuites: z.string(),
-  echConfigList: z.string(),
-  excludeFromSubTypes: z.array(z.string()),
-  finalMask: z.string(),
-  fingerprint: z.string(),
-  groupId: z.string(),
-  hostHeader: z.string(),
-  hosts: z.array(z.string()),
-  inboundIds: z.array(z.number().int()),
-  isDisabled: z.boolean(),
-  isHidden: z.boolean(),
-  keepSniBlank: z.boolean(),
-  mihomoIpVersion: z.enum(['dual', 'ipv4', 'ipv6', 'ipv4-prefer', 'ipv6-prefer']),
-  mihomoX25519: z.boolean(),
-  muxParams: z.string(),
-  nodeGuids: z.array(z.string()),
-  overrideSniFromAddress: z.boolean(),
-  path: z.string(),
-  pinnedPeerCertSha256: z.array(z.string()),
-  port: z.number().int().min(0).max(65535),
-  remark: z.string().max(256),
-  security: z.enum(['same', 'tls', 'none', 'reality']),
-  serverDescription: z.string().max(64),
-  shuffleHost: z.boolean(),
-  sni: z.string(),
-  sockoptParams: z.string(),
-  sortOrder: z.number().int(),
-  tags: z.array(z.string()),
-  verifyPeerCertByName: z.string(),
-  vlessRoute: z.string(),
-});
-export type HostGroup = z.infer<typeof HostGroupSchema>;
-
 export const HwidSlotStatusSchema = z.object({
   active: z.boolean(),
   full: z.boolean(),
@@ -754,14 +678,12 @@ export const InboundSchema = z.object({
   id: z.number().int(),
   lastTrafficResetTime: z.number().int(),
   listen: z.string(),
-  nodeId: z.number().int().nullable().optional(),
-  originNodeGuid: z.string().optional(),
   port: z.number().int().min(0).max(65535),
   protocol: z.enum(['vmess', 'vless', 'trojan', 'shadowsocks', 'wireguard', 'hysteria', 'http', 'mixed', 'tunnel', 'tun', 'mtproto', 'amneziawg', 'tuic']),
   remark: z.string(),
   settings: z.unknown(),
   shareAddr: z.string(),
-  shareAddrStrategy: z.enum(['node', 'listen', 'custom']),
+  shareAddrStrategy: z.enum(['listen', 'custom']),
   sniffing: z.unknown(),
   streamSettings: z.unknown(),
   subSortIndex: z.number().int(),
@@ -800,8 +722,6 @@ export const InboundOptionSchema = z.object({
   listen: z.string().optional(),
   mtprotoDomain: z.string().optional(),
   network: z.string().optional(),
-  nodeAddress: z.string().optional(),
-  nodeId: z.number().int().nullable().optional(),
   port: z.number().int(),
   protocol: z.string(),
   remark: z.string(),
@@ -862,115 +782,6 @@ export const NewUUIDResponseSchema = z.object({
 });
 export type NewUUIDResponse = z.infer<typeof NewUUIDResponseSchema>;
 
-export const NodeSchema = z.object({
-  activeCount: z.number().int(),
-  address: z.string(),
-  allowPrivateAddress: z.boolean(),
-  basePath: z.string(),
-  clientCount: z.number().int(),
-  configDirty: z.boolean(),
-  configDirtyAt: z.number().int(),
-  cpuPct: z.number(),
-  createdAt: z.number().int(),
-  depletedCount: z.number().int(),
-  disabledCount: z.number().int(),
-  enable: z.boolean(),
-  guid: z.string(),
-  id: z.number().int(),
-  inboundCount: z.number().int(),
-  inboundSyncMode: z.enum(['all', 'selected']),
-  inboundTags: z.array(z.string()),
-  lastError: z.string(),
-  lastHeartbeat: z.number().int(),
-  latencyMs: z.number().int(),
-  memPct: z.number(),
-  name: z.string(),
-  netDown: z.number().int(),
-  netUp: z.number().int(),
-  onlineCount: z.number().int(),
-  outboundTag: z.string(),
-  panelVersion: z.string(),
-  parentGuid: z.string().optional(),
-  pinnedCertSha256: z.string(),
-  port: z.number().int().min(1).max(65535),
-  remark: z.string(),
-  scheme: z.enum(['http', 'https']),
-  status: z.string(),
-  tlsVerifyMode: z.enum(['verify', 'skip', 'pin', 'mtls']),
-  transitive: z.boolean().optional(),
-  updatedAt: z.number().int(),
-  uptimeSecs: z.number().int(),
-  xrayError: z.string(),
-  xrayState: z.string(),
-  xrayVersion: z.string(),
-});
-export type Node = z.infer<typeof NodeSchema>;
-
-export const NodeMutationRequestSchema = z.object({
-  address: z.string(),
-  allowPrivateAddress: z.boolean(),
-  apiToken: z.string().nullable().optional(),
-  basePath: z.string(),
-  clearApiToken: z.boolean().optional(),
-  enable: z.boolean(),
-  id: z.number().int(),
-  inboundSyncMode: z.enum(['all', 'selected']),
-  inboundTags: z.array(z.string()),
-  name: z.string(),
-  outboundTag: z.string(),
-  pinnedCertSha256: z.string(),
-  port: z.number().int().min(1).max(65535),
-  remark: z.string(),
-  scheme: z.enum(['http', 'https']),
-  tlsVerifyMode: z.enum(['verify', 'skip', 'pin', 'mtls']),
-});
-export type NodeMutationRequest = z.infer<typeof NodeMutationRequestSchema>;
-
-export const NodeViewSchema = z.object({
-  activeCount: z.number().int(),
-  address: z.string(),
-  allowPrivateAddress: z.boolean(),
-  basePath: z.string(),
-  clientCount: z.number().int(),
-  configDirty: z.boolean(),
-  configDirtyAt: z.number().int(),
-  cpuPct: z.number(),
-  createdAt: z.number().int(),
-  depletedCount: z.number().int(),
-  disabledCount: z.number().int(),
-  enable: z.boolean(),
-  guid: z.string(),
-  hasApiToken: z.boolean(),
-  id: z.number().int(),
-  inboundCount: z.number().int(),
-  inboundSyncMode: z.string(),
-  inboundTags: z.array(z.string()),
-  lastError: z.string(),
-  lastHeartbeat: z.number().int(),
-  latencyMs: z.number().int(),
-  memPct: z.number(),
-  name: z.string(),
-  netDown: z.number().int(),
-  netUp: z.number().int(),
-  onlineCount: z.number().int(),
-  outboundTag: z.string(),
-  panelVersion: z.string(),
-  parentGuid: z.string().optional(),
-  pinnedCertSha256: z.string(),
-  port: z.number().int(),
-  remark: z.string(),
-  scheme: z.string(),
-  status: z.string(),
-  tlsVerifyMode: z.string(),
-  transitive: z.boolean().optional(),
-  updatedAt: z.number().int(),
-  uptimeSecs: z.number().int(),
-  xrayError: z.string(),
-  xrayState: z.string(),
-  xrayVersion: z.string(),
-});
-export type NodeView = z.infer<typeof NodeViewSchema>;
-
 export const OutboundTrafficsSchema = z.object({
   down: z.number().int(),
   id: z.number().int(),
@@ -1001,20 +812,6 @@ export const PeerActivitySchema = z.object({
   up: z.number().int(),
 });
 export type PeerActivity = z.infer<typeof PeerActivitySchema>;
-
-export const ProbeResultUISchema = z.object({
-  cpuPct: z.number(),
-  error: z.string(),
-  latencyMs: z.number().int(),
-  memPct: z.number(),
-  panelVersion: z.string(),
-  status: z.string(),
-  uptimeSecs: z.number().int(),
-  xrayError: z.string(),
-  xrayState: z.string(),
-  xrayVersion: z.string(),
-});
-export type ProbeResultUI = z.infer<typeof ProbeResultUISchema>;
 
 export const RealityScanResultSchema = z.object({
   alpn: z.string(),
@@ -1088,26 +885,6 @@ export const SettingSchema = z.object({
   value: z.string(),
 });
 export type Setting = z.infer<typeof SettingSchema>;
-
-export const SponsorSchema = z.object({
-  enable: z.boolean().nullable().optional(),
-  from: z.string().nullable().optional(),
-  id: z.string(),
-  link: z.string(),
-  logo: z.string().optional(),
-  name: z.string(),
-  slots: z.array(z.string()),
-  text: z.record(z.string(), z.string()),
-  title: z.record(z.string(), z.string()),
-  until: z.string(),
-});
-export type Sponsor = z.infer<typeof SponsorSchema>;
-
-export const SponsorListSchema = z.object({
-  contact: z.string().optional(),
-  sponsors: z.array(z.lazy(() => SponsorSchema)),
-});
-export type SponsorList = z.infer<typeof SponsorListSchema>;
 
 export const SubBalancerSchema = z.object({
   createdAt: z.number().int(),

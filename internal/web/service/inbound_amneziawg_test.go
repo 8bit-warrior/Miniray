@@ -29,7 +29,7 @@ var awgTestPrivateKey, awgTestPublicKey = func() (string, string) {
 func TestCheckForwardedPortsConflict_EmptySpecNoConflict(t *testing.T) {
 	setupConflictDB(t)
 	svc := &InboundService{}
-	ctx, err := svc.loadPortConflictContext(database.GetDB(), nil)
+	ctx, err := svc.loadPortConflictContext(database.GetDB())
 	if err != nil {
 		t.Fatalf("loadPortConflictContext: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestCheckForwardedPortsConflict_EmptySpecNoConflict(t *testing.T) {
 func TestCheckForwardedPortsConflict_CollidesWithPanelPort(t *testing.T) {
 	setupConflictDB(t)
 	svc := &InboundService{}
-	ctx, err := svc.loadPortConflictContext(database.GetDB(), nil)
+	ctx, err := svc.loadPortConflictContext(database.GetDB())
 	if err != nil {
 		t.Fatalf("loadPortConflictContext: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestCheckForwardedPortsConflict_CollidesWithEnabledInboundPort(t *testing.T
 	seedInboundConflict(t, "vless-8080", "0.0.0.0", 8080, model.VLESS, `{"network":"tcp"}`, `{}`)
 
 	svc := &InboundService{}
-	ctx, err := svc.loadPortConflictContext(database.GetDB(), nil)
+	ctx, err := svc.loadPortConflictContext(database.GetDB())
 	if err != nil {
 		t.Fatalf("loadPortConflictContext: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestCheckForwardedPortsConflict_IgnoresDisabledInboundPort(t *testing.T) {
 	}
 
 	svc := &InboundService{}
-	ctx, err := svc.loadPortConflictContext(database.GetDB(), nil)
+	ctx, err := svc.loadPortConflictContext(database.GetDB())
 	if err != nil {
 		t.Fatalf("loadPortConflictContext: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestCheckForwardedPortsConflict_NoCollisionWhenPortsDontOverlap(t *testing.
 	seedInboundConflict(t, "vless-8080", "0.0.0.0", 8080, model.VLESS, `{"network":"tcp"}`, `{}`)
 
 	svc := &InboundService{}
-	ctx, err := svc.loadPortConflictContext(database.GetDB(), nil)
+	ctx, err := svc.loadPortConflictContext(database.GetDB())
 	if err != nil {
 		t.Fatalf("loadPortConflictContext: %v", err)
 	}
@@ -105,19 +105,6 @@ func TestCheckForwardedPortsConflict_NoCollisionWhenPortsDontOverlap(t *testing.
 // for the forwarded port to actually collide with. Mirrors
 // TestCheckPortConflict_NodeScope's own reasoning for the general port-
 // conflict check.
-func TestCheckForwardedPortsConflict_IgnoresPortOnDifferentNode(t *testing.T) {
-	setupConflictDB(t)
-	seedInboundConflictNode(t, "node1-8080", "0.0.0.0", 8080, model.VLESS, `{"network":"tcp"}`, `{}`, new(1))
-
-	svc := &InboundService{}
-	ctx, err := svc.loadPortConflictContext(database.GetDB(), nil)
-	if err != nil {
-		t.Fatalf("loadPortConflictContext: %v", err)
-	}
-	if hit := svc.checkForwardedPortsConflict(ctx, "8080"); hit != "" {
-		t.Fatalf("a port used only on a different node must not conflict; got hit=%q", hit)
-	}
-}
 
 // inboundAmneziaWGServer is pure (no DB), so it needs neither setupConflictDB
 // nor CGO/sqlite -- it can run in any Go environment.
@@ -320,7 +307,7 @@ func TestGetAmneziaWGLogs_ClampsCountAndFiltersEvents(t *testing.T) {
 func TestCheckForwardedPortsConflict_RejectsSpecOverCap(t *testing.T) {
 	setupConflictDB(t)
 	svc := &InboundService{}
-	ctx, err := svc.loadPortConflictContext(database.GetDB(), nil)
+	ctx, err := svc.loadPortConflictContext(database.GetDB())
 	if err != nil {
 		t.Fatalf("loadPortConflictContext: %v", err)
 	}
@@ -337,7 +324,7 @@ func TestCheckForwardedPortsConflict_RejectsSpecOverCap(t *testing.T) {
 func TestCheckForwardedPortsConflict_AcceptsSpecExactlyAtCap(t *testing.T) {
 	setupConflictDB(t)
 	svc := &InboundService{}
-	ctx, err := svc.loadPortConflictContext(database.GetDB(), nil)
+	ctx, err := svc.loadPortConflictContext(database.GetDB())
 	if err != nil {
 		t.Fatalf("loadPortConflictContext: %v", err)
 	}
@@ -361,7 +348,7 @@ func TestCheckForwardedPortsConflict_CollidesWithAmneziawgnetSocksPort(t *testin
 	relayPort := amneziawgnet.SOCKSPortForInbound(awgInbound.Id)
 
 	svc := &InboundService{}
-	ctx, err := svc.loadPortConflictContext(database.GetDB(), nil)
+	ctx, err := svc.loadPortConflictContext(database.GetDB())
 	if err != nil {
 		t.Fatalf("loadPortConflictContext: %v", err)
 	}

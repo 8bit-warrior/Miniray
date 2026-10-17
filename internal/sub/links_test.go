@@ -43,24 +43,6 @@ func TestSplitLinkLines_WhitespaceOnlyHasNoEntries(t *testing.T) {
 	}
 }
 
-func TestLinksForClient_UsesHostEndpoints(t *testing.T) {
-	seedSubDB(t)
-	inbound := seedSubInbound(t, "s-gate", "gate", 4431, 1, `{"network":"tcp","security":"none"}`)
-	seedHost(t, &model.Host{
-		InboundId: inbound.Id, Remark: "public", Address: "proxy.example.com",
-		Port: 443, Security: "same",
-	})
-
-	links := NewLinkProvider().LinksForClient("req.example.com", inbound, "gate@e")
-
-	if len(links) != 1 {
-		t.Fatalf("links = %d, want 1: %v", len(links), links)
-	}
-	if !strings.Contains(links[0], "proxy.example.com:443") {
-		t.Fatalf("link = %q, want the host endpoint proxy.example.com:443", links[0])
-	}
-}
-
 // LinksForClient (per-client QR / links API) must use the clients-table UUID
 // when the inbound settings JSON still embeds a stale id — same source as
 // /inbounds/list and allLinks (#6436).

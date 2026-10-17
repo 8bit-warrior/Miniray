@@ -1,7 +1,6 @@
 package service
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/8bit-warrior/Miniray/internal/database"
@@ -48,48 +47,9 @@ func TestUpdateInbound_RegeneratesAutoTagOnPortChange(t *testing.T) {
 // manager isn't wired in unit tests, so UpdateInbound returns a runtime error
 // for node inbounds before persisting; we assert on the tag it computed (set on
 // the returned object) which is what the save would use.
-func TestUpdateInbound_NodeTagKeepsPrefixWhenNodeIdOmitted(t *testing.T) {
-	setupConflictDB(t)
-	seedInboundConflictNode(t, "n1-in-443-tcp", "0.0.0.0", 443, model.VLESS, `{"network":"tcp"}`, `{"clients":[]}`, new(1))
-
-	var existing model.Inbound
-	if err := database.GetDB().Where("tag = ?", "n1-in-443-tcp").First(&existing).Error; err != nil {
-		t.Fatalf("read seeded row: %v", err)
-	}
-
-	svc := &InboundService{}
-	update := existing
-	update.Port = 8443
-	update.Tag = "n1-in-443-tcp"
-	update.NodeID = nil
-	got, _, _ := svc.UpdateInbound(&update)
-	if got.Tag != "n1-in-8443-tcp" {
-		t.Fatalf("node prefix must survive a port change, got %q", got.Tag)
-	}
-}
 
 // A node inbound sharing a port with a local inbound must stay editable: the
 // port-conflict check is scoped to the inbound's stored NodeID, not the body's.
-func TestUpdateInbound_NodeInboundNotBlockedByLocalSamePort(t *testing.T) {
-	setupConflictDB(t)
-	seedInboundConflict(t, "in-10000-tcp", "0.0.0.0", 10000, model.VLESS, `{"network":"tcp"}`, `{"clients":[]}`)
-	seedInboundConflictNode(t, "n1-in-10000-tcp", "0.0.0.0", 10000, model.VLESS, `{"network":"tcp"}`, `{"clients":[]}`, new(1))
-
-	var nodeInbound model.Inbound
-	if err := database.GetDB().Where("tag = ?", "n1-in-10000-tcp").First(&nodeInbound).Error; err != nil {
-		t.Fatalf("read seeded node row: %v", err)
-	}
-
-	svc := &InboundService{}
-	update := nodeInbound
-	update.Listen = "10.0.0.5"
-	update.NodeID = nil
-	_, _, err := svc.UpdateInbound(&update)
-
-	if err != nil && strings.Contains(err.Error(), "already used") {
-		t.Fatalf("node inbound edit wrongly rejected as a port conflict: %v", err)
-	}
-}
 
 // a tag the user set by hand (doesn't match the canonical shape) survives a
 // port change untouched.

@@ -13,7 +13,7 @@ import (
 // reverseUserProbe records the account maps the panel pushes to the core: the
 // last place a stored reverse tag can be dropped before it reaches a listener.
 type reverseUserProbe struct {
-	fakeNodeRuntime
+	fakeRuntime
 	mu    sync.Mutex
 	users []map[string]any
 }

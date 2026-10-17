@@ -31,7 +31,9 @@ test('remains expanded at 220px across remounts without a pin setting', async ()
   const second = await renderSidebar();
   const restored = second.container.querySelector('.ant-layout-sider');
   expect(restored?.classList.contains('ant-layout-sider-collapsed')).toBe(false);
-  expect(second.container.querySelector('.ant-sidebar')?.getAttribute('style')).toContain('--sider-rail: 220px');
+  expect(second.container.querySelector('.ant-sidebar')?.getAttribute('style')).toContain(
+    '--sider-rail: 220px',
+  );
 });
 
 test('shows the command palette shortcut for the active platform', async () => {

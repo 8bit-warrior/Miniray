@@ -7,8 +7,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/xray"
-
-	"gorm.io/gorm"
 )
 
 type trafficLocalApplyAction uint8
@@ -27,63 +25,13 @@ type trafficLocalApplyPlan struct {
 }
 
 type trafficMutationBatch struct {
-	localPlans  []trafficLocalApplyPlan
-	remotePlans []trafficInboundUpdatePlan
-	nodeIDs     map[int]struct{}
+	localPlans []trafficLocalApplyPlan
+
 	// renewedEmails get their MTProto sidecar quota zeroed once the tick commits.
 	renewedEmails []string
 }
 
-type trafficInboundUpdatePlan struct{ oldInbound, newInbound model.Inbound }
-
-func newTrafficMutationBatch() *trafficMutationBatch {
-	return &trafficMutationBatch{nodeIDs: make(map[int]struct{})}
-}
-
-func (b *trafficMutationBatch) addNode(nodeID int) {
-	if nodeID > 0 {
-		b.nodeIDs[nodeID] = struct{}{}
-	}
-}
-
-func (b *trafficMutationBatch) markNodesTx(tx *gorm.DB) error {
-	if b == nil {
-		return nil
-	}
-	nodeSvc := NodeService{}
-	for nodeID := range b.nodeIDs {
-		if err := nodeSvc.MarkNodeDirtyTx(tx, nodeID); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// applyTrafficRemotePlans is bounded like every per-client node push: the nodes are
-// already dirty, so an offline or slow one defers to the reconcile.
-func (s *InboundService) applyTrafficRemotePlans(plans []trafficInboundUpdatePlan) bool {
-	ids := make([]int, len(plans))
-	for i := range plans {
-		ids[i] = plans[i].newInbound.Id
-	}
-	failed, panics := fanoutInboundResults(ids, inboundFanoutConcurrency, func(i int) bool {
-		rt, push, _, err := s.nodePushPlan(&plans[i].newInbound)
-		if err == nil && push {
-			ctx, cancel := nodePushContext()
-			err = rt.UpdateInbound(ctx, &plans[i].oldInbound, &plans[i].newInbound)
-			cancel()
-		}
-		if err != nil {
-			logger.Debug("traffic post-commit remote apply failed:", err)
-		}
-		return err != nil
-	})
-	needRestart := false
-	for i := range failed {
-		needRestart = needRestart || failed[i] || panics[i] != nil
-	}
-	return needRestart
-}
+func newTrafficMutationBatch() *trafficMutationBatch { return &trafficMutationBatch{} }
 
 func (s *InboundService) applyTrafficMutationBatch(b *trafficMutationBatch) bool {
 	if b == nil {

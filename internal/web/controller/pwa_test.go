@@ -12,11 +12,11 @@ import (
 func TestServePWAAssets(t *testing.T) {
 	oldDistFS := distFS
 	distFS = fstest.MapFS{
-		"dist/manifest.webmanifest": &fstest.MapFile{Data: []byte(`{"name":"miniray"}`)},
-		"dist/pwa-register.js":      &fstest.MapFile{Data: []byte("register")},
-		"dist/service-worker.js":    &fstest.MapFile{Data: []byte("worker")},
-		"dist/icons/miniray-192.png":  &fstest.MapFile{Data: []byte("icon-192")},
-		"dist/icons/miniray-512.png":  &fstest.MapFile{Data: []byte("icon-512")},
+		"dist/manifest.webmanifest":  &fstest.MapFile{Data: []byte(`{"name":"miniray"}`)},
+		"dist/pwa-register.js":       &fstest.MapFile{Data: []byte("register")},
+		"dist/service-worker.js":     &fstest.MapFile{Data: []byte("worker")},
+		"dist/icons/miniray-192.png": &fstest.MapFile{Data: []byte("icon-192")},
+		"dist/icons/miniray-512.png": &fstest.MapFile{Data: []byte("icon-512")},
 	}
 	t.Cleanup(func() { distFS = oldDistFS })
 

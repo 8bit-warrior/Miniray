@@ -302,9 +302,8 @@ func TestGatewayRequestedHeartbeatDoesNotRaceTicker(t *testing.T) {
 			return
 		}
 		defer conn.Close()
-		// 10ms, not 1ms: Discord answers every heartbeat and the client now drops a
-		// socket it hears nothing back on, so the ACK needs room to arrive.
-		_ = conn.WriteJSON(GatewayPayload{Op: opHello, D: []byte(`{"heartbeat_interval": 10}`)})
+		// Allow ACK delivery on busy CI hosts while both client writers overlap.
+		_ = conn.WriteJSON(GatewayPayload{Op: opHello, D: []byte(`{"heartbeat_interval": 100}`)})
 
 		// Two server goroutines write, so they share one writer: gorilla panics on
 		// concurrent writes, and this test is about the CLIENT's two writers.

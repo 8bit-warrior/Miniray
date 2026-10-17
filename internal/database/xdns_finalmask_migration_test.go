@@ -34,10 +34,6 @@ func TestXdnsFinalmaskSeederUpgradesEveryStoredMask(t *testing.T) {
 	initMigrateDB(t)
 	ib := seedInboundWithStream(t, "xdns-in", 5353,
 		`{"network":"kcp","security":"none","finalmask":`+legacyXdnsFinalmask+`}`)
-	host := &model.Host{InboundId: ib.Id, Remark: "h", Address: "cdn.example.com", Port: 53, FinalMask: legacyXdnsFinalmask}
-	if err := GetDB().Create(host).Error; err != nil {
-		t.Fatalf("create host: %v", err)
-	}
 	seedTemplate(t, `{"outbounds":[{"protocol":"vless","tag":"dns-tunnel","settings":{},"streamSettings":{"network":"kcp","finalmask":`+legacyXdnsFinalmask+`}}]}`)
 	if err := GetDB().Create(&model.Setting{Key: "subJsonFinalMask", Value: legacyXdnsFinalmask}).Error; err != nil {
 		t.Fatalf("seed subJsonFinalMask: %v", err)
@@ -67,16 +63,6 @@ func TestXdnsFinalmaskSeederUpgradesEveryStoredMask(t *testing.T) {
 		t.Fatalf("inbound stream is not JSON: %v", err)
 	}
 	assertXdnsUpgraded(t, "inbound stream", stream["finalmask"])
-
-	var storedHost model.Host
-	if err := GetDB().First(&storedHost, host.Id).Error; err != nil {
-		t.Fatalf("reload host: %v", err)
-	}
-	var hostMask any
-	if err := json.Unmarshal([]byte(storedHost.FinalMask), &hostMask); err != nil {
-		t.Fatalf("host finalMask is not JSON: %v", err)
-	}
-	assertXdnsUpgraded(t, "host finalMask", hostMask)
 
 	var template struct {
 		Outbounds []struct {

@@ -13,7 +13,7 @@ func (s *InboundService) DesiredTuicInstances() ([]tuic.Instance, error) {
 	db := database.GetDB()
 	var inbounds []*model.Inbound
 	err := db.Model(model.Inbound{}).
-		Where("protocol = ? AND enable = ? AND node_id IS NULL", model.TUIC, true).
+		Where("protocol = ? AND enable = ?", model.TUIC, true).
 		Find(&inbounds).Error
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (s *InboundService) DesiredTuicInstances() ([]tuic.Instance, error) {
 
 func (s *InboundService) applyLocalTuic(inboundId int) {
 	inbound, err := s.GetInbound(inboundId)
-	if err != nil || inbound == nil || inbound.Protocol != model.TUIC || inbound.NodeID != nil {
+	if err != nil || inbound == nil || inbound.Protocol != model.TUIC {
 		return
 	}
 	rt, err := s.runtimeFor(inbound)

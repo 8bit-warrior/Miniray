@@ -270,13 +270,9 @@ func (h *metricHistory) restore(data map[string]persistedSeries) {
 	}
 }
 
-// systemMetrics holds whole-host time series (cpu, mem, netUp, etc.) fed by
-// ServerService.RefreshStatus every 2s. nodeMetrics holds per-node CPU/Mem fed
-// by NodeHeartbeatJob. xrayMetrics holds xray expvar series. Only systemMetrics
-// is persisted; the others rebuild from live connections.
+// systemMetrics persists host samples; xrayMetrics rebuilds from the live core.
 var (
 	systemMetrics = newMetricHistory()
-	nodeMetrics   = newMetricHistory()
 	xrayMetrics   = newMetricHistory()
 )
 

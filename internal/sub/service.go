@@ -54,11 +54,7 @@ type SubService struct {
 	subTrafficDepletedTemplate string
 	inboundService             service.InboundService
 	settingService             service.SettingService
-	// nodesByID is populated per request from the Node table so
-	// resolveInboundAddress can return the node's address for any
-	// inbound whose NodeID is set. Keeps the per-link host derivation
-	// O(1) instead of O(N) DB hits.
-	nodesByID map[int]*model.Node
+
 	// statsByEmail maps a client email to its traffic row across ALL inbounds
 	// loaded for the request. client_traffics.email is globally unique, so this
 	// lets statsForClient resolve usage for a client even on an inbound that
@@ -85,18 +81,12 @@ func NewSubService(remarkTemplate string) *SubService {
 	}
 }
 
-// ForRequest returns a shallow copy with request-scoped state populated.
-// Subscription controllers share one base SubService, so request-specific
-// fields such as address and nodesByID must live on a per-request copy.
 func (s *SubService) ForRequest(host string) *SubService {
 	req := *s
 	req.PrepareForRequest(host)
 	return &req
 }
 
-// PrepareForRequest sets per-request state (host + nodes map) on this
-// SubService instance. HTTP handlers should call ForRequest instead so the
-// controller's shared base service is never mutated by concurrent requests.
 func (s *SubService) PrepareForRequest(host string) {
 	if !isRoutableHost(host) {
 		if d := s.configuredPublicHost(); d != "" {
@@ -111,7 +101,7 @@ func (s *SubService) PrepareForRequest(host string) {
 	s.clientsByInbound = map[int]map[string]model.Client{}
 	s.fullyPrimedInbounds = map[int]bool{}
 	s.settingsByInbound = map[int]map[string]any{}
-	s.loadNodes()
+
 	s.loadRemarkSettings()
 	s.subCalendarExpireInclusive, _ = s.settingService.GetSubCalendarExpireInclusive()
 	s.calendarExpireLocation = nil
@@ -284,12 +274,6 @@ func isLoopbackHost(host string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
-// listenIsInternalOnly reports whether a bind address is reachable only from
-// the same host — a loopback IP or a unix-domain socket. Such an inbound can't
-// be dialed directly by a remote client, so when it is the child side of a
-// fallback its share link must be projected through the master. A public or
-// wildcard listen (""/0.0.0.0/::) is reachable on its own port and advertises
-// itself.
 func listenIsInternalOnly(listen string) bool {
 	if listen == "" {
 		return false
@@ -492,19 +476,11 @@ func (s *SubService) getSubs(subId string) ([]string, []string, int64, xray.Clie
 			continue
 		}
 		s.projectThroughFallbackMaster(inbound)
-		// Host overrides apply AFTER fallback projection so a host's
-		// address/TLS wins over the projected master stream.
-		hostEps := s.hostEndpoints(inbound, "raw")
 		for _, client := range clients {
 			if client.Enable {
 				hasEnabledClient = true
 			}
-			var link string
-			if len(hostEps) > 0 {
-				link = s.linkFromHosts(inbound, client, hostEps)
-			} else {
-				link = s.GetLink(inbound, client.Email)
-			}
+			link := s.GetLink(inbound, client.Email)
 			result = append(result, link)
 			emails = append(emails, client.Email)
 			seenEmails[client.Email] = struct{}{}
@@ -549,13 +525,6 @@ func (s *SubService) getSubs(subId string) ([]string, []string, int64, xray.Clie
 	return result, emails, lastOnline, traffic, nil
 }
 
-// inboundLinks builds the share links for every distinct client of one inbound
-// the same way getSubs does — managed Host endpoints win over the plain link so
-// {{HOST}} and per-host variants render — but across all clients rather than a
-// single subId. Resolves clients via clientsForLinkExport so UUID-bearing
-// protocols match the running Xray config (#6436) while WireGuard/AmneziaWG
-// keep per-inbound tunnel identity from settings. Dedups by email (#5134).
-// Backs the panel's "Export all inbound links" and matches client/QR pages.
 func (s *SubService) inboundLinks(inbound *model.Inbound) []string {
 	clients, err := s.clientsForLinkExport(inbound)
 	if err != nil {
@@ -563,7 +532,6 @@ func (s *SubService) inboundLinks(inbound *model.Inbound) []string {
 	}
 	s.primeLinkClients(inbound.Id, clients, true)
 	s.projectThroughFallbackMaster(inbound)
-	hostEps := s.hostEndpoints(inbound, "raw")
 	var out []string
 	seen := make(map[string]struct{}, len(clients))
 	for _, client := range clients {
@@ -572,12 +540,7 @@ func (s *SubService) inboundLinks(inbound *model.Inbound) []string {
 			continue
 		}
 		seen[key] = struct{}{}
-		var link string
-		if len(hostEps) > 0 {
-			link = s.linkFromHosts(inbound, client, hostEps)
-		} else {
-			link = s.GetLink(inbound, client.Email)
-		}
+		link := s.GetLink(inbound, client.Email)
 		out = append(out, splitLinkLines(link)...)
 	}
 	return out
@@ -606,10 +569,6 @@ func (s *SubService) AggregateTrafficByEmails(emails []string) (xray.ClientTraff
 		return agg, 0
 	}
 
-	// total/expiry are configured limits owned by the clients table, not the
-	// runtime traffic rows. In a multi-node setup the node snapshot can reset
-	// client_traffics.total/expiry_time to 0, so fall back to the clients
-	// table to keep the Subscription-Userinfo header in sync with the UI (#4645).
 	limits := make(map[string]model.ClientRecord, len(emails))
 	var records []model.ClientRecord
 	if err := db.Model(&model.ClientRecord{}).Where("email IN ?", emails).Find(&records).Error; err != nil {
@@ -724,23 +683,6 @@ func (s *SubService) indexStatsBySubId(subId string) {
 	}
 }
 
-// projectThroughFallbackMaster mutates the inbound in place so its
-// Listen/Port/StreamSettings reflect the externally reachable master
-// when applicable. Covers both fallback mechanisms:
-//   - panel-tracked: an inbound_fallbacks row where child_id = inbound.Id
-//   - legacy unix-socket: inbound.Listen begins with "@" and some VLESS/
-//     Trojan inbound's settings.fallbacks references that listen address
-//
-// Returns true when a projection happened; sub services call this before
-// generating links so a child VLESS-WS bound to 127.0.0.1 emits the
-// master's :443 + TLS state instead of its own loopback endpoint.
-//
-// Projection only applies to a child that is not directly reachable on its
-// own listen (loopback or a unix-domain socket). An inbound on a public or
-// wildcard listen is reachable on its own port, so it advertises its own
-// port + security even when a stale fallback rule still names it as a child —
-// otherwise its share link would leak the master's port and Reality/TLS
-// settings (#4987).
 func (s *SubService) projectThroughFallbackMaster(inbound *model.Inbound) bool {
 	if inbound == nil {
 		return false
@@ -780,10 +722,6 @@ func (s *SubService) projectThroughFallbackMaster(inbound *model.Inbound) bool {
 	return true
 }
 
-// mergeStreamFromMaster copies the master's security + tlsSettings +
-// realitySettings + externalProxy onto the child's stream so the child's
-// link advertises the master's TLS / Reality state. Transport (network
-// + ws/grpc/etc. settings) stays the child's.
 func mergeStreamFromMaster(childStream, masterStream string) string {
 	var stream map[string]any
 	_ = json.Unmarshal([]byte(childStream), &stream)
@@ -821,6 +759,15 @@ func mergeStreamFromMaster(childStream, masterStream string) string {
 // (socks, http, mixed, wireguard, dokodemo, tunnel). The returned string may
 // contain multiple `\n`-separated URLs when the inbound has externalProxy set.
 func (s *SubService) GetLink(inbound *model.Inbound, email string) string {
+	clone := *inbound
+	stream := unmarshalStreamSettings(clone.StreamSettings)
+	s.prepareExternalProxies(stream, &clone, "raw")
+	encoded, err := json.Marshal(stream)
+	if err != nil {
+		return ""
+	}
+	clone.StreamSettings = string(encoded)
+	inbound = &clone
 	switch inbound.Protocol {
 	case "vmess":
 		return s.genVmessLink(inbound, email)
@@ -1256,7 +1203,7 @@ func (s *SubService) genVlessLink(inbound *model.Inbound, email string) string {
 			params,
 			security,
 			func(ep map[string]any, dest string, port int) string {
-				return fmt.Sprintf("vless://%s@%s", applyVlessRoute(uuid, hostVlessRoute(ep)), joinHostPort(dest, port))
+				return fmt.Sprintf("vless://%s@%s", applyVlessRoute(uuid, externalProxyVlessRoute(ep)), joinHostPort(dest, port))
 			},
 			func(ep map[string]any) string {
 				return s.endpointRemark(inbound, email, ep, streamNetwork)
@@ -1513,11 +1460,6 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 		params["mport"] = hopPorts
 	}
 
-	// Fan out one link per External Proxy entry if any. Previously this
-	// generator ignored `externalProxy` entirely, so the link kept the
-	// server's own IP/port even when the admin configured an alternate
-	// endpoint (e.g. a CDN hostname + port that forwards to the node).
-	// Matches the behaviour of genVlessLink / genTrojanLink / ….
 	externalProxies, _ := stream["externalProxy"].([]any)
 	if len(externalProxies) > 0 {
 		links := make([]string, 0, len(externalProxies))
@@ -1540,8 +1482,6 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 		return strings.Join(links, "\n")
 	}
 
-	// No external proxy configured — use the inbound's resolved address so
-	// node-managed inbounds get the node's host instead of the central panel's.
 	link := fmt.Sprintf("%s://%s@%s", protocol, auth, joinHostPort(s.resolveInboundAddress(inbound), inbound.Port))
 	return buildLinkWithParams(link, params, s.genRemark(inbound, email, "", "quic"))
 }
@@ -1617,64 +1557,12 @@ func splitHysteriaPacketSize(value string) (string, string) {
 	return minStr, maxStr
 }
 
-// loadNodes refreshes nodesByID from the DB. Called once per request so
-// the per-inbound resolveInboundAddress lookups are pure map reads.
-// We filter to address != ” so a half-configured node row doesn't
-// accidentally produce a useless host like "https://:2053".
-func (s *SubService) loadNodes() {
-	db := database.GetDB()
-	var nodes []*model.Node
-	if err := db.Model(&model.Node{}).Where("address != ''").Find(&nodes).Error; err != nil {
-		logger.Warning("subscription: load nodes failed:", err)
-		s.nodesByID = nil
-		return
-	}
-	m := make(map[int]*model.Node, len(nodes))
-	for _, n := range nodes {
-		m[n.Id] = n
-	}
-	s.nodesByID = m
-}
-
-// resolveInboundAddress picks the host an external client should connect to,
-// honoring the inbound's share address strategy the same way the panel's
-// share/QR link builder does (#5208):
-//   - "listen": an explicit, client-reachable bind Listen wins, backed by the
-//     node's address for node-managed inbounds;
-//   - "custom": the inbound's ShareAddr wins, then node, then listen;
-//   - "node" (default, and any unknown value): the node's address for
-//     node-managed inbounds, then a routable Listen — the pre-strategy order.
-//
-// Every chain ends at the admin's configured public host (Sub/Web domain) and
-// then the subscriber's request host (s.address). Preferring the configured
-// host over the request host for this last resort keeps a wildcard local inbound
-// from advertising a bogus client IP that leaked into the request Host header
-// behind NAT/proxy/CDN (#5425). A loopback/wildcard bind or a unix-domain-socket
-// listen is a server-side detail and is never advertised; External Proxy still
-// overrides everything upstream of this call.
 func (s *SubService) resolveInboundAddress(inbound *model.Inbound) string {
-	var nodeAddr string
-	if inbound.NodeID != nil && s.nodesByID != nil {
-		if n, ok := s.nodesByID[*inbound.NodeID]; ok {
-			nodeAddr = n.Address
-		}
+	if inbound.ShareAddrStrategy == "custom" && strings.TrimSpace(inbound.ShareAddr) != "" {
+		return strings.TrimSpace(inbound.ShareAddr)
 	}
-	var listenAddr string
 	if listen := inbound.Listen; listen != "" && listen[0] != '@' && listen[0] != '/' && isRoutableHost(listen) {
-		listenAddr = listen
-	}
-
-	candidates := []string{nodeAddr, listenAddr}
-	switch inbound.ShareAddrStrategy {
-	case "listen":
-		candidates = []string{listenAddr, nodeAddr}
-	case "custom":
-		candidates = []string{strings.TrimSpace(inbound.ShareAddr), nodeAddr, listenAddr}
-	}
-	for _, c := range candidates {
-		if c != "" {
-			return c
-		}
+		return listen
 	}
 	if d := s.configuredPublicHost(); d != "" {
 		return d
@@ -1941,16 +1829,6 @@ func pinnedSha256List(tlsClientSettings any) ([]string, bool) {
 	return out, true
 }
 
-// hysteriaPinHex normalises a pinnedPeerCertSha256 entry into the 64-character
-// lowercase hex form that Xray-core's Hysteria2 pinSHA256 parser requires.
-//
-// The panel stores pins in several shapes: base64 (xray-core's native TLS
-// format, used by the generate button and the JSON subscription) and hex —
-// either bare or colon-separated as `openssl x509 -fingerprint -sha256` emits
-// it. Hysteria2 clients hex-decode pinSHA256 and crash on a base64 value, so
-// each entry is coerced to bare hex here. Anything that is neither a 32-byte
-// hex nor a 32-byte base64 SHA-256 is returned unchanged so unexpected data is
-// not silently dropped. Mirrors decodeCertPin in internal/web/service/node.go.
 func hysteriaPinHex(pin string) string {
 	pin = strings.TrimSpace(pin)
 	if h := strings.ReplaceAll(pin, ":", ""); len(h) == hex.EncodedLen(sha256.Size) {

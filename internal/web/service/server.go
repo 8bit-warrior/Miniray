@@ -31,6 +31,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+	utls "github.com/refraction-networking/utls"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/disk"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/load"
+	"github.com/shirou/gopsutil/v4/mem"
+	"github.com/shirou/gopsutil/v4/net"
+
 	"github.com/8bit-warrior/Miniray/internal/amneziawg"
 	"github.com/8bit-warrior/Miniray/internal/amneziawgnet"
 	"github.com/8bit-warrior/Miniray/internal/config"
@@ -41,15 +50,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/util/netsafe"
 	"github.com/8bit-warrior/Miniray/internal/util/sys"
 	"github.com/8bit-warrior/Miniray/internal/xray"
-
-	"github.com/google/uuid"
-	utls "github.com/refraction-networking/utls"
-	"github.com/shirou/gopsutil/v4/cpu"
-	"github.com/shirou/gopsutil/v4/disk"
-	"github.com/shirou/gopsutil/v4/host"
-	"github.com/shirou/gopsutil/v4/load"
-	"github.com/shirou/gopsutil/v4/mem"
-	"github.com/shirou/gopsutil/v4/net"
 )
 
 // ProcessState represents the current state of a system process.
@@ -103,7 +103,6 @@ type Status struct {
 		Running    bool `json:"running"`
 	} `json:"amneziawg"`
 	PanelVersion string    `json:"panelVersion"`
-	PanelGuid    string    `json:"panelGuid"`
 	Uptime       uint64    `json:"uptime"`
 	Loads        []float64 `json:"loads"`
 	TcpCount     int       `json:"tcpCount"`
@@ -179,10 +178,6 @@ type cachedXrayVersions struct {
 // quarter-hour staleness window is fine and saves the API budget.
 const xrayVersionsCacheTTL = 15 * time.Minute
 
-// allowedHistoryBuckets is the bucket-second whitelist for time-series
-// aggregation endpoints (server + node metrics). Restricting it prevents
-// callers from triggering arbitrary aggregation work and keeps the
-// frontend's bucket selector self-documenting.
 var allowedHistoryBuckets = map[int]bool{
 	2:     true, // 2m
 	30:    true, // 30m
@@ -195,9 +190,6 @@ var allowedHistoryBuckets = map[int]bool{
 	10080: true, // 7d
 }
 
-// IsAllowedHistoryBucket reports whether a bucket-seconds value is in the
-// whitelist used by /server/history, /server/cpuHistory, /server/xrayMetricsHistory,
-// /server/xrayObservatoryHistory, and /nodes/history.
 func IsAllowedHistoryBucket(bucketSeconds int) bool {
 	return allowedHistoryBuckets[bucketSeconds]
 }
@@ -210,9 +202,6 @@ func (s *ServerService) LastStatus() *Status {
 	return s.lastStatus
 }
 
-// CurrentStatus never reports "no status yet": the @2s ticker leaves LastStatus
-// nil for the first seconds after a restart, and a master probing a node then
-// reads the empty snapshot as an offline panel.
 func (s *ServerService) CurrentStatus() *Status {
 	if status := s.LastStatus(); status != nil {
 		return status
@@ -491,8 +480,6 @@ func firstPublicIP(services []string) string {
 	return ip
 }
 
-// resolvePublicIPsInBackground keeps a status sample off the lookup path: a box
-// with no IPv6 route spends 3s per service, and the sample is what nodes report.
 func (s *ServerService) resolvePublicIPsInBackground() {
 	s.mu.Lock()
 	settled := s.cachedIPv4 != "" && (s.cachedIPv6 != "" || s.noIPv6)
@@ -686,8 +673,6 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 	// Xray status
 	if s.xrayService.IsXrayRunning() {
 		status.Xray.State = Running
-		// A core that runs but was refused the new config is a fault the
-		// operator only ever sees here and in the node list.
 		status.Xray.ErrorMsg = s.xrayService.GetHeldBackConfig()
 	} else {
 		err := s.xrayService.GetXrayErr()
@@ -702,7 +687,7 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 
 	var amneziawgCount int64
 	if err := database.GetDB().Model(model.Inbound{}).
-		Where("protocol = ? AND enable = ? AND node_id IS NULL", model.AmneziaWG, true).
+		Where("protocol = ? AND enable = ?", model.AmneziaWG, true).
 		Count(&amneziawgCount).Error; err != nil {
 		logger.Warning("count amneziawg inbounds failed:", err)
 	}
@@ -710,9 +695,6 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 	status.AmneziaWG.Running = amneziawgnet.GetManager().HasRunning()
 
 	status.PanelVersion = config.GetPanelVersion()
-	if guid, err := s.settingService.GetPanelGuid(); err == nil {
-		status.PanelGuid = guid
-	}
 
 	// Application stats
 	if rss := sys.SelfRSS(); rss > 0 {
@@ -1310,17 +1292,6 @@ type AmneziaWGLogs struct {
 // prefixes its message with it.
 const amneziawgEventMarker = "amneziawg"
 
-// amneziawgLogActivity gathers live PeerActivity rows across every enabled,
-// non-node-hosted AmneziaWG inbound, newest handshake first. An inbound
-// amneziawgnet has no running Device for yet (not reconciled, disabled,
-// errored) contributes no rows -- not reported as an error, since the
-// caller (GetAmneziaWGLogs) already has a device-agnostic Running flag from
-// amneziawgnet.GetManager().HasRunning() for that.
-// clampUint64ToInt64 saturates at math.MaxInt64 instead of wrapping negative,
-// for a live uint64 byte counter (amneziawgnet's own UAPI-dump snapshot, not
-// a DB-accumulated total) going into an int64 API field -- unreachable in
-// practice at real traffic volumes, but a silent negative value would be
-// worse than a saturated one if it were ever hit.
 func clampUint64ToInt64(v uint64) int64 {
 	if v > math.MaxInt64 {
 		return math.MaxInt64
@@ -1331,7 +1302,7 @@ func clampUint64ToInt64(v uint64) int64 {
 func amneziawgLogActivity() []PeerActivity {
 	var inbounds []*model.Inbound
 	if err := database.GetDB().
-		Where("protocol = ? AND enable = ? AND node_id IS NULL", model.AmneziaWG, true).
+		Where("protocol = ? AND enable = ?", model.AmneziaWG, true).
 		Find(&inbounds).Error; err != nil {
 		logger.Warning("amneziawg logs: list inbounds failed:", err)
 		return nil
@@ -1658,17 +1629,10 @@ func (s *ServerService) GetMigration() ([]byte, string, error) {
 	return data, "miniray.dump", nil
 }
 
-// hostBoundSettingKeys are the settings that describe *this* machine rather
-// than the configuration being carried: where the panel and the subscription
-// service listen, the certificates they present, and the identity this panel
-// uses towards its nodes. An import that overwrites them leaves the
-// destination unreachable on its own address, or impersonating the source.
 var hostBoundSettingKeys = []string{
 	"webListen", "webDomain", "webPort", "webCertFile", "webKeyFile", "webBasePath",
 	"subListen", "subDomain", "subPort", "subCertFile", "subKeyFile", "subURI", "subJsonURI",
-	"secret", "panelGuid",
-	"nodeMtlsCaCertPem", "nodeMtlsCaKeyPem", "nodeMtlsClientCertPem",
-	"nodeMtlsClientKeyPem", "nodeMtlsClientCertSha256", "nodeMtlsClientCAPem",
+	"secret",
 }
 
 // hostBoundSnapshot records this machine's values, and just as importantly
@@ -1714,11 +1678,6 @@ func restoreHostBoundSettings(snap hostBoundSnapshot) {
 	settingSvc := &SettingService{}
 	for _, key := range hostBoundSettingKeys {
 		if _, had := snap.present[key]; !had {
-			// Absent because it is minted on demand, not because a default applied:
-			// the imported copy is the only one that exists, so keep it (#6227).
-			if lazilyMintedSettingKeys[key] {
-				continue
-			}
 			if err := db.Where("key = ?", key).Delete(&model.Setting{}).Error; err != nil {
 				logger.Warningf("Import: could not drop imported setting %q: %v", key, err)
 			}
@@ -1734,13 +1693,6 @@ func restoreHostBoundSettings(snap hostBoundSnapshot) {
 
 // Minted on demand, so a fresh install has no row: dropping the imported copy
 // would destroy the only one that exists, CA private key included.
-var lazilyMintedSettingKeys = map[string]bool{
-	"nodeMtlsCaCertPem":     true,
-	"nodeMtlsCaKeyPem":      true,
-	"nodeMtlsClientCertPem": true,
-	"nodeMtlsClientKeyPem":  true,
-	"nodeMtlsClientCAPem":   true,
-}
 
 func (s *ServerService) ImportDB(file multipart.File, keepHostSettings bool) error {
 	kind, err := sniffUploadKind(file)
@@ -2461,14 +2413,6 @@ func walkCertFiles(node any, out []string) []string {
 	return out
 }
 
-// GetRemoteCertHash opens a uTLS (Chrome fingerprint) handshake to a remote
-// endpoint and returns the hex-encoded SHA-256 of its leaf certificate — the
-// value to put in pinnedPeerCertSha256 (pcs) when pinning a server whose
-// certificate file you don't hold (a CDN front, a REALITY dest, an external
-// proxy). A native handshake replaces the old `xray tls ping` subprocess so the
-// real dial/handshake failure (connection refused, timeout, …) surfaces
-// verbatim. `server` may be host or host:port; the port defaults to 443.
-// allowPrivate lifts the SSRF guard for this one probe (the panel's confirmed opt-in).
 func (s *ServerService) GetRemoteCertHash(server string, allowPrivate bool) ([]string, error) {
 	server = strings.TrimSpace(server)
 	if server == "" {

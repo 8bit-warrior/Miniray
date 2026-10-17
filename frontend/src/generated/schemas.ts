@@ -136,6 +136,22 @@ export const SCHEMAS: Record<string, unknown> = {
         "minimum": 0,
         "type": "integer"
       },
+      "panelOfflineEnabled": {
+        "type": "boolean"
+      },
+      "panelOfflineUnit": {
+        "enum": [
+          "minute",
+          "hour",
+          "day"
+        ],
+        "type": "string"
+      },
+      "panelOfflineValue": {
+        "maximum": 525600,
+        "minimum": 1,
+        "type": "integer"
+      },
       "panelOutbound": {
         "type": "string"
       },
@@ -612,6 +628,9 @@ export const SCHEMAS: Record<string, unknown> = {
       "ldapVlessField",
       "outboundDownThreshold",
       "pageSize",
+      "panelOfflineEnabled",
+      "panelOfflineUnit",
+      "panelOfflineValue",
       "panelOutbound",
       "realityScanCandidates",
       "remarkTemplate",
@@ -910,6 +929,22 @@ export const SCHEMAS: Record<string, unknown> = {
       "pageSize": {
         "maximum": 1000,
         "minimum": 0,
+        "type": "integer"
+      },
+      "panelOfflineEnabled": {
+        "type": "boolean"
+      },
+      "panelOfflineUnit": {
+        "enum": [
+          "minute",
+          "hour",
+          "day"
+        ],
+        "type": "string"
+      },
+      "panelOfflineValue": {
+        "maximum": 525600,
+        "minimum": 1,
         "type": "integer"
       },
       "panelOutbound": {
@@ -1396,6 +1431,9 @@ export const SCHEMAS: Record<string, unknown> = {
       "ldapVlessField",
       "outboundDownThreshold",
       "pageSize",
+      "panelOfflineEnabled",
+      "panelOfflineUnit",
+      "panelOfflineValue",
       "panelOutbound",
       "realityScanCandidates",
       "remarkTemplate",
@@ -1704,10 +1742,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "description": "AmneziaWG per-client port-forwarding spec, e.g. \"80,443,8000-8100\"",
         "type": "string"
       },
-      "group": {
-        "description": "Logical grouping label",
-        "type": "string"
-      },
       "id": {
         "description": "Unique client identifier",
         "type": "string"
@@ -1851,16 +1885,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "example": 47,
         "type": "integer"
       },
-      "groups": {
-        "example": [
-          "staff",
-          "trial"
-        ],
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
       "items": {
         "items": {
           "$ref": "#/components/schemas/ClientSlim"
@@ -1885,7 +1909,6 @@ export const SCHEMAS: Record<string, unknown> = {
     },
     "required": [
       "filtered",
-      "groups",
       "items",
       "page",
       "pageSize",
@@ -1926,9 +1949,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "type": "string"
       },
       "forwardedPorts": {
-        "type": "string"
-      },
-      "group": {
         "type": "string"
       },
       "id": {
@@ -2010,7 +2030,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "expiryTime",
       "flow",
       "forwardedPorts",
-      "group",
       "id",
       "keepAlive",
       "limitHwid",
@@ -2162,10 +2181,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "example": 1735689600000,
         "format": "int64",
         "type": "integer"
-      },
-      "group": {
-        "example": "staff",
-        "type": "string"
       },
       "inboundIds": {
         "example": [
@@ -2420,7 +2435,6 @@ export const SCHEMAS: Record<string, unknown> = {
     "type": "object"
   },
   "FallbackParentInfo": {
-    "description": "FallbackParentInfo carries everything the frontend needs to rewrite a\nchild inbound's client link: where to connect (the master's address\nand port) and which path matched on the master's fallbacks array.\nThe frontend already has the master inbound in its dbInbounds list,\nso we only ship identifiers + the match path here.",
     "properties": {
       "masterId": {
         "type": "integer"
@@ -2613,364 +2627,6 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
-  "Host": {
-    "properties": {
-      "address": {
-        "example": "cdn.example.com",
-        "type": "string"
-      },
-      "allowInsecure": {
-        "type": "boolean"
-      },
-      "alpn": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "cipherSuites": {
-        "type": "string"
-      },
-      "createdAt": {
-        "format": "int64",
-        "type": "integer"
-      },
-      "echConfigList": {
-        "type": "string"
-      },
-      "excludeFromSubTypes": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "finalMask": {
-        "description": "FinalMask is a JSON object of xray finalmask masks (tcp/udp/quicParams),\nmerged into this host's JSON-subscription stream. Empty = no override.",
-        "type": "string"
-      },
-      "fingerprint": {
-        "type": "string"
-      },
-      "groupId": {
-        "type": "string"
-      },
-      "hostHeader": {
-        "type": "string"
-      },
-      "id": {
-        "example": 1,
-        "type": "integer"
-      },
-      "inboundId": {
-        "example": 1,
-        "type": "integer"
-      },
-      "isDisabled": {
-        "type": "boolean"
-      },
-      "isHidden": {
-        "type": "boolean"
-      },
-      "keepSniBlank": {
-        "type": "boolean"
-      },
-      "mihomoIpVersion": {
-        "enum": [
-          "dual",
-          "ipv4",
-          "ipv6",
-          "ipv4-prefer",
-          "ipv6-prefer"
-        ],
-        "type": "string"
-      },
-      "mihomoX25519": {
-        "type": "boolean"
-      },
-      "muxParams": {},
-      "nodeGuids": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "overrideSniFromAddress": {
-        "type": "boolean"
-      },
-      "path": {
-        "type": "string"
-      },
-      "pinnedPeerCertSha256": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "port": {
-        "example": 8443,
-        "maximum": 65535,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "remark": {
-        "example": "cdn-front",
-        "maxLength": 256,
-        "type": "string"
-      },
-      "security": {
-        "enum": [
-          "same",
-          "tls",
-          "none",
-          "reality"
-        ],
-        "example": "same",
-        "type": "string"
-      },
-      "serverDescription": {
-        "maxLength": 64,
-        "type": "string"
-      },
-      "shuffleHost": {
-        "type": "boolean"
-      },
-      "sni": {
-        "type": "string"
-      },
-      "sockoptParams": {},
-      "sortOrder": {
-        "type": "integer"
-      },
-      "tags": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "updatedAt": {
-        "format": "int64",
-        "type": "integer"
-      },
-      "verifyPeerCertByName": {
-        "type": "string"
-      },
-      "vlessRoute": {
-        "description": "Single VLESS route value (0-65535) baked into the subscription UUID's 3rd\ngroup (bytes 6-7), which xray reads via net.PortFromBytes(id[6:8]). Empty = none.",
-        "example": "443",
-        "type": "string"
-      }
-    },
-    "required": [
-      "address",
-      "allowInsecure",
-      "alpn",
-      "cipherSuites",
-      "createdAt",
-      "echConfigList",
-      "excludeFromSubTypes",
-      "finalMask",
-      "fingerprint",
-      "groupId",
-      "hostHeader",
-      "id",
-      "inboundId",
-      "isDisabled",
-      "isHidden",
-      "keepSniBlank",
-      "mihomoIpVersion",
-      "mihomoX25519",
-      "muxParams",
-      "overrideSniFromAddress",
-      "path",
-      "pinnedPeerCertSha256",
-      "port",
-      "remark",
-      "security",
-      "serverDescription",
-      "shuffleHost",
-      "sni",
-      "sockoptParams",
-      "sortOrder",
-      "tags",
-      "updatedAt",
-      "verifyPeerCertByName",
-      "vlessRoute"
-    ],
-    "type": "object"
-  },
-  "HostGroup": {
-    "properties": {
-      "allowInsecure": {
-        "type": "boolean"
-      },
-      "alpn": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "cipherSuites": {
-        "type": "string"
-      },
-      "echConfigList": {
-        "type": "string"
-      },
-      "excludeFromSubTypes": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "finalMask": {
-        "type": "string"
-      },
-      "fingerprint": {
-        "type": "string"
-      },
-      "groupId": {
-        "type": "string"
-      },
-      "hostHeader": {
-        "type": "string"
-      },
-      "hosts": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "inboundIds": {
-        "items": {
-          "type": "integer"
-        },
-        "type": "array"
-      },
-      "isDisabled": {
-        "type": "boolean"
-      },
-      "isHidden": {
-        "type": "boolean"
-      },
-      "keepSniBlank": {
-        "type": "boolean"
-      },
-      "mihomoIpVersion": {
-        "enum": [
-          "dual",
-          "ipv4",
-          "ipv6",
-          "ipv4-prefer",
-          "ipv6-prefer"
-        ],
-        "type": "string"
-      },
-      "mihomoX25519": {
-        "type": "boolean"
-      },
-      "muxParams": {
-        "type": "string"
-      },
-      "nodeGuids": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "overrideSniFromAddress": {
-        "type": "boolean"
-      },
-      "path": {
-        "type": "string"
-      },
-      "pinnedPeerCertSha256": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "port": {
-        "maximum": 65535,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "remark": {
-        "maxLength": 256,
-        "type": "string"
-      },
-      "security": {
-        "enum": [
-          "same",
-          "tls",
-          "none",
-          "reality"
-        ],
-        "type": "string"
-      },
-      "serverDescription": {
-        "maxLength": 64,
-        "type": "string"
-      },
-      "shuffleHost": {
-        "type": "boolean"
-      },
-      "sni": {
-        "type": "string"
-      },
-      "sockoptParams": {
-        "type": "string"
-      },
-      "sortOrder": {
-        "type": "integer"
-      },
-      "tags": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "verifyPeerCertByName": {
-        "type": "string"
-      },
-      "vlessRoute": {
-        "type": "string"
-      }
-    },
-    "required": [
-      "allowInsecure",
-      "alpn",
-      "cipherSuites",
-      "echConfigList",
-      "excludeFromSubTypes",
-      "finalMask",
-      "fingerprint",
-      "groupId",
-      "hostHeader",
-      "hosts",
-      "inboundIds",
-      "isDisabled",
-      "isHidden",
-      "keepSniBlank",
-      "mihomoIpVersion",
-      "mihomoX25519",
-      "muxParams",
-      "nodeGuids",
-      "overrideSniFromAddress",
-      "path",
-      "pinnedPeerCertSha256",
-      "port",
-      "remark",
-      "security",
-      "serverDescription",
-      "shuffleHost",
-      "sni",
-      "sockoptParams",
-      "sortOrder",
-      "tags",
-      "verifyPeerCertByName",
-      "vlessRoute"
-    ],
-    "type": "object"
-  },
   "HwidSlotStatus": {
     "description": "HwidSlotStatus is the aggregate device-slot view exposed to subscribers:\ncounters only, no hwid value or hash, no email, no device metadata.",
     "properties": {
@@ -3044,7 +2700,6 @@ export const SCHEMAS: Record<string, unknown> = {
             "$ref": "#/components/schemas/FallbackParentInfo"
           }
         ],
-        "description": "FallbackParent is populated by the API layer when this inbound is\nattached as a fallback child of a VLESS/Trojan TCP-TLS master.\nThe frontend uses it to rewrite client-share links so they advertise\nthe master's externally reachable endpoint instead of the child's\nloopback listen. Not persisted.",
         "nullable": true
       },
       "id": {
@@ -3059,14 +2714,6 @@ export const SCHEMAS: Record<string, unknown> = {
       },
       "listen": {
         "description": "Xray configuration fields",
-        "type": "string"
-      },
-      "nodeId": {
-        "nullable": true,
-        "type": "integer"
-      },
-      "originNodeGuid": {
-        "description": "OriginNodeGuid is the panelGuid of the node that physically hosts this\ninbound, propagated up across hops (#4983). Empty for an inbound that\nlives on this panel's own xray; set to the originating node's GUID when\nthe inbound was synced from a node (kept as-is across further hops). Lets\nthe master attribute a deeply nested inbound to the real node instead of\nthe intermediate one it was fetched through.",
         "type": "string"
       },
       "port": {
@@ -3105,7 +2752,6 @@ export const SCHEMAS: Record<string, unknown> = {
       },
       "shareAddrStrategy": {
         "enum": [
-          "node",
           "listen",
           "custom"
         ],
@@ -3266,15 +2912,6 @@ export const SCHEMAS: Record<string, unknown> = {
       },
       "network": {
         "type": "string"
-      },
-      "nodeAddress": {
-        "description": "Share-host resolution inputs, mirroring the subscription's\nresolveInboundAddress so the clients page renders a node-managed WireGuard\nEndpoint that points at the node, not the master panel. NodeAddress is the\nhosting node's externally reachable address (empty for this panel's own\ninbounds); Listen and ShareAddrStrategy/ShareAddr feed the same\nnode→listen→custom fallback the share/QR links already use.",
-        "type": "string"
-      },
-      "nodeId": {
-        "description": "Hosting node; nil for this panel's own inbounds. Lets the clients\npage map a node filter onto inbound IDs (#4997).",
-        "nullable": true,
-        "type": "integer"
       },
       "port": {
         "example": 443,
@@ -3479,537 +3116,6 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
-  "Node": {
-    "description": "Node represents a remote miniray panel registered with the central panel.\nThe central panel polls each node's existing /panel/api/server/status\nendpoint over HTTP using the per-node ApiToken to populate the runtime\nstatus fields below.",
-    "properties": {
-      "activeCount": {
-        "example": 23,
-        "type": "integer"
-      },
-      "address": {
-        "example": "node1.example.com",
-        "type": "string"
-      },
-      "allowPrivateAddress": {
-        "type": "boolean"
-      },
-      "basePath": {
-        "example": "/",
-        "type": "string"
-      },
-      "clientCount": {
-        "example": 27,
-        "type": "integer"
-      },
-      "configDirty": {
-        "type": "boolean"
-      },
-      "configDirtyAt": {
-        "format": "int64",
-        "type": "integer"
-      },
-      "cpuPct": {
-        "example": 23.5,
-        "type": "number"
-      },
-      "createdAt": {
-        "example": 1700000000,
-        "format": "int64",
-        "type": "integer"
-      },
-      "depletedCount": {
-        "example": 1,
-        "type": "integer"
-      },
-      "disabledCount": {
-        "example": 3,
-        "type": "integer"
-      },
-      "enable": {
-        "example": true,
-        "type": "boolean"
-      },
-      "guid": {
-        "description": "Guid is the remote panel's stable self-identifier (its panelGuid),\nlearned from each heartbeat. It is the globally stable node identity used\nto attribute online clients/inbounds to the physical node across a chain\nof nodes (#4983); panel-local autoincrement ids don't survive a hop.\nObserved-state only — never user-edited.",
-        "type": "string"
-      },
-      "id": {
-        "example": 1,
-        "type": "integer"
-      },
-      "inboundCount": {
-        "example": 5,
-        "type": "integer"
-      },
-      "inboundSyncMode": {
-        "enum": [
-          "all",
-          "selected"
-        ],
-        "type": "string"
-      },
-      "inboundTags": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "lastError": {
-        "type": "string"
-      },
-      "lastHeartbeat": {
-        "description": "unix seconds, 0 = never",
-        "example": 1700000000,
-        "format": "int64",
-        "type": "integer"
-      },
-      "latencyMs": {
-        "example": 42,
-        "type": "integer"
-      },
-      "memPct": {
-        "example": 45.1,
-        "type": "number"
-      },
-      "name": {
-        "example": "de-fra-1",
-        "type": "string"
-      },
-      "netDown": {
-        "example": 2097152,
-        "format": "int64",
-        "type": "integer"
-      },
-      "netUp": {
-        "example": 1048576,
-        "format": "int64",
-        "type": "integer"
-      },
-      "onlineCount": {
-        "example": 3,
-        "type": "integer"
-      },
-      "outboundTag": {
-        "type": "string"
-      },
-      "panelVersion": {
-        "example": "v3.x.x",
-        "type": "string"
-      },
-      "parentGuid": {
-        "description": "ParentGuid + Transitive are set only when a node is surfaced as part of a\nnode tree (#4983): direct nodes carry the master panel's own GUID, a\ntransitive sub-node carries its parent node's GUID. Transitive nodes are\nread-only projections (Id == 0, not persisted) — never edited or deployed.",
-        "type": "string"
-      },
-      "pinnedCertSha256": {
-        "type": "string"
-      },
-      "port": {
-        "example": 2053,
-        "maximum": 65535,
-        "minimum": 1,
-        "type": "integer"
-      },
-      "remark": {
-        "type": "string"
-      },
-      "scheme": {
-        "enum": [
-          "http",
-          "https"
-        ],
-        "example": "https",
-        "type": "string"
-      },
-      "status": {
-        "description": "Heartbeat-updated fields. UpdatedAt advances on every probe even when\nthe row is otherwise unchanged so the UI's \"last seen\" tooltip is\ntruthful without us having to read LastHeartbeat separately.\nonline|offline|unknown",
-        "example": "online",
-        "type": "string"
-      },
-      "tlsVerifyMode": {
-        "enum": [
-          "verify",
-          "skip",
-          "pin",
-          "mtls"
-        ],
-        "type": "string"
-      },
-      "transitive": {
-        "type": "boolean"
-      },
-      "updatedAt": {
-        "example": 1700000000,
-        "format": "int64",
-        "type": "integer"
-      },
-      "uptimeSecs": {
-        "example": 86400,
-        "format": "int64",
-        "type": "integer"
-      },
-      "xrayError": {
-        "type": "string"
-      },
-      "xrayState": {
-        "description": "XrayState and XrayError are captured from the remote node's /panel/api/server/status\nduring heartbeats. They let the central panel distinguish \"panel API reachable\"\n(status=online) from \"Xray core itself has failed on the node\" for monitoring.",
-        "type": "string"
-      },
-      "xrayVersion": {
-        "example": "25.10.31",
-        "type": "string"
-      }
-    },
-    "required": [
-      "activeCount",
-      "address",
-      "allowPrivateAddress",
-      "basePath",
-      "clientCount",
-      "configDirty",
-      "configDirtyAt",
-      "cpuPct",
-      "createdAt",
-      "depletedCount",
-      "disabledCount",
-      "enable",
-      "guid",
-      "id",
-      "inboundCount",
-      "inboundSyncMode",
-      "inboundTags",
-      "lastError",
-      "lastHeartbeat",
-      "latencyMs",
-      "memPct",
-      "name",
-      "netDown",
-      "netUp",
-      "onlineCount",
-      "outboundTag",
-      "panelVersion",
-      "pinnedCertSha256",
-      "port",
-      "remark",
-      "scheme",
-      "status",
-      "tlsVerifyMode",
-      "updatedAt",
-      "uptimeSecs",
-      "xrayError",
-      "xrayState",
-      "xrayVersion"
-    ],
-    "type": "object"
-  },
-  "NodeMutationRequest": {
-    "description": "NodeMutationRequest is the node write/probe contract. ApiToken is accepted\nonly as input. On update, nil means keep the stored token; replacement and\nclearing are explicit and mutually exclusive.",
-    "properties": {
-      "address": {
-        "type": "string"
-      },
-      "allowPrivateAddress": {
-        "type": "boolean"
-      },
-      "apiToken": {
-        "nullable": true,
-        "type": "string"
-      },
-      "basePath": {
-        "type": "string"
-      },
-      "clearApiToken": {
-        "type": "boolean"
-      },
-      "enable": {
-        "type": "boolean"
-      },
-      "id": {
-        "type": "integer"
-      },
-      "inboundSyncMode": {
-        "enum": [
-          "all",
-          "selected"
-        ],
-        "type": "string"
-      },
-      "inboundTags": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "name": {
-        "type": "string"
-      },
-      "outboundTag": {
-        "type": "string"
-      },
-      "pinnedCertSha256": {
-        "type": "string"
-      },
-      "port": {
-        "maximum": 65535,
-        "minimum": 1,
-        "type": "integer"
-      },
-      "remark": {
-        "type": "string"
-      },
-      "scheme": {
-        "enum": [
-          "http",
-          "https"
-        ],
-        "type": "string"
-      },
-      "tlsVerifyMode": {
-        "enum": [
-          "verify",
-          "skip",
-          "pin",
-          "mtls"
-        ],
-        "type": "string"
-      }
-    },
-    "required": [
-      "address",
-      "allowPrivateAddress",
-      "basePath",
-      "enable",
-      "id",
-      "inboundSyncMode",
-      "inboundTags",
-      "name",
-      "outboundTag",
-      "pinnedCertSha256",
-      "port",
-      "remark",
-      "scheme",
-      "tlsVerifyMode"
-    ],
-    "type": "object"
-  },
-  "NodeView": {
-    "description": "NodeView is the browser/API read contract for nodes. Credentials are\nwrite-only: responses expose only whether a node has a token configured.",
-    "properties": {
-      "activeCount": {
-        "example": 20,
-        "type": "integer"
-      },
-      "address": {
-        "example": "node.example.com",
-        "type": "string"
-      },
-      "allowPrivateAddress": {
-        "example": false,
-        "type": "boolean"
-      },
-      "basePath": {
-        "example": "/",
-        "type": "string"
-      },
-      "clientCount": {
-        "example": 25,
-        "type": "integer"
-      },
-      "configDirty": {
-        "example": false,
-        "type": "boolean"
-      },
-      "configDirtyAt": {
-        "example": 0,
-        "format": "int64",
-        "type": "integer"
-      },
-      "cpuPct": {
-        "example": 12.5,
-        "type": "number"
-      },
-      "createdAt": {
-        "example": 1700000000,
-        "format": "int64",
-        "type": "integer"
-      },
-      "depletedCount": {
-        "example": 1,
-        "type": "integer"
-      },
-      "disabledCount": {
-        "example": 2,
-        "type": "integer"
-      },
-      "enable": {
-        "example": true,
-        "type": "boolean"
-      },
-      "guid": {
-        "example": "node-guid",
-        "type": "string"
-      },
-      "hasApiToken": {
-        "example": true,
-        "type": "boolean"
-      },
-      "id": {
-        "example": 1,
-        "type": "integer"
-      },
-      "inboundCount": {
-        "example": 3,
-        "type": "integer"
-      },
-      "inboundSyncMode": {
-        "example": "all",
-        "type": "string"
-      },
-      "inboundTags": {
-        "example": [
-          "in-443-tcp"
-        ],
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "lastError": {
-        "type": "string"
-      },
-      "lastHeartbeat": {
-        "example": 1700000000,
-        "format": "int64",
-        "type": "integer"
-      },
-      "latencyMs": {
-        "example": 42,
-        "type": "integer"
-      },
-      "memPct": {
-        "example": 45.2,
-        "type": "number"
-      },
-      "name": {
-        "example": "edge-1",
-        "type": "string"
-      },
-      "netDown": {
-        "example": 1048576,
-        "format": "int64",
-        "type": "integer"
-      },
-      "netUp": {
-        "example": 2097152,
-        "format": "int64",
-        "type": "integer"
-      },
-      "onlineCount": {
-        "example": 5,
-        "type": "integer"
-      },
-      "outboundTag": {
-        "example": "direct",
-        "type": "string"
-      },
-      "panelVersion": {
-        "example": "v3.x.x",
-        "type": "string"
-      },
-      "parentGuid": {
-        "type": "string"
-      },
-      "pinnedCertSha256": {
-        "type": "string"
-      },
-      "port": {
-        "example": 2053,
-        "type": "integer"
-      },
-      "remark": {
-        "example": "Primary edge",
-        "type": "string"
-      },
-      "scheme": {
-        "example": "https",
-        "type": "string"
-      },
-      "status": {
-        "example": "online",
-        "type": "string"
-      },
-      "tlsVerifyMode": {
-        "example": "verify",
-        "type": "string"
-      },
-      "transitive": {
-        "example": false,
-        "type": "boolean"
-      },
-      "updatedAt": {
-        "example": 1700003600,
-        "format": "int64",
-        "type": "integer"
-      },
-      "uptimeSecs": {
-        "example": 86400,
-        "format": "int64",
-        "type": "integer"
-      },
-      "xrayError": {
-        "type": "string"
-      },
-      "xrayState": {
-        "example": "running",
-        "type": "string"
-      },
-      "xrayVersion": {
-        "example": "25.10.31",
-        "type": "string"
-      }
-    },
-    "required": [
-      "activeCount",
-      "address",
-      "allowPrivateAddress",
-      "basePath",
-      "clientCount",
-      "configDirty",
-      "configDirtyAt",
-      "cpuPct",
-      "createdAt",
-      "depletedCount",
-      "disabledCount",
-      "enable",
-      "guid",
-      "hasApiToken",
-      "id",
-      "inboundCount",
-      "inboundSyncMode",
-      "inboundTags",
-      "lastError",
-      "lastHeartbeat",
-      "latencyMs",
-      "memPct",
-      "name",
-      "netDown",
-      "netUp",
-      "onlineCount",
-      "outboundTag",
-      "panelVersion",
-      "pinnedCertSha256",
-      "port",
-      "remark",
-      "scheme",
-      "status",
-      "tlsVerifyMode",
-      "updatedAt",
-      "uptimeSecs",
-      "xrayError",
-      "xrayState",
-      "xrayVersion"
-    ],
-    "type": "object"
-  },
   "OutboundTraffics": {
     "description": "OutboundTraffics tracks traffic statistics for Xray outbound connections.",
     "properties": {
@@ -4129,62 +3235,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "online",
       "tag",
       "up"
-    ],
-    "type": "object"
-  },
-  "ProbeResultUI": {
-    "properties": {
-      "cpuPct": {
-        "example": 12.5,
-        "type": "number"
-      },
-      "error": {
-        "type": "string"
-      },
-      "latencyMs": {
-        "example": 42,
-        "type": "integer"
-      },
-      "memPct": {
-        "example": 45.2,
-        "type": "number"
-      },
-      "panelVersion": {
-        "example": "v3.x.x",
-        "type": "string"
-      },
-      "status": {
-        "example": "online",
-        "type": "string"
-      },
-      "uptimeSecs": {
-        "example": 86400,
-        "format": "int64",
-        "type": "integer"
-      },
-      "xrayError": {
-        "type": "string"
-      },
-      "xrayState": {
-        "description": "XrayState/XrayError are populated on successful probes even when the node's\nXray core is not healthy. The UI uses them for a distinct \"panel ok, xray failed\" indicator.",
-        "type": "string"
-      },
-      "xrayVersion": {
-        "example": "25.10.31",
-        "type": "string"
-      }
-    },
-    "required": [
-      "cpuPct",
-      "error",
-      "latencyMs",
-      "memPct",
-      "panelVersion",
-      "status",
-      "uptimeSecs",
-      "xrayError",
-      "xrayState",
-      "xrayVersion"
     ],
     "type": "object"
   },
@@ -4465,90 +3515,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "id",
       "key",
       "value"
-    ],
-    "type": "object"
-  },
-  "Sponsor": {
-    "description": "Sponsor is one paid placement published in the repo's sponsors.json.",
-    "properties": {
-      "enable": {
-        "example": true,
-        "nullable": true,
-        "type": "boolean"
-      },
-      "from": {
-        "example": "2026-10-01T00:00:00Z",
-        "format": "date-time",
-        "nullable": true,
-        "type": "string"
-      },
-      "id": {
-        "example": "acme-2026-10",
-        "type": "string"
-      },
-      "link": {
-        "example": "https://acme.example/?utm_source=miniray",
-        "type": "string"
-      },
-      "logo": {
-        "example": "/sponsors/logo/acme.png",
-        "type": "string"
-      },
-      "name": {
-        "example": "Acme VPS",
-        "type": "string"
-      },
-      "slots": {
-        "items": {
-          "type": "string"
-        },
-        "type": "array"
-      },
-      "text": {
-        "additionalProperties": {
-          "type": "string"
-        },
-        "type": "object"
-      },
-      "title": {
-        "additionalProperties": {
-          "type": "string"
-        },
-        "type": "object"
-      },
-      "until": {
-        "example": "2026-11-01T00:00:00Z",
-        "format": "date-time",
-        "type": "string"
-      }
-    },
-    "required": [
-      "id",
-      "link",
-      "name",
-      "slots",
-      "text",
-      "title",
-      "until"
-    ],
-    "type": "object"
-  },
-  "SponsorList": {
-    "description": "SponsorList is the active sponsor set plus the contact link for new sponsors.",
-    "properties": {
-      "contact": {
-        "example": "https://t.me/example",
-        "type": "string"
-      },
-      "sponsors": {
-        "items": {
-          "$ref": "#/components/schemas/Sponsor"
-        },
-        "type": "array"
-      }
-    },
-    "required": [
-      "sponsors"
     ],
     "type": "object"
   },

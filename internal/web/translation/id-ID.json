@@ -112,15 +112,11 @@
     "dashboard": "Ikhtisar",
     "inbounds": "Inbound",
     "clients": "Klien",
-    "groups": "Grup",
-    "nodes": "Node",
     "settings": "Pengaturan Panel",
     "xray": "Konfigurasi Xray",
     "routing": "Pengalihan",
     "outbounds": "Outbound",
     "apiDocs": "Dokumentasi API",
-    "sponsors": "Sponsor",
-    "hosts": "Host",
     "docs": "Dokumentasi",
     "openMenu": "Buka menu",
     "subFormats": "Sub Formats"
@@ -292,9 +288,6 @@
       "operate": "Menu",
       "enable": "Aktifkan",
       "remark": "Catatan",
-      "node": "Node",
-      "deployTo": "Terapkan ke",
-      "localPanel": "Panel lokal",
       "fallbacks": {
         "title": "Fallback",
         "empty": "Belum ada fallback",
@@ -330,7 +323,6 @@
       "delAllClientsConfirmTitle": "Hapus semua {count} klien dari \"{remark}\"?",
       "delAllClientsConfirmContent": "Menghapus setiap klien dari inbound ini dan menghapus catatan trafiknya. Inbound itu sendiri dipertahankan. Tindakan ini tidak dapat dibatalkan.",
       "attachClients": "Lampirkan klien ke…",
-      "addClientsToGroup": "Tambah klien ke grup…",
       "attachClientsTitle": "Lampirkan klien dari «{remark}»",
       "attachClientsDesc": "Melampirkan {count} klien yang sama (UUID/kata sandi sama dan trafik bersama) ke inbound terpilih. Tetap ada di inbound ini juga.",
       "attachClientsTargets": "Inbound tujuan",
@@ -438,13 +430,10 @@
         "inboundCreateSuccess": "Inbound berhasil dibuat",
         "bulkDeleted": "{count} inbound dihapus",
         "bulkDeletedMixed": "{ok} dihapus, {failed} gagal",
-        "clonedMany": "{count} inbound digandakan",
-        "clonedMixed": "{ok} digandakan, {failed} gagal",
         "inboundDeleteSuccess": "Inbound berhasil dihapus",
         "inboundClientAddSuccess": "Klien inbound telah ditambahkan",
         "inboundClientDeleteSuccess": "Klien inbound telah dihapus",
         "inboundClientUpdateSuccess": "Klien inbound telah diperbarui",
-        "savedNodeOfflineWillSync": "Disimpan secara lokal. Node pendukung sedang offline atau dinonaktifkan — perubahan akan disinkronkan setelah terhubung kembali.",
         "resetAllClientTrafficSuccess": "Semua lalu lintas klien telah direset",
         "resetAllTrafficSuccess": "Semua lalu lintas telah direset",
         "resetInboundClientTrafficSuccess": "Lalu lintas telah direset",
@@ -661,7 +650,6 @@
         "disableFlow": "Nonaktifkan flow XTLS",
         "disableFlowHelp": "Kecualikan inbound ini dari injeksi otomatis xtls-rprx-vision, meskipun transport-nya mendukung flow (mis. inbound XHTTP yang dituneling dengan enkripsi VLESS). Klien tetap memakai Vision pada inbound lain yang mendukung dalam langganan yang sama. Hanya VLESS.",
         "shareAddrStrategyOptions": {
-          "node": "Alamat node",
           "listen": "Alamat listen inbound",
           "custom": "Kustom"
         },
@@ -742,10 +730,7 @@
       "searchPlaceholder": "Cari email, komentar, sub ID, UUID, kata sandi, auth, Telegram ID…",
       "filterTitle": "Filter klien",
       "clearAllFilters": "Hapus semua",
-      "filters": {
-        "nodes": "Node",
-        "localPanel": "Lokal (panel ini)"
-      },
+      "filters": {},
       "showingCount": "Menampilkan {shown} dari {total}",
       "sortOldest": "Terlama dulu",
       "sortNewest": "Terbaru dulu",
@@ -788,9 +773,6 @@
       "email": "Email",
       "emailInvalidChars": "Email tidak boleh mengandung spasi, '/', '\\', atau karakter kontrol",
       "subIdInvalidChars": "ID langganan tidak boleh mengandung spasi, '/', '\\', atau karakter kontrol",
-      "group": "Grup",
-      "groupDesc": "Label logis untuk mengelompokkan klien terkait (mis. tim, pelanggan, wilayah). Dapat difilter dari toolbar.",
-      "groupPlaceholder": "mis. customer-a",
       "comment": "Komentar",
       "traffic": "Lalu lintas",
       "speed": "Kecepatan",
@@ -827,15 +809,6 @@
       "resetAllTrafficsContent": "Penghitung kirim/terima setiap klien turun ke nol. Kuota dan kedaluwarsa tidak terpengaruh. Tidak dapat dibatalkan.",
       "deleteConfirmTitle": "Hapus klien {email}?",
       "deleteConfirmContent": "Tindakan ini menghapus klien dari setiap inbound terlampir dan menghapus catatan lalu lintasnya. Tidak dapat dibatalkan.",
-      "addToGroupTitle": "Tambahkan {count} klien ke grup",
-      "addToGroupTooltip": "Pilih grup yang ada atau ketik nama baru. Gunakan Ungroup untuk menghapus klien dari grup saat ini.",
-      "groupName": "Nama grup",
-      "addToGroupSuccessToast": "{count} klien ditambahkan ke {group}",
-      "ungroupSuccessToast": "Grup dihapus dari {count} klien",
-      "ungroup": "Lepaskan grup",
-      "ungroupConfirmTitle": "Hapus {count} klien dari grupnya?",
-      "ungroupConfirmContent": "Menghapus label grup dari setiap klien terpilih. Klien tetap dipertahankan (gunakan Delete untuk menghapus sepenuhnya).",
-      "addToGroup": "Tambahkan ke grup",
       "attach": "Lampirkan",
       "adjust": "Atur",
       "subLinks": "Tautan sub",
@@ -957,18 +930,6 @@
       "renewOnDayDesc": "Perpanjang pada tanggal ini setiap bulan kalender, pada tengah malam menurut zona waktu panel, alih-alih setiap N hari. Bulan yang terlalu pendek untuk tanggal yang dipilih diperpanjang pada hari terakhirnya. 0 mempertahankan mode interval hari.",
       "renewsUsed": "Perpanjangan terpakai",
       "bulkAdTagHint": "Masukkan tag heksadesimal 32 karakter untuk mengatur, atau 'none' untuk menghapus pada MTProto."
-    },
-    "groups": {},
-    "nodes": {
-      "name": "Nama",
-      "apiToken": "Token API",
-      "apiTokenHint": "Panel jarak jauh menampilkan token API-nya di Otentikasi → Token API.",
-      "latency": "Latensi",
-      "statusValues": {},
-      "toasts": {
-        "fillRequired": "Nama, alamat, port, dan token API wajib diisi"
-      },
-      "mtls": {}
     },
     "settings": {
       "defaultTag": "Bawaan",
@@ -1236,7 +1197,9 @@
         "apiTokenEmpty": "Belum ada token — buat satu untuk mengautentikasi bot atau panel jarak jauh.",
         "apiTokenDeleteWarning": "Setiap pemanggil yang menggunakan token ini akan berhenti terautentikasi segera.",
         "apiTokenCreatedTitle": "Token dibuat",
-        "apiTokenCreatedNotice": "Salin token ini sekarang. Demi keamanan, token tidak disimpan dalam bentuk yang dapat dibaca dan tidak akan ditampilkan lagi."
+        "apiTokenCreatedNotice": "Salin token ini sekarang. Demi keamanan, token tidak disimpan dalam bentuk yang dapat dibaca dan tidak akan ditampilkan lagi.",
+        "apiToken": "Token API",
+        "apiTokenHint": "Panel jarak jauh menampilkan token API-nya di Otentikasi → Token API."
       },
       "toasts": {
         "modifySettings": "Parameter telah diubah.",
@@ -1281,8 +1244,6 @@
       "eventOutboundDown": "Mati",
       "eventOutboundUp": "Aktif",
       "eventXrayCrash": "Crash",
-      "eventNodeDown": "Mati",
-      "eventNodeUp": "Aktif",
       "eventCPUHigh": "CPU tinggi (%)",
       "requestFailed": "Permintaan gagal",
       "smtpEncryption": "Enkripsi",
@@ -1586,7 +1547,51 @@
       "subIncyResolveDnsDomainDesc": "URL server DoH, biasanya berakhiran /dns-query.",
       "subIncyResolveDnsIp": "IP server DoH",
       "subIncyResolveDnsIpDesc": "IP server DoH untuk bootstrap.",
-      "subIncyGroupRouting": "Perutean"
+      "subIncyGroupRouting": "Perutean",
+      "exportDatabaseDesc": "",
+      "allowInsecure": "Izinkan tidak aman",
+      "allowInsecureHelp": "Lewati verifikasi sertifikat TLS (allowInsecure / skip-cert-verify).",
+      "remarkVars": {
+        "title": "Variabel Templat",
+        "intro": "Klik sebuah variabel untuk menambahkannya. Variabel diganti per klien saat langganan dibuat.",
+        "preview": "Pratinjau",
+        "groups": {
+          "client": "Klien",
+          "traffic": "Trafik",
+          "time": "Waktu & status",
+          "connection": "Koneksi"
+        },
+        "descEMAIL": "Email klien",
+        "descINBOUND": "Catatan inbound itu sendiri (nama konfigurasi)",
+        "descHOST": "Catatan host",
+        "descID": "UUID klien",
+        "descSHORT_ID": "8 karakter pertama dari UUID",
+        "descTELEGRAM_ID": "ID Telegram klien (kosong jika tidak diatur)",
+        "descSUB_ID": "ID langganan",
+        "descCOMMENT": "Komentar klien",
+        "descTRAFFIC_USED": "Trafik terpakai (mudah dibaca)",
+        "descTRAFFIC_LEFT": "Trafik tersisa (disembunyikan jika tanpa batas)",
+        "descTRAFFIC_TOTAL": "Total trafik (disembunyikan jika tanpa batas)",
+        "descTRAFFIC_USED_BYTES": "Trafik terpakai dalam byte",
+        "descTRAFFIC_LEFT_BYTES": "Trafik tersisa dalam byte",
+        "descTRAFFIC_TOTAL_BYTES": "Total trafik dalam byte",
+        "descUP": "Trafik unggah",
+        "descDOWN": "Trafik unduh",
+        "descSTATUS": "aktif / kedaluwarsa / nonaktif / habis",
+        "descSTATUS_EMOJI": "Status sebagai emoji (✅ ⏳ 🚫)",
+        "descDAYS_LEFT": "Hari hingga kedaluwarsa (disembunyikan jika tanpa batas)",
+        "descTIME_LEFT": "Waktu tersisa (mis. 12d 4h 30m)",
+        "descUSAGE_PERCENTAGE": "Trafik terpakai dalam persentase (disembunyikan jika tanpa batas)",
+        "descEXPIRE_DATE": "Tanggal kedaluwarsa (YYYY-MM-DD)",
+        "descJALALI_EXPIRE_DATE": "Tanggal kedaluwarsa dalam kalender Jalali (YYYY/MM/DD)",
+        "descEXPIRE_UNIX": "Kedaluwarsa sebagai timestamp Unix (detik)",
+        "descCREATED_UNIX": "Waktu pembuatan sebagai timestamp Unix (detik)",
+        "descRESET_DAYS": "Periode reset trafik dalam hari",
+        "descRESET_DAY": "Tanggal perpanjangan setiap bulan",
+        "descPROTOCOL": "Protokol inbound (VLESS, VMess, Trojan, …)",
+        "descTRANSPORT": "Jaringan transport (tcp, ws, grpc, …)",
+        "descSECURITY": "Keamanan transport (TLS, REALITY, NONE)"
+      }
     },
     "xray": {
       "save": "Simpan",
@@ -2093,62 +2098,9 @@
         "poolSize": "Ukuran Kolam"
       },
       "defaultOutbound": "Outbound default",
-      "defaultOutboundDesc": "Lalu lintas tanpa aturan routing memakai outbound ini (yang pertama dalam daftar)."
-    },
-    "hosts": {
-      "summary": {},
-      "sections": {},
-      "fields": {
-        "allowInsecure": "Izinkan tidak aman"
-      },
-      "hints": {
-        "allowInsecure": "Lewati verifikasi sertifikat TLS (allowInsecure / skip-cert-verify)."
-      },
-      "remarkVars": {
-        "title": "Variabel Templat",
-        "intro": "Klik sebuah variabel untuk menambahkannya. Variabel diganti per klien saat langganan dibuat.",
-        "preview": "Pratinjau",
-        "groups": {
-          "client": "Klien",
-          "traffic": "Trafik",
-          "time": "Waktu & status",
-          "connection": "Koneksi"
-        },
-        "descEMAIL": "Email klien",
-        "descINBOUND": "Catatan inbound itu sendiri (nama konfigurasi)",
-        "descHOST": "Catatan host",
-        "descID": "UUID klien",
-        "descSHORT_ID": "8 karakter pertama dari UUID",
-        "descTELEGRAM_ID": "ID Telegram klien (kosong jika tidak diatur)",
-        "descSUB_ID": "ID langganan",
-        "descCOMMENT": "Komentar klien",
-        "descTRAFFIC_USED": "Trafik terpakai (mudah dibaca)",
-        "descTRAFFIC_LEFT": "Trafik tersisa (disembunyikan jika tanpa batas)",
-        "descTRAFFIC_TOTAL": "Total trafik (disembunyikan jika tanpa batas)",
-        "descTRAFFIC_USED_BYTES": "Trafik terpakai dalam byte",
-        "descTRAFFIC_LEFT_BYTES": "Trafik tersisa dalam byte",
-        "descTRAFFIC_TOTAL_BYTES": "Total trafik dalam byte",
-        "descUP": "Trafik unggah",
-        "descDOWN": "Trafik unduh",
-        "descSTATUS": "aktif / kedaluwarsa / nonaktif / habis",
-        "descSTATUS_EMOJI": "Status sebagai emoji (✅ ⏳ 🚫)",
-        "descDAYS_LEFT": "Hari hingga kedaluwarsa (disembunyikan jika tanpa batas)",
-        "descTIME_LEFT": "Waktu tersisa (mis. 12d 4h 30m)",
-        "descUSAGE_PERCENTAGE": "Trafik terpakai dalam persentase (disembunyikan jika tanpa batas)",
-        "descEXPIRE_DATE": "Tanggal kedaluwarsa (YYYY-MM-DD)",
-        "descJALALI_EXPIRE_DATE": "Tanggal kedaluwarsa dalam kalender Jalali (YYYY/MM/DD)",
-        "descEXPIRE_UNIX": "Kedaluwarsa sebagai timestamp Unix (detik)",
-        "descCREATED_UNIX": "Waktu pembuatan sebagai timestamp Unix (detik)",
-        "descRESET_DAYS": "Periode reset trafik dalam hari",
-        "descRESET_DAY": "Tanggal perpanjangan setiap bulan",
-        "descPROTOCOL": "Protokol inbound (VLESS, VMess, Trojan, …)",
-        "descTRANSPORT": "Jaringan transport (tcp, ws, grpc, …)",
-        "descSECURITY": "Keamanan transport (TLS, REALITY, NONE)"
-      },
-      "toasts": {
-        "badTag": "Tag tidak valid",
-        "badVlessRoute": "Masukkan satu angka antara 0 dan 65535"
-      }
+      "defaultOutboundDesc": "Lalu lintas tanpa aturan routing memakai outbound ini (yang pertama dalam daftar).",
+      "ruleName": "Nama",
+      "outboundLatency": "Latensi"
     }
   },
   "tgbot": {
@@ -2273,8 +2225,6 @@
       "eventDelayDetail": "Penundaan: {{ .Delay }}ms",
       "eventXrayCrash": "Xray CRASH",
       "eventXrayCrashError": "Kesalahan: {{ .Error }}",
-      "eventNodeDown": "Node {{ .Name }} MATI",
-      "eventNodeUp": "Node {{ .Name }} AKTIF",
       "eventLoginFallback": "Gagal masuk dari {{ .Source }}",
       "memoryThreshold": "Penggunaan memori {{ .Percent }}% melebihi ambang batas {{ .Threshold }}%"
     },
@@ -2366,7 +2316,6 @@
       "error": "Galat",
       "delay": "Latensi",
       "outbound": "Outbound",
-      "node": "Node",
       "threshold": "Ambang Batas",
       "reason": "Alasan",
       "time": "Waktu",
@@ -2381,8 +2330,6 @@
     "alerts": {
       "outboundDown": "Outbound Mati",
       "outboundUp": "Outbound Aktif",
-      "nodeDown": "Node Mati",
-      "nodeUp": "Node Aktif",
       "xrayCrash": "Inti Xray Mengalami Crash",
       "cpuHigh": "Ambang Batas CPU Terlampaui",
       "memoryHigh": "Ambang Batas Memori Terlampaui",
@@ -2428,7 +2375,6 @@
   "email": {
     "labelStatus": "Status",
     "labelOutbound": "Outbound",
-    "labelNode": "Node",
     "labelError": "Kesalahan",
     "labelDelay": "Penundaan",
     "labelUsername": "Nama Pengguna",

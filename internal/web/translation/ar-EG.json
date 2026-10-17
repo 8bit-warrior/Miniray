@@ -112,15 +112,11 @@
     "dashboard": "نظرة عامة",
     "inbounds": "الواردات",
     "clients": "العملاء",
-    "groups": "المجموعات",
-    "nodes": "النودز",
     "settings": "إعدادات اللوحة",
     "xray": "إعدادات Xray",
     "routing": "التوجيه",
     "outbounds": "الصادرات",
     "apiDocs": "توثيق API",
-    "sponsors": "الرعاة",
-    "hosts": "المضيفات",
     "docs": "التوثيق",
     "openMenu": "فتح القائمة",
     "subFormats": "Sub Formats"
@@ -292,9 +288,6 @@
       "operate": "القائمة",
       "enable": "مفعل",
       "remark": "ملاحظة",
-      "node": "العقدة",
-      "deployTo": "نشر على",
-      "localPanel": "بانل محلي",
       "fallbacks": {
         "title": "Fallbacks",
         "empty": "لا توجد fallbacks بعد",
@@ -330,7 +323,6 @@
       "delAllClientsConfirmTitle": "حذف جميع العملاء البالغ عددهم {count} من \"{remark}\"؟",
       "delAllClientsConfirmContent": "يزيل كل عميل من هذا الإدخال ويحذف سجلات حركة المرور الخاصة بهم. يتم الاحتفاظ بالإدخال نفسه. لا يمكن التراجع عن هذا.",
       "attachClients": "إرفاق عملاء بـ…",
-      "addClientsToGroup": "إضافة عملاء إلى مجموعة…",
       "attachClientsTitle": "إرفاق عملاء من «{remark}»",
       "attachClientsDesc": "يربط نفس {count} عميل (UUID/كلمة المرور وحركة المرور المشتركة) بالواردات المحددة. يبقون في هذا الوارد أيضاً.",
       "attachClientsTargets": "الواردات الهدف",
@@ -438,13 +430,10 @@
         "inboundCreateSuccess": "تم إنشاء الوارد بنجاح",
         "bulkDeleted": "تم حذف {count} إدخال",
         "bulkDeletedMixed": "تم حذف {ok}, وفشل {failed}",
-        "clonedMany": "تم استنساخ {count} إدخال",
-        "clonedMixed": "تم استنساخ {ok}, وفشل {failed}",
         "inboundDeleteSuccess": "تم حذف الوارد بنجاح",
         "inboundClientAddSuccess": "تمت إضافة عميل(عملاء) وارد",
         "inboundClientDeleteSuccess": "تم حذف عميل وارد",
         "inboundClientUpdateSuccess": "تم تحديث عميل وارد",
-        "savedNodeOfflineWillSync": "تم الحفظ محليًا. إحدى العُقد الداعمة غير متصلة أو معطّلة — ستتم مزامنة التغيير بمجرد إعادة الاتصال.",
         "resetAllClientTrafficSuccess": "تم إعادة تعيين كل حركة المرور من العميل",
         "resetAllTrafficSuccess": "تم إعادة تعيين كل حركة المرور",
         "resetInboundClientTrafficSuccess": "تم إعادة تعيين حركة المرور",
@@ -661,7 +650,6 @@
         "disableFlow": "تعطيل تدفق XTLS",
         "disableFlowHelp": "استثناء هذا الـ inbound من الحقن التلقائي لـ xtls-rprx-vision، حتى عندما يكون النقل قادرًا على الـ flow (مثل inbound من نوع XHTTP عبر نفق مع تشفير VLESS). يحتفظ العملاء بـ Vision على باقي الـ inbounds القادرة ضمن نفس الاشتراك. لـ VLESS فقط.",
         "shareAddrStrategyOptions": {
-          "node": "عنوان العقدة",
           "listen": "عنوان استماع الوارد",
           "custom": "مخصص"
         },
@@ -742,10 +730,7 @@
       "searchPlaceholder": "ابحث بالبريد، التعليق، sub ID، UUID، كلمة المرور، auth، Telegram ID…",
       "filterTitle": "تصفية العملاء",
       "clearAllFilters": "مسح الكل",
-      "filters": {
-        "nodes": "النودز",
-        "localPanel": "محلي (هذه اللوحة)"
-      },
+      "filters": {},
       "showingCount": "عرض {shown} من {total}",
       "sortOldest": "الأقدم أولاً",
       "sortNewest": "الأحدث أولاً",
@@ -788,9 +773,6 @@
       "email": "البريد",
       "emailInvalidChars": "لا يمكن أن يحتوي البريد الإلكتروني على مسافات أو '/' أو '\\' أو أحرف تحكم",
       "subIdInvalidChars": "لا يمكن أن يحتوي معرّف الاشتراك على مسافات أو '/' أو '\\' أو أحرف تحكم",
-      "group": "المجموعة",
-      "groupDesc": "تسمية منطقية لتجميع العملاء (مثل فريق، عميل، منطقة). يمكن تصفيتها من شريط الأدوات.",
-      "groupPlaceholder": "مثلاً customer-a",
       "comment": "ملاحظة",
       "traffic": "حركة المرور",
       "speed": "السرعة",
@@ -827,15 +809,6 @@
       "resetAllTrafficsContent": "يُعاد ضبط عدّاد الإرسال/الاستقبال لكل عميل إلى الصفر. لا تتأثر الحصص ومواعيد الانتهاء. لا يمكن التراجع.",
       "deleteConfirmTitle": "حذف العميل {email}؟",
       "deleteConfirmContent": "سيؤدي هذا إلى إزالة العميل من جميع الاتصالات الواردة المرتبطة وحذف سجل حركة مروره. لا يمكن التراجع.",
-      "addToGroupTitle": "إضافة {count} عميل إلى مجموعة",
-      "addToGroupTooltip": "اختر مجموعة موجودة أو أدخل اسماً جديداً. استخدم Ungroup لإزالة العملاء من مجموعتهم الحالية.",
-      "groupName": "اسم المجموعة",
-      "addToGroupSuccessToast": "تمت إضافة {count} عميل إلى {group}",
-      "ungroupSuccessToast": "تم مسح المجموعة من {count} عميل",
-      "ungroup": "إزالة من المجموعة",
-      "ungroupConfirmTitle": "إزالة {count} عميل من مجموعتهم؟",
-      "ungroupConfirmContent": "يمسح تسمية المجموعة من كل عميل محدد. يُحفظ العملاء (استخدم Delete للإزالة الكاملة).",
-      "addToGroup": "إضافة إلى مجموعة",
       "attach": "إرفاق",
       "adjust": "ضبط",
       "subLinks": "روابط الاشتراك",
@@ -957,18 +930,6 @@
       "renewOnDayDesc": "يتم التجديد في هذا اليوم من كل شهر ميلادي، عند منتصف الليل بتوقيت اللوحة، بدلاً من كل N يوم. إذا كان الشهر أقصر من اليوم المختار، يتم التجديد في آخر يوم منه. القيمة 0 تُبقي وضع الفاصل اليومي.",
       "renewsUsed": "التجديدات المستخدمة",
       "bulkAdTagHint": "أدخل علامة من 32 حرفًا ست عشريًا للتعيين، أو 'none' للمسح في منافذ MTProto."
-    },
-    "groups": {},
-    "nodes": {
-      "name": "الاسم",
-      "apiToken": "رمز API",
-      "apiTokenHint": "البانل البعيد بيعرض توكن API بتاعه في المصادقة → توكن API.",
-      "latency": "الكمون",
-      "statusValues": {},
-      "toasts": {
-        "fillRequired": "الاسم والعنوان والبورت وتوكن API كلهم مطلوبين"
-      },
-      "mtls": {}
     },
     "settings": {
       "defaultTag": "افتراضي",
@@ -1236,7 +1197,9 @@
         "apiTokenEmpty": "لا توجد رموز بعد — أنشئ واحدًا لمصادقة الروبوتات أو اللوحات البعيدة.",
         "apiTokenDeleteWarning": "أي عميل يستخدم هذا الرمز سيفقد المصادقة فورًا.",
         "apiTokenCreatedTitle": "تم إنشاء الرمز",
-        "apiTokenCreatedNotice": "انسخ هذا الرمز الآن. لأسباب أمنية لا يتم تخزينه بصيغة قابلة للقراءة ولن يتم عرضه مرة أخرى."
+        "apiTokenCreatedNotice": "انسخ هذا الرمز الآن. لأسباب أمنية لا يتم تخزينه بصيغة قابلة للقراءة ولن يتم عرضه مرة أخرى.",
+        "apiToken": "رمز API",
+        "apiTokenHint": "البانل البعيد بيعرض توكن API بتاعه في المصادقة → توكن API."
       },
       "toasts": {
         "modifySettings": "تم تغيير المعلمات.",
@@ -1281,8 +1244,6 @@
       "eventOutboundDown": "غير متصل",
       "eventOutboundUp": "متصل",
       "eventXrayCrash": "تعطّل",
-      "eventNodeDown": "غير متصلة",
-      "eventNodeUp": "متصلة",
       "eventCPUHigh": "ارتفاع استخدام المعالج (%)",
       "requestFailed": "فشل الطلب",
       "smtpEncryption": "التشفير",
@@ -1586,7 +1547,51 @@
       "subIncyResolveDnsDomainDesc": "رابط سيرفر DoH، غالبًا ينتهي بـ /dns-query.",
       "subIncyResolveDnsIp": "IP سيرفر DoH",
       "subIncyResolveDnsIpDesc": "عنوان IP لسيرفر DoH للتهيئة.",
-      "subIncyGroupRouting": "التوجيه"
+      "subIncyGroupRouting": "التوجيه",
+      "exportDatabaseDesc": "",
+      "allowInsecure": "السماح بغير الآمن",
+      "allowInsecureHelp": "تخطّي التحقق من شهادة TLS (allowInsecure / skip-cert-verify).",
+      "remarkVars": {
+        "title": "متغيرات القالب",
+        "intro": "اضغط على متغير لإضافته. يتم استبداله لكل عميل عند إنشاء الاشتراك.",
+        "preview": "معاينة",
+        "groups": {
+          "client": "العميل",
+          "traffic": "حركة المرور",
+          "time": "الوقت والحالة",
+          "connection": "الاتصال"
+        },
+        "descEMAIL": "بريد العميل",
+        "descINBOUND": "ملاحظة الوارد نفسه (اسم الإعداد)",
+        "descHOST": "ملاحظة المضيف",
+        "descID": "UUID العميل",
+        "descSHORT_ID": "أول 8 أحرف من الـ UUID",
+        "descTELEGRAM_ID": "معرّف تلغرام للعميل (فارغ إذا لم يُحدَّد)",
+        "descSUB_ID": "معرّف الاشتراك",
+        "descCOMMENT": "تعليق العميل",
+        "descTRAFFIC_USED": "حركة المرور المستخدمة (قابلة للقراءة)",
+        "descTRAFFIC_LEFT": "حركة المرور المتبقية (مخفية إذا كانت غير محدودة)",
+        "descTRAFFIC_TOTAL": "إجمالي حركة المرور (مخفي إذا كان غير محدود)",
+        "descTRAFFIC_USED_BYTES": "حركة المرور المستخدمة بالبايت",
+        "descTRAFFIC_LEFT_BYTES": "حركة المرور المتبقية بالبايت",
+        "descTRAFFIC_TOTAL_BYTES": "إجمالي حركة المرور بالبايت",
+        "descUP": "حركة مرور الرفع",
+        "descDOWN": "حركة مرور التنزيل",
+        "descSTATUS": "نشط / منتهٍ / معطّل / مستنفد",
+        "descSTATUS_EMOJI": "الحالة كرمز تعبيري (✅ ⏳ 🚫)",
+        "descDAYS_LEFT": "الأيام حتى الانتهاء (مخفية إذا كانت غير محدودة)",
+        "descTIME_LEFT": "الوقت المتبقي (مثال: 12d 4h 30m)",
+        "descUSAGE_PERCENTAGE": "حركة المرور المستخدمة كنسبة مئوية (مخفية إذا كانت غير محدودة)",
+        "descEXPIRE_DATE": "تاريخ الانتهاء (YYYY-MM-DD)",
+        "descJALALI_EXPIRE_DATE": "تاريخ الانتهاء بالتقويم الجلالي (YYYY/MM/DD)",
+        "descEXPIRE_UNIX": "الانتهاء كطابع زمني Unix (بالثواني)",
+        "descCREATED_UNIX": "وقت الإنشاء كطابع زمني Unix (بالثواني)",
+        "descRESET_DAYS": "فترة إعادة تعيين حركة المرور بالأيام",
+        "descRESET_DAY": "يوم الشهر الذي يتم فيه التجديد",
+        "descPROTOCOL": "بروتوكول الوارد (VLESS، VMess، Trojan، …)",
+        "descTRANSPORT": "شبكة النقل (tcp، ws، grpc، …)",
+        "descSECURITY": "أمان النقل (TLS، REALITY، NONE)"
+      }
     },
     "xray": {
       "save": "احفظ",
@@ -2093,62 +2098,9 @@
         "poolSize": "حجم المجموعة"
       },
       "defaultOutbound": "الصادر الافتراضي",
-      "defaultOutboundDesc": "الحركة التي لا تطابق أي قاعدة توجيه تستخدم هذا الصادر (الأول في القائمة)."
-    },
-    "hosts": {
-      "summary": {},
-      "sections": {},
-      "fields": {
-        "allowInsecure": "السماح بغير الآمن"
-      },
-      "hints": {
-        "allowInsecure": "تخطّي التحقق من شهادة TLS (allowInsecure / skip-cert-verify)."
-      },
-      "remarkVars": {
-        "title": "متغيرات القالب",
-        "intro": "اضغط على متغير لإضافته. يتم استبداله لكل عميل عند إنشاء الاشتراك.",
-        "preview": "معاينة",
-        "groups": {
-          "client": "العميل",
-          "traffic": "حركة المرور",
-          "time": "الوقت والحالة",
-          "connection": "الاتصال"
-        },
-        "descEMAIL": "بريد العميل",
-        "descINBOUND": "ملاحظة الوارد نفسه (اسم الإعداد)",
-        "descHOST": "ملاحظة المضيف",
-        "descID": "UUID العميل",
-        "descSHORT_ID": "أول 8 أحرف من الـ UUID",
-        "descTELEGRAM_ID": "معرّف تلغرام للعميل (فارغ إذا لم يُحدَّد)",
-        "descSUB_ID": "معرّف الاشتراك",
-        "descCOMMENT": "تعليق العميل",
-        "descTRAFFIC_USED": "حركة المرور المستخدمة (قابلة للقراءة)",
-        "descTRAFFIC_LEFT": "حركة المرور المتبقية (مخفية إذا كانت غير محدودة)",
-        "descTRAFFIC_TOTAL": "إجمالي حركة المرور (مخفي إذا كان غير محدود)",
-        "descTRAFFIC_USED_BYTES": "حركة المرور المستخدمة بالبايت",
-        "descTRAFFIC_LEFT_BYTES": "حركة المرور المتبقية بالبايت",
-        "descTRAFFIC_TOTAL_BYTES": "إجمالي حركة المرور بالبايت",
-        "descUP": "حركة مرور الرفع",
-        "descDOWN": "حركة مرور التنزيل",
-        "descSTATUS": "نشط / منتهٍ / معطّل / مستنفد",
-        "descSTATUS_EMOJI": "الحالة كرمز تعبيري (✅ ⏳ 🚫)",
-        "descDAYS_LEFT": "الأيام حتى الانتهاء (مخفية إذا كانت غير محدودة)",
-        "descTIME_LEFT": "الوقت المتبقي (مثال: 12d 4h 30m)",
-        "descUSAGE_PERCENTAGE": "حركة المرور المستخدمة كنسبة مئوية (مخفية إذا كانت غير محدودة)",
-        "descEXPIRE_DATE": "تاريخ الانتهاء (YYYY-MM-DD)",
-        "descJALALI_EXPIRE_DATE": "تاريخ الانتهاء بالتقويم الجلالي (YYYY/MM/DD)",
-        "descEXPIRE_UNIX": "الانتهاء كطابع زمني Unix (بالثواني)",
-        "descCREATED_UNIX": "وقت الإنشاء كطابع زمني Unix (بالثواني)",
-        "descRESET_DAYS": "فترة إعادة تعيين حركة المرور بالأيام",
-        "descRESET_DAY": "يوم الشهر الذي يتم فيه التجديد",
-        "descPROTOCOL": "بروتوكول الوارد (VLESS، VMess، Trojan، …)",
-        "descTRANSPORT": "شبكة النقل (tcp، ws، grpc، …)",
-        "descSECURITY": "أمان النقل (TLS، REALITY، NONE)"
-      },
-      "toasts": {
-        "badTag": "وسم غير صالح",
-        "badVlessRoute": "أدخل رقماً واحداً بين 0 و65535"
-      }
+      "defaultOutboundDesc": "الحركة التي لا تطابق أي قاعدة توجيه تستخدم هذا الصادر (الأول في القائمة).",
+      "ruleName": "الاسم",
+      "outboundLatency": "الكمون"
     }
   },
   "tgbot": {
@@ -2273,8 +2225,6 @@
       "eventDelayDetail": "التأخير: {{ .Delay }} مللي ثانية",
       "eventXrayCrash": "تعطّل Xray",
       "eventXrayCrashError": "الخطأ: {{ .Error }}",
-      "eventNodeDown": "العقدة {{ .Name }} غير متصلة",
-      "eventNodeUp": "العقدة {{ .Name }} متصلة",
       "eventLoginFallback": "فشل تسجيل الدخول من {{ .Source }}",
       "memoryThreshold": "استخدام الذاكرة {{ .Percent }}% يتجاوز الحد {{ .Threshold }}%"
     },
@@ -2366,7 +2316,6 @@
       "error": "خطأ",
       "delay": "زمن الاستجابة",
       "outbound": "الصادر",
-      "node": "العقدة",
       "threshold": "الحد",
       "reason": "السبب",
       "time": "الوقت",
@@ -2381,8 +2330,6 @@
     "alerts": {
       "outboundDown": "الصادر متوقف",
       "outboundUp": "الصادر يعمل",
-      "nodeDown": "العقدة متوقفة",
-      "nodeUp": "العقدة تعمل",
       "xrayCrash": "تعطّلت نواة Xray",
       "cpuHigh": "تم تجاوز حد المعالج",
       "memoryHigh": "تم تجاوز حد الذاكرة",
@@ -2428,7 +2375,6 @@
   "email": {
     "labelStatus": "الحالة",
     "labelOutbound": "الصادر",
-    "labelNode": "العقدة",
     "labelError": "الخطأ",
     "labelDelay": "التأخير",
     "labelUsername": "اسم المستخدم",

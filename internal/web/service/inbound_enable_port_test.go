@@ -13,7 +13,7 @@ func setupEnablePortTest(t *testing.T) {
 	t.Helper()
 	setupConflictDB(t)
 	mgr := runtime.NewManager(runtime.LocalDeps{APIPort: func() int { return 0 }})
-	mgr.SetLocalRuntimeOverride(&fakeNodeRuntime{})
+	mgr.SetLocalRuntimeOverride(&fakeRuntime{})
 	runtime.SetManager(mgr)
 	t.Cleanup(func() { runtime.SetManager(nil) })
 }
@@ -60,24 +60,5 @@ func TestSetInboundEnableAllowsTCPUDPCoexistence(t *testing.T) {
 	}
 	if after := loadInboundByTag(t, "tcp-sleeper"); !after.Enable {
 		t.Fatal("the row must be enabled")
-	}
-}
-
-// Nodes run their own Xray, so a node row sharing a local port is legal and must
-// stay enableable.
-func TestSetInboundEnableAllowsANodeRowOnALocalPort(t *testing.T) {
-	setupEnablePortTest(t)
-	seedInboundConflict(t, "local-holder", "0.0.0.0", 44433, model.VLESS, `{"network":"tcp"}`, `{}`)
-
-	node := &model.Node{Name: "n1", Address: "127.0.0.1", Port: 2096, Scheme: "https", Enable: true, Status: "online"}
-	if err := database.GetDB().Create(node).Error; err != nil {
-		t.Fatalf("seed node: %v", err)
-	}
-	seedInboundConflictNode(t, "node-row", "0.0.0.0", 44433, model.VLESS, `{"network":"tcp"}`, `{}`, &node.Id)
-	row := loadInboundByTag(t, "node-row")
-	disableInboundRow(t, row.Id)
-
-	if _, err := (&InboundService{}).SetInboundEnable(row.Id, true); err != nil {
-		t.Fatalf("a node row must be enableable regardless of a local row's port: %v", err)
 	}
 }

@@ -8,7 +8,6 @@ import {
   QrcodeOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-
 import { ClipboardManager, FileManager, HttpUtil, IntlUtil, SizeFormatter } from '@/utils';
 import { formatInboundLabel, formatTunnelConfigMeta } from '@/lib/inbounds/label';
 import { normalizeClientIps, type ClientIpInfo } from '@/lib/clients/ip-log';
@@ -30,10 +29,7 @@ import {
   findAmneziaWGInbounds,
   isAmneziaWGClient,
 } from './amneziawgConfig';
-import { tunnelConfigEndpoints, tunnelEndpointLabel } from './tunnelEndpoints';
-import type { HostRecord } from '@/schemas/api/host';
 import './ClientInfoModal.css';
-
 const INBOUND_PROTOCOL_COLORS: Record<string, string> = {
   vless: 'blue',
   vmess: 'geekblue',
@@ -48,9 +44,7 @@ const INBOUND_PROTOCOL_COLORS: Record<string, string> = {
   tunnel: 'orange',
   tuic: 'orange',
 };
-
 const INBOUND_CHIP_LIMIT = 1;
-
 interface SubSettings {
   enable: boolean;
   subURI: string;
@@ -60,7 +54,6 @@ interface SubSettings {
   subClashEnable: boolean;
   publicHost?: string;
 }
-
 interface ClientInfoModalProps {
   open: boolean;
   client: ClientRecord | null;
@@ -68,17 +61,12 @@ interface ClientInfoModalProps {
   tunnelAllowedIPs?: Record<number, string>;
   isOnline: boolean;
   subSettings?: SubSettings;
-  hosts?: HostRecord[];
   onOpenChange: (open: boolean) => void;
 }
-
-const NO_HOSTS: HostRecord[] = [];
-
 interface ApiMsg<T = unknown> {
   success?: boolean;
   obj?: T;
 }
-
 const DEFAULT_SUB: SubSettings = {
   enable: false,
   subURI: '',
@@ -88,13 +76,11 @@ const DEFAULT_SUB: SubSettings = {
   subClashEnable: false,
   publicHost: '',
 };
-
 const SUBSCRIPTION_DOWNLOAD_NAMES = {
   standard: 'subscription-standard.txt',
   json: 'subscription-json.json',
   clash: 'subscription-clash.yaml',
 } as const;
-
 export default function ClientInfoModal({
   open,
   client,
@@ -102,7 +88,6 @@ export default function ClientInfoModal({
   tunnelAllowedIPs,
   isOnline,
   subSettings = DEFAULT_SUB,
-  hosts = NO_HOSTS,
   onOpenChange,
 }: ClientInfoModalProps) {
   const { datepicker } = useDatepicker();
@@ -136,7 +121,6 @@ export default function ClientInfoModal({
   const [downloadingFormat, setDownloadingFormat] = useState<
     keyof typeof SUBSCRIPTION_DOWNLOAD_NAMES | null
   >(null);
-
   // Clearing on close happens during render; the effect owns only the fetch.
   const openSubId = open ? (client?.subId ?? '') : null;
   const [syncedSubId, setSyncedSubId] = useState(openSubId);
@@ -150,7 +134,6 @@ export default function ClientInfoModal({
       setHwidsModalOpen(false);
     }
   }
-
   useEffect(() => {
     if (!open || !client?.subId) return;
     let cancelled = false;
@@ -165,7 +148,6 @@ export default function ClientInfoModal({
       cancelled = true;
     };
   }, [open, client?.subId]);
-
   const traffic = client?.traffic || null;
   const totalBytes = client?.totalGB || 0;
   const used = (traffic?.up || 0) + (traffic?.down || 0);
@@ -174,7 +156,6 @@ export default function ClientInfoModal({
     const r = totalBytes - used;
     return r > 0 ? r : 0;
   }, [totalBytes, used]);
-
   const subId = client?.subId;
   const subLink = subId && subSettings?.subURI ? subSettings.subURI + subId : '';
   const subJsonLink =
@@ -185,7 +166,6 @@ export default function ClientInfoModal({
     subId && subSettings?.subClashEnable && subSettings?.subClashURI
       ? subSettings.subClashURI + subId
       : '';
-
   const showSubscription = !!(subSettings?.enable && client?.subId);
   const wgInbounds = useMemo(
     () => findWireguardInbounds(client, inboundsById),
@@ -198,15 +178,16 @@ export default function ClientInfoModal({
     return wgInbounds
       .flatMap((ib) => {
         const address = tunnelAllowedIPs?.[ib.id] ?? '';
-        return tunnelConfigEndpoints(ib, hosts, host, publicHost).map((ep) => ({
-          inbound: ib,
-          endpoint: tunnelEndpointLabel(ep),
-          text: buildWireguardClientConfig(client, ib, host, publicHost, address, ep),
-        }));
+        return [
+          {
+            inbound: ib,
+            endpoint: '',
+            text: buildWireguardClientConfig(client, ib, host, publicHost, address),
+          },
+        ];
       })
       .filter((c) => !!c.text);
-  }, [client, wgInbounds, tunnelAllowedIPs, subSettings?.publicHost, hosts]);
-
+  }, [client, wgInbounds, tunnelAllowedIPs, subSettings?.publicHost]);
   const awgInbounds = useMemo(
     () => findAmneziaWGInbounds(client, inboundsById),
     [client, inboundsById],
@@ -218,21 +199,21 @@ export default function ClientInfoModal({
     return awgInbounds
       .flatMap((ib) => {
         const address = tunnelAllowedIPs?.[ib.id] ?? '';
-        return tunnelConfigEndpoints(ib, hosts, host, publicHost).map((ep) => ({
-          inbound: ib,
-          endpoint: tunnelEndpointLabel(ep),
-          text: buildAmneziaWGClientConfig(client, ib, host, publicHost, address, ep),
-        }));
+        return [
+          {
+            inbound: ib,
+            endpoint: '',
+            text: buildAmneziaWGClientConfig(client, ib, host, publicHost, address),
+          },
+        ];
       })
       .filter((c) => !!c.text);
-  }, [client, awgInbounds, tunnelAllowedIPs, subSettings?.publicHost, hosts]);
-
+  }, [client, awgInbounds, tunnelAllowedIPs, subSettings?.publicHost]);
   async function copyValue(text: string) {
     if (!text) return;
     const ok = await ClipboardManager.copyText(String(text));
     if (ok) messageApi.success(t('copied'));
   }
-
   async function downloadSubscription(
     url: string,
     format: keyof typeof SUBSCRIPTION_DOWNLOAD_NAMES,
@@ -250,7 +231,6 @@ export default function ClientInfoModal({
       setDownloadingFormat(null);
     }
   }
-
   async function loadIps() {
     if (!client?.email) return;
     setIpsLoading(true);
@@ -267,7 +247,6 @@ export default function ClientInfoModal({
       setIpsLoading(false);
     }
   }
-
   async function clearIps() {
     if (!client?.email) return;
     setIpsClearing(true);
@@ -280,17 +259,14 @@ export default function ClientInfoModal({
       setIpsClearing(false);
     }
   }
-
   function openIpsModal() {
     setIpsModalOpen(true);
     if (clientIps.length === 0) void loadIps();
   }
-
   function openHwidsModal() {
     setHwidsModalOpen(true);
     if (clientHwids.length === 0) void loadHwids();
   }
-
   return (
     <>
       {messageContextHolder}
@@ -510,14 +486,7 @@ export default function ClientInfoModal({
                     <Tag>{dateLabel(client.updatedAt)}</Tag>
                   </td>
                 </tr>
-                {client.group && (
-                  <tr>
-                    <td>{t('pages.clients.group')}</td>
-                    <td>
-                      <Tag color="geekblue">{client.group}</Tag>
-                    </td>
-                  </tr>
-                )}
+
                 {client.comment && (
                   <tr>
                     <td>{t('pages.clients.comment')}</td>
@@ -887,11 +856,6 @@ export default function ClientInfoModal({
               >
                 {entry.ip}
                 {entry.time ? ` (${entry.time})` : ''}
-                {entry.node ? (
-                  <span style={{ marginInlineStart: 6, opacity: 0.85, fontWeight: 600 }}>
-                    @ {entry.node}
-                  </span>
-                ) : null}
               </Tag>
             ))}
           </div>

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-
 import { HttpUtil, Msg } from '@/utils';
 import { parseMsg } from '@/utils/zodValidate';
 import { keys } from '@/api/queryKeys';
@@ -33,7 +32,6 @@ import {
 } from '@/schemas/client';
 import { DefaultsPayloadSchema } from '@/schemas/defaults';
 import { TRAFFIC_POLL_INTERVAL_S } from '@/lib/traffic/poll-interval';
-
 // One row sent to POST /clients/:email/externalLinks.
 export type ExternalLinkInput = {
   kind: 'link' | 'subscription';
@@ -43,11 +41,8 @@ export type ExternalLinkInput = {
   expiryTime: number;
   namePrefix: string;
 };
-
 export type { ClientRecord, ClientTraffic, ClientsSummary, InboundOption, ExternalLink };
-
 const JSON_HEADERS = { headers: { 'Content-Type': 'application/json' } } as const;
-
 interface SubSettings {
   enable: boolean;
   happLinkEnable: boolean;
@@ -58,7 +53,6 @@ interface SubSettings {
   subClashEnable: boolean;
   publicHost: string;
 }
-
 export interface ClientQueryParams {
   page: number;
   pageSize: number;
@@ -76,9 +70,7 @@ export interface ClientQueryParams {
   autoRenew?: 'on' | 'off' | '';
   hasTgId?: 'yes' | 'no' | '';
   hasComment?: 'yes' | 'no' | '';
-  group?: string;
 }
-
 const DEFAULT_QUERY: ClientQueryParams = { page: 1, pageSize: 25 };
 const DEFAULT_SUMMARY: ClientsSummary = {
   total: 0,
@@ -92,14 +84,13 @@ const DEFAULT_SUMMARY: ClientsSummary = {
   expiring: [],
   deactive: [],
 };
-
 export interface ClientSpeedEntry {
   up: number;
   down: number;
 }
-
-type ClientStatRow = ClientTraffic & { email?: string };
-
+type ClientStatRow = ClientTraffic & {
+  email?: string;
+};
 export function sameSpeedMap(
   a: Record<string, ClientSpeedEntry>,
   b: Record<string, ClientSpeedEntry>,
@@ -113,7 +104,6 @@ export function sameSpeedMap(
   }
   return true;
 }
-
 function buildQS(p: ClientQueryParams): string {
   const sp = new URLSearchParams();
   sp.set('page', String(p.page || 1));
@@ -131,10 +121,8 @@ function buildQS(p: ClientQueryParams): string {
   if (p.autoRenew) sp.set('autoRenew', p.autoRenew);
   if (p.hasTgId) sp.set('hasTgId', p.hasTgId);
   if (p.hasComment) sp.set('hasComment', p.hasComment);
-  if (p.group) sp.set('group', p.group);
   return sp.toString();
 }
-
 async function fetchClientPage(params: ClientQueryParams): Promise<ClientPageResponse> {
   const qs = buildQS(params);
   const msg = await HttpUtil.get(`/panel/api/clients/list/paged?${qs}`, undefined, {
@@ -145,14 +133,12 @@ async function fetchClientPage(params: ClientQueryParams): Promise<ClientPageRes
   if (!validated.obj) throw new Error('Empty clients response');
   return validated.obj;
 }
-
 async function fetchInboundOptions(): Promise<InboundOption[]> {
   const msg = await HttpUtil.get('/panel/api/inbounds/options', undefined, { silent: true });
   if (!msg?.success) throw new Error(msg?.msg || 'Failed to fetch inbound options');
   const validated = parseMsg(msg, InboundOptionsSchema, 'inbounds/options');
   return Array.isArray(validated.obj) ? validated.obj : [];
 }
-
 async function fetchDefaults(): Promise<Record<string, unknown>> {
   const msg = await HttpUtil.post('/panel/api/setting/defaultSettings', undefined, {
     silent: true,
@@ -161,7 +147,6 @@ async function fetchDefaults(): Promise<Record<string, unknown>> {
   const validated = parseMsg(msg, DefaultsPayloadSchema, 'setting/defaultSettings');
   return validated.obj || {};
 }
-
 export interface UseClientsOptions {
   // Callers that only need the mutations — the bulk modals, the groups page —
   // pass false. Mounting them used to start a second 5-second poll of the paged
@@ -169,11 +154,9 @@ export interface UseClientsOptions {
   // summary aggregate every 5 seconds for nothing.
   list?: boolean;
 }
-
 export function useClients(options: UseClientsOptions = {}) {
   const withList = options.list ?? true;
   const queryClient = useQueryClient();
-
   // Null until the page has settled on a query. The clients page cannot build
   // one until the persisted sort and the panel's configured page size are both
   // known, and fetching before then cost three sequential requests per load —
@@ -200,14 +183,12 @@ export function useClients(options: UseClientsOptions = {}) {
         (prev.usageTo ?? 0) === (next.usageTo ?? 0) &&
         (prev.autoRenew ?? '') === (next.autoRenew ?? '') &&
         (prev.hasTgId ?? '') === (next.hasTgId ?? '') &&
-        (prev.hasComment ?? '') === (next.hasComment ?? '') &&
-        (prev.group ?? '') === (next.group ?? '')
+        (prev.hasComment ?? '') === (next.hasComment ?? '')
       )
         return prev;
       return next;
     });
   }, []);
-
   const listQuery = useQuery({
     queryKey: keys.clients.list(query ?? DEFAULT_QUERY),
     queryFn: () => fetchClientPage(query ?? DEFAULT_QUERY),
@@ -219,20 +200,17 @@ export function useClients(options: UseClientsOptions = {}) {
     refetchOnWindowFocus: 'always',
     placeholderData: keepPreviousData,
   });
-
   const inboundOptionsQuery = useQuery({
     queryKey: keys.inbounds.options(),
     queryFn: fetchInboundOptions,
     enabled: withList,
     staleTime: Infinity,
   });
-
   const defaultsQuery = useQuery({
     queryKey: keys.settings.defaults(),
     queryFn: fetchDefaults,
     staleTime: Infinity,
   });
-
   const onlinesQuery = useQuery({
     queryKey: keys.clients.onlines(),
     queryFn: async () => {
@@ -244,11 +222,9 @@ export function useClients(options: UseClientsOptions = {}) {
     enabled: withList,
     staleTime: Infinity,
   });
-
   const clients = listQuery.data?.items ?? [];
   const total = listQuery.data?.total ?? 0;
   const filtered = listQuery.data?.filtered ?? 0;
-  const allGroups = listQuery.data?.groups ?? [];
   const fetched = listQuery.data !== undefined || listQuery.isError;
   const fetchError = listQuery.error ? (listQuery.error as Error).message : '';
   // isFetching is deliberately NOT read here. Touching it makes it a tracked
@@ -259,10 +235,8 @@ export function useClients(options: UseClientsOptions = {}) {
   // Showing kept-previous data for a new key (filter/sort/page) — drives the
   // table overlay so the 5s background poll doesn't flash it.
   const transitioning = listQuery.isPlaceholderData;
-
   const inbounds = inboundOptionsQuery.data ?? [];
   const onlines = useMemo(() => onlinesQuery.data ?? [], [onlinesQuery.data]);
-
   const defaults = defaultsQuery.data ?? {};
   const subSettings: SubSettings = useMemo(
     () => ({
@@ -287,7 +261,6 @@ export function useClients(options: UseClientsOptions = {}) {
       defaults.webDomain,
     ],
   );
-
   const ipLimitEnable = !!defaults.ipLimitEnable;
   const tgBotEnable = !!defaults.tgBotEnable;
   const expireDiff = ((defaults.expireDiff as number) ?? 0) * 86400000;
@@ -298,10 +271,8 @@ export function useClients(options: UseClientsOptions = {}) {
   // configured page size is real. isFetched (not isSuccess) so a failed
   // settings request still lets the page fall back and render.
   const settingsReady = defaultsQuery.isFetched;
-
   const [clientSpeed, setClientSpeed] = useState<Record<string, ClientSpeedEntry>>({});
   const summary = listQuery.data?.summary ?? DEFAULT_SUMMARY;
-
   const invalidateAll = useCallback(() => {
     markLocalInvalidate();
     return Promise.all([
@@ -310,11 +281,9 @@ export function useClients(options: UseClientsOptions = {}) {
       queryClient.invalidateQueries({ queryKey: keys.xray.config() }),
     ]);
   }, [queryClient]);
-
   const refresh = useCallback(async () => {
     await invalidateAll();
   }, [invalidateAll]);
-
   const hydrate = useCallback(async (email: string): Promise<ClientHydrate | null> => {
     if (!email) return null;
     const msg = await HttpUtil.get(`/panel/api/clients/get/${encodeURIComponent(email)}`);
@@ -322,7 +291,6 @@ export function useClients(options: UseClientsOptions = {}) {
     const validated = parseMsg(msg, ClientHydrateSchema, 'clients/get');
     return validated.obj;
   }, []);
-
   const createMut = useMutation({
     mutationFn: (payload: unknown) =>
       HttpUtil.post('/panel/api/clients/add', payload, JSON_HEADERS),
@@ -330,23 +298,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
-  const bulkAddToGroupMut = useMutation({
-    mutationFn: (body: { emails: string[]; group: string }) =>
-      HttpUtil.post('/panel/api/clients/groups/bulkAdd', body, JSON_HEADERS),
-    onSuccess: (msg) => {
-      if (msg?.success) invalidateAll();
-    },
-  });
-
-  const bulkRemoveFromGroupMut = useMutation({
-    mutationFn: (body: { emails: string[] }) =>
-      HttpUtil.post('/panel/api/clients/groups/bulkRemove', body, JSON_HEADERS),
-    onSuccess: (msg) => {
-      if (msg?.success) invalidateAll();
-    },
-  });
-
   const updateMut = useMutation({
     mutationFn: ({ email, client }: { email: string; client: unknown }) =>
       HttpUtil.post(`/panel/api/clients/update/${encodeURIComponent(email)}`, client, JSON_HEADERS),
@@ -354,7 +305,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const removeMut = useMutation({
     mutationFn: ({ email, keepTraffic }: { email: string; keepTraffic?: boolean }) => {
       const url = keepTraffic
@@ -366,7 +316,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const bulkDeleteMut = useMutation({
     mutationFn: async (payload: {
       emails: string[];
@@ -379,7 +328,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const bulkCreateMut = useMutation({
     mutationFn: async (payloads: unknown[]): Promise<Msg<BulkCreateResult>> => {
       const raw = await HttpUtil.post('/panel/api/clients/bulkCreate', payloads, JSON_HEADERS);
@@ -389,7 +337,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const bulkAdjustMut = useMutation({
     mutationFn: async (payload: {
       emails: string[];
@@ -406,7 +353,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const bulkSetEnableMut = useMutation({
     mutationFn: async (payload: {
       emails: string[];
@@ -426,7 +372,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const attachMut = useMutation({
     mutationFn: ({ email, inboundIds }: { email: string; inboundIds: number[] }) =>
       HttpUtil.post(
@@ -438,7 +383,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const setExternalLinksMut = useMutation({
     mutationFn: ({ email, externalLinks }: { email: string; externalLinks: ExternalLinkInput[] }) =>
       HttpUtil.post(
@@ -450,7 +394,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const bulkAttachMut = useMutation({
     mutationFn: async (payload: {
       emails: string[];
@@ -463,7 +406,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const detachMut = useMutation({
     mutationFn: ({ email, inboundIds }: { email: string; inboundIds: number[] }) =>
       HttpUtil.post(
@@ -475,7 +417,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const bulkDetachMut = useMutation({
     mutationFn: async (payload: {
       emails: string[];
@@ -488,7 +429,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const resetTrafficMut = useMutation({
     mutationFn: (email: string) =>
       HttpUtil.post(`/panel/api/clients/resetTraffic/${encodeURIComponent(email)}`),
@@ -496,14 +436,12 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const resetAllTrafficsMut = useMutation({
     mutationFn: () => HttpUtil.post('/panel/api/clients/resetAllTraffics'),
     onSuccess: (msg) => {
       if (msg?.success) invalidateAll();
     },
   });
-
   const delDepletedMut = useMutation({
     mutationFn: async () => {
       const raw = await HttpUtil.post('/panel/api/clients/delDepleted');
@@ -513,7 +451,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const delOrphansMut = useMutation({
     mutationFn: async () => {
       const raw = await HttpUtil.post('/panel/api/clients/delOrphans');
@@ -523,7 +460,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const importClientsMut = useMutation({
     mutationFn: async (data: string): Promise<Msg<BulkCreateResult>> => {
       const raw = await HttpUtil.post('/panel/api/clients/import', { data }, JSON_HEADERS);
@@ -533,7 +469,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (msg?.success) invalidateAll();
     },
   });
-
   const create = useCallback((payload: unknown) => createMut.mutateAsync(payload), [createMut]);
   const update = useCallback(
     (email: string, client: unknown) => {
@@ -594,20 +529,6 @@ export function useClients(options: UseClientsOptions = {}) {
       return bulkSetEnableMut.mutateAsync({ emails, enable: false });
     },
     [bulkSetEnableMut],
-  );
-  const bulkAddToGroup = useCallback(
-    (emails: string[], group: string) => {
-      if (!Array.isArray(emails) || emails.length === 0) return Promise.resolve(null);
-      return bulkAddToGroupMut.mutateAsync({ emails, group });
-    },
-    [bulkAddToGroupMut],
-  );
-  const bulkRemoveFromGroup = useCallback(
-    (emails: string[]) => {
-      if (!Array.isArray(emails) || emails.length === 0) return Promise.resolve(null);
-      return bulkRemoveFromGroupMut.mutateAsync({ emails });
-    },
-    [bulkRemoveFromGroupMut],
   );
   const attach = useCallback(
     (email: string, inboundIds: number[]) => {
@@ -674,7 +595,6 @@ export function useClients(options: UseClientsOptions = {}) {
     if (!msg?.success) return null;
     return Array.isArray(msg.obj) ? msg.obj : [];
   }, []);
-
   const setEnable = useCallback(
     async (client: ClientRecord, enable: boolean) => {
       if (!client?.email) return null;
@@ -700,7 +620,6 @@ export function useClients(options: UseClientsOptions = {}) {
         resetMax: Number(base.resetMax) || 0,
         trafficReset: base.trafficReset || 'never',
         trafficResetDay: Number(base.trafficResetDay) || 1,
-        group: base.group || '',
         comment: base.comment || '',
         enable: !!enable,
       };
@@ -711,20 +630,22 @@ export function useClients(options: UseClientsOptions = {}) {
     },
     [hydrate, update],
   );
-
   // WS-driven in-place merges. Page wires these via useWebSocket; the bridge
   // covers coarse 'invalidate' and 'inbounds' events centrally.
   const queryRef = useRef(query);
   useEffect(() => {
     queryRef.current = query;
   });
-
   const applyTrafficEvent = useCallback(
     (payload: unknown) => {
       if (!payload || typeof payload !== 'object') return;
       const p = payload as {
         onlineClients?: string[];
-        clientTraffics?: { email: string; up: number; down: number }[];
+        clientTraffics?: {
+          email: string;
+          up: number;
+          down: number;
+        }[];
       };
       if (Array.isArray(p.onlineClients)) {
         queryClient.setQueryData(keys.clients.onlines(), p.onlineClients);
@@ -751,11 +672,12 @@ export function useClients(options: UseClientsOptions = {}) {
     },
     [queryClient],
   );
-
   const applyClientStatsEvent = useCallback(
     (payload: unknown) => {
       if (!payload || typeof payload !== 'object') return;
-      const p = payload as { clients?: ClientStatRow[] };
+      const p = payload as {
+        clients?: ClientStatRow[];
+      };
       if (!Array.isArray(p.clients) || p.clients.length === 0) return;
       const active = queryRef.current;
       if (!active) return;
@@ -787,17 +709,14 @@ export function useClients(options: UseClientsOptions = {}) {
     },
     [queryClient],
   );
-
   useEffect(() => {
     queryRef.current = query;
   }, [query]);
-
   return {
     clients,
     total,
     filtered,
     summary,
-    allGroups,
     hydrate,
     query,
     setQuery,
@@ -822,8 +741,6 @@ export function useClients(options: UseClientsOptions = {}) {
     bulkAdjust,
     bulkEnable,
     bulkDisable,
-    bulkAddToGroup,
-    bulkRemoveFromGroup,
     attach,
     setExternalLinks,
     bulkAttach,

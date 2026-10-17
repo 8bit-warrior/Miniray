@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	"github.com/8bit-warrior/Miniray/internal/web/entity"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 	"github.com/8bit-warrior/Miniray/internal/web/websocket"
-
-	"github.com/gin-gonic/gin"
 )
 
 func notifyClientsChanged() {
@@ -87,8 +87,6 @@ func (a *ClientController) initRouter(g *gin.RouterGroup) {
 	g.DELETE("/hwids/:email", a.clearHwids)
 	g.DELETE("/hwids/:email/:id", a.deleteHwid)
 	g.POST("/onlines", a.onlines)
-	g.POST("/onlinesByGuid", a.onlinesByGuid)
-	g.POST("/clientIpsByGuid", a.clientIpsByGuid)
 	g.POST("/activeInbounds", a.activeInbounds)
 	g.POST("/lastOnline", a.lastOnline)
 }
@@ -217,7 +215,7 @@ func (a *ClientController) create(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
-	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientAddSuccess"), pendingNodeObj(a.inboundService.AnyNodePending(payload.InboundIds)), nil)
+	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientAddSuccess"), nil, nil)
 }
 
 func (a *ClientController) update(c *gin.Context) {
@@ -246,7 +244,7 @@ func (a *ClientController) update(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
-	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientUpdateSuccess"), pendingNodeObj(a.clientService.HasPendingNode(&a.inboundService, email)), nil)
+	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientUpdateSuccess"), nil, nil)
 }
 
 func (a *ClientController) delete(c *gin.Context) {
@@ -298,7 +296,7 @@ func (a *ClientController) attach(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
-	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientAddSuccess"), pendingNodeObj(a.inboundService.AnyNodePending(body.InboundIds)), nil)
+	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientAddSuccess"), nil, nil)
 }
 
 func (a *ClientController) setExternalLinks(c *gin.Context) {
@@ -578,13 +576,8 @@ func (a *ClientController) updateTrafficByEmail(c *gin.Context) {
 
 func (a *ClientController) getIps(c *gin.Context) {
 	email := c.Param("email")
-	infos, err := a.inboundService.GetClientIpsWithNodes(email)
+	infos, err := a.inboundService.GetClientIpLog(email)
 	jsonObj(c, infos, err)
-}
-
-func (a *ClientController) clientIpsByGuid(c *gin.Context) {
-	data, err := a.inboundService.GetClientIpsByGuid()
-	jsonObj(c, data, err)
 }
 
 func (a *ClientController) clearIps(c *gin.Context) {
@@ -626,12 +619,8 @@ func (a *ClientController) onlines(c *gin.Context) {
 	jsonObj(c, a.inboundService.GetOnlineClients(), nil)
 }
 
-func (a *ClientController) onlinesByGuid(c *gin.Context) {
-	jsonObj(c, a.inboundService.GetOnlineClientsByGuid(), nil)
-}
-
 func (a *ClientController) activeInbounds(c *gin.Context) {
-	jsonObj(c, a.inboundService.GetActiveInboundsByGuid(), nil)
+	jsonObj(c, a.inboundService.GetActiveInboundTags(), nil)
 }
 
 func (a *ClientController) lastOnline(c *gin.Context) {
@@ -709,7 +698,7 @@ func (a *ClientController) detach(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
-	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientDeleteSuccess"), pendingNodeObj(a.inboundService.AnyNodePending(body.InboundIds)), nil)
+	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientDeleteSuccess"), nil, nil)
 }
 
 type bulkResetRequest struct {

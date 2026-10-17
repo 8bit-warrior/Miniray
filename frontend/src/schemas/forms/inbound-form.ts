@@ -1,5 +1,4 @@
 import { z } from 'zod';
-
 import { InboundPortSchema, SniffingSchema } from '@/schemas/primitives';
 import { InboundSettingsSchema } from '@/schemas/protocols/inbound';
 import {
@@ -9,7 +8,6 @@ import {
   tlsCertUsesFiles,
 } from '@/schemas/protocols/security';
 import { NetworkSettingsSchema, StreamExtrasSchema } from '@/schemas/protocols/stream';
-
 // Inbound certificates must follow the selected editor mode. The shared wire
 // union also serves outbound TLS, where a client certificate is optional.
 const InboundTlsCertFieldsSchema = TlsCertInlineSchema.extend({
@@ -19,7 +17,6 @@ const InboundTlsCertFieldsSchema = TlsCertInlineSchema.extend({
   certificate: z.array(z.string()).default([]),
   key: z.array(z.string()).default([]),
 });
-
 const InboundTlsCertSchema = InboundTlsCertFieldsSchema.superRefine((cert, ctx) => {
   const useFile = tlsCertUsesFiles(cert);
   const hasCertificate = useFile
@@ -46,7 +43,6 @@ const InboundTlsCertSchema = InboundTlsCertFieldsSchema.superRefine((cert, ctx) 
     ? { ...settings, certificateFile, keyFile }
     : { ...settings, certificate, key };
 });
-
 const InboundTlsSettingsSchema = TlsStreamSettingsSchema.extend({
   certificates: z
     .array(InboundTlsCertSchema)
@@ -55,19 +51,15 @@ const InboundTlsSettingsSchema = TlsStreamSettingsSchema.extend({
       error: 'pages.inbounds.form.tlsServerCertificateRequired',
     }),
 });
-
 const InboundSecuritySettingsSchema = securitySettingsSchemaFor(InboundTlsSettingsSchema);
-
 export const InboundStreamFormSchema = NetworkSettingsSchema.and(InboundSecuritySettingsSchema).and(
   StreamExtrasSchema,
 );
 export type InboundStreamFormValues = z.infer<typeof InboundStreamFormSchema>;
-
 export const TrafficResetSchema = z.enum(['never', 'hourly', 'daily', 'weekly', 'monthly']);
 export type TrafficReset = z.infer<typeof TrafficResetSchema>;
-export const ShareAddrStrategySchema = z.enum(['node', 'listen', 'custom']);
+export const ShareAddrStrategySchema = z.enum(['listen', 'custom']);
 export type ShareAddrStrategy = z.infer<typeof ShareAddrStrategySchema>;
-
 // Db-side fields layered on top of the xray slice. These mirror the
 // DBInbound model — they live in the SQL row, not in xray's config.
 export const InboundDbFieldsSchema = z.object({
@@ -77,15 +69,13 @@ export const InboundDbFieldsSchema = z.object({
   trafficReset: TrafficResetSchema.default('never'),
   trafficResetDay: z.number().int().min(1).max(31).default(1),
   lastTrafficResetTime: z.number().int().default(0),
-  nodeId: z.number().int().nullable().optional(),
-  shareAddrStrategy: ShareAddrStrategySchema.default('node'),
+  shareAddrStrategy: ShareAddrStrategySchema.default('listen'),
   shareAddr: z.string().default(''),
   subSortIndex: z.number().int().default(1),
   excludeFromSub: z.boolean().default(false),
   disableFlow: z.boolean().default(false),
 });
 export type InboundDbFields = z.infer<typeof InboundDbFieldsSchema>;
-
 export const InboundFormBaseSchema = z.object({
   remark: z.string().default(''),
   enable: z.boolean().default(true),
@@ -105,13 +95,11 @@ export const InboundFormBaseSchema = z.object({
   streamSettings: InboundStreamFormSchema.optional(),
 });
 export type InboundFormBase = z.infer<typeof InboundFormBaseSchema>;
-
 // Full form values = base + db fields + protocol-discriminated settings.
 // Consumers narrow on `.protocol` to access the matching settings branch.
 export const InboundFormSchema =
   InboundFormBaseSchema.and(InboundDbFieldsSchema).and(InboundSettingsSchema);
 export type InboundFormValues = z.infer<typeof InboundFormSchema>;
-
 export const FallbackRowSchema = z.object({
   rowKey: z.string(),
   childId: z.number().int().nullable(),

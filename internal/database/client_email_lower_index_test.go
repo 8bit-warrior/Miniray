@@ -26,9 +26,6 @@ func TestMigrateClientEmailLowerIndexIsIdempotent(t *testing.T) {
 		t.Fatal("idx_clients_email_lower vanished after a second run")
 	}
 
-	if IsPostgres() {
-		return
-	}
 	// The identity lookups filter on LOWER(email); without the expression index
 	// they seq-scan, which is the cost this migration exists to remove.
 	var plan []struct{ Detail string }

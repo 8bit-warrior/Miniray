@@ -115,56 +115,6 @@ func TestRecreateByNameKeepsReplacedTokenScope(t *testing.T) {
 	}
 }
 
-// An explicit scope wins over the replaced token's, and a bad one is refused
-// before the old token is touched.
-func TestRecreateByNameAppliesGivenScope(t *testing.T) {
-	tests := []struct {
-		name      string
-		seedScope string
-		scope     string
-		want      string
-		wantErr   string
-	}{
-		{name: "replaces a monitor token as node-sync", seedScope: model.ApiScopeMonitor, scope: model.ApiScopeNodeSync, want: model.ApiScopeNodeSync},
-		{name: "creates a new token as monitor", scope: model.ApiScopeMonitor, want: model.ApiScopeMonitor},
-		{name: "refuses an unknown scope", seedScope: model.ApiScopeMonitor, scope: "root", want: model.ApiScopeMonitor, wantErr: "scope must be 'admin', 'monitor', or 'node-sync'"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("MINIRAY_DB_FOLDER", t.TempDir())
-			dbtest.InitDB(t, config.GetDBPath())
-
-			svc := ApiTokenService{}
-			var seeded *ApiTokenView
-			if tt.seedScope != "" {
-				var err error
-				if seeded, err = svc.Create("bot", tt.seedScope, 0); err != nil {
-					t.Fatalf("seed bot: %v", err)
-				}
-			}
-			_, err := svc.RecreateByName("bot", tt.scope)
-			if tt.wantErr != "" {
-				if err == nil || strings.TrimSpace(err.Error()) != tt.wantErr {
-					t.Fatalf("error = %v, want %q", err, tt.wantErr)
-				}
-				if !svc.Match(seeded.Token) {
-					t.Fatal("the old token was revoked by a refused rotation")
-				}
-			} else if err != nil {
-				t.Fatalf("recreate: %v", err)
-			}
-
-			var row model.ApiToken
-			if err := database.GetDB().Where("name = ?", "bot").First(&row).Error; err != nil {
-				t.Fatalf("load bot: %v", err)
-			}
-			if row.Scope != tt.want {
-				t.Fatalf("stored scope = %q, want %q", row.Scope, tt.want)
-			}
-		})
-	}
-}
-
 // A scope this build does not know, as after a downgrade, must not be guessed
 // as admin; the rotation fails and the stored row stays untouched.
 func TestRecreateByNameRefusesUnknownStoredScope(t *testing.T) {
@@ -188,35 +138,6 @@ func TestRecreateByNameRefusesUnknownStoredScope(t *testing.T) {
 	}
 	if row.Id != stored.Id || row.Token != stored.Token || row.Scope != stored.Scope {
 		t.Fatalf("row = %+v, want the stored row %+v unchanged", row, stored)
-	}
-}
-
-// Rotating a token issued with an expiry through the API handed back one that
-// never expires, since the replacement row took ExpiresAt 0.
-func TestRecreateByNameKeepsReplacedTokenExpiry(t *testing.T) {
-	for _, scope := range []string{"", model.ApiScopeNodeSync} {
-		t.Run("scope="+scope, func(t *testing.T) {
-			t.Setenv("MINIRAY_DB_FOLDER", t.TempDir())
-			dbtest.InitDB(t, config.GetDBPath())
-
-			svc := ApiTokenService{}
-			expiresAt := nowMilli() + 30*24*60*60*1000
-			if _, err := svc.Create("grafana", model.ApiScopeMonitor, expiresAt); err != nil {
-				t.Fatalf("seed grafana: %v", err)
-			}
-			rotated, err := svc.RecreateByName("grafana", scope)
-			if err != nil {
-				t.Fatalf("recreate: %v", err)
-			}
-
-			var row model.ApiToken
-			if err := database.GetDB().Where("name = ?", "grafana").First(&row).Error; err != nil {
-				t.Fatalf("load grafana: %v", err)
-			}
-			if row.ExpiresAt != expiresAt || rotated.ExpiresAt != expiresAt {
-				t.Fatalf("stored expiresAt = %d, returned %d, want %d", row.ExpiresAt, rotated.ExpiresAt, expiresAt)
-			}
-		})
 	}
 }
 

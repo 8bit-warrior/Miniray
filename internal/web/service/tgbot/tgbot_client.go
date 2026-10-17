@@ -12,15 +12,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mymmrac/telego"
+	tu "github.com/mymmrac/telego/telegoutil"
+	"github.com/skip2/go-qrcode"
+
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/util/common"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 	"github.com/8bit-warrior/Miniray/internal/xray"
-
-	"github.com/mymmrac/telego"
-	tu "github.com/mymmrac/telego/telegoutil"
-	"github.com/skip2/go-qrcode"
 )
 
 // BuildClientDraftMessage builds a protocol-neutral summary of the in-progress

@@ -2,7 +2,6 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Divider, Modal, Space, Tabs, Tag, Tooltip } from 'antd';
 import { CopyOutlined, SyncOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
-
 import { HttpUtil, IntlUtil, SizeFormatter, ColorUtils, Wireguard } from '@/utils';
 import { activateOnKey } from '@/utils/a11y';
 import { Protocols } from '@/schemas/primitives';
@@ -17,8 +16,6 @@ import {
   preferPublicHost,
 } from '@/lib/xray/inbound-link';
 import { inboundFromDb } from '@/lib/xray/inbound-from-db';
-import { withHostEndpoints } from '@/lib/hosts/host-link';
-
 import {
   buildInboundInfo,
   copyText,
@@ -30,9 +27,6 @@ import {
 } from './helpers';
 import type { ClientSetting, ClientStats, InboundInfo, InboundInfoModalProps } from './types';
 import './InboundInfoModal.css';
-
-const EMPTY_HOSTS: NonNullable<InboundInfoModalProps['hosts']> = [];
-
 export default function InboundInfoModal({
   open,
   onClose,
@@ -42,18 +36,20 @@ export default function InboundInfoModal({
   trafficDiff = 0,
   ipLimitEnable = false,
   tgBotEnable = false,
-  nodeAddress = '',
   subSettings,
-  hosts = EMPTY_HOSTS,
   lastOnlineMap = {},
 }: InboundInfoModalProps) {
   const { t } = useTranslation();
   const { datepicker } = useDatepicker();
-
   const [inbound, setInbound] = useState<InboundInfo | null>(null);
   const [clientSettings, setClientSettings] = useState<ClientSetting | null>(null);
   const [clientStats, setClientStats] = useState<ClientStats | null>(null);
-  const [links, setLinks] = useState<{ remark?: string; link: string }[]>([]);
+  const [links, setLinks] = useState<
+    {
+      remark?: string;
+      link: string;
+    }[]
+  >([]);
   const [wireguardConfigs, setWireguardConfigs] = useState<string[][]>([]);
   const [wireguardLinks, setWireguardLinks] = useState<string[][]>([]);
   const [amneziawgConfigs, setAmneziawgConfigs] = useState<string[][]>([]);
@@ -64,7 +60,6 @@ export default function InboundInfoModal({
   const [clientIpsArray, setClientIpsArray] = useState<string[]>([]);
   const [clientIpsText, setClientIpsText] = useState('');
   const [activeTab, setActiveTab] = useState('client');
-
   const loadClientIps = useCallback(async () => {
     if (!clientStats?.email) return;
     setRefreshing(true);
@@ -98,7 +93,6 @@ export default function InboundInfoModal({
       setRefreshing(false);
     }
   }, [clientStats, t]);
-
   const clearClientIps = useCallback(async () => {
     if (!clientStats?.email) return;
     const msg = await HttpUtil.post(`/panel/api/clients/clearIps/${clientStats.email}`);
@@ -107,15 +101,12 @@ export default function InboundInfoModal({
       setClientIpsText(t('tgbot.noIpRecord'));
     }
   }, [clientStats, t]);
-
   // The panel's contents are a pure function of the props, so they are adopted
   // during render; only the IP lookup below stays asynchronous.
   const [syncedProps, setSyncedProps] = useState<{
     dbInbound: typeof dbInbound;
     clientIndex: typeof clientIndex;
-    nodeAddress: typeof nodeAddress;
     subSettings: typeof subSettings;
-    hosts: typeof hosts;
     ipLimitEnable: typeof ipLimitEnable;
   } | null>(null);
   if (
@@ -124,16 +115,13 @@ export default function InboundInfoModal({
     (syncedProps === null ||
       syncedProps.dbInbound !== dbInbound ||
       syncedProps.clientIndex !== clientIndex ||
-      syncedProps.nodeAddress !== nodeAddress ||
       syncedProps.subSettings !== subSettings ||
-      syncedProps.hosts !== hosts ||
       syncedProps.ipLimitEnable !== ipLimitEnable)
   ) {
-    setSyncedProps({ dbInbound, clientIndex, nodeAddress, subSettings, hosts, ipLimitEnable });
+    setSyncedProps({ dbInbound, clientIndex, subSettings, ipLimitEnable });
     const info = buildInboundInfo(dbInbound);
     setInbound(info);
     setActiveTab(info.clients.length > 0 ? 'client' : 'inbound');
-
     const idx = clientIndex ?? 0;
     const clientSet = info.clients.length > 0 ? info.clients[idx] || null : null;
     setClientSettings(clientSet);
@@ -141,24 +129,17 @@ export default function InboundInfoModal({
       ? (dbInbound.clientStats || []).find((s) => s.email === clientSet.email) || null
       : null;
     setClientStats(stats);
-
     const fallbackHostname = preferPublicHost(
       window.location.hostname,
       subSettings?.publicHost ?? '',
     );
-    const inboundForLinks = withHostEndpoints(
-      inboundFromDb(dbInbound),
-      dbInbound.id,
-      hosts,
-      nodeAddress,
-      fallbackHostname,
-    );
+    const inboundForLinks = inboundFromDb(dbInbound);
     if (info.protocol === Protocols.WIREGUARD) {
       setWireguardConfigs(
         genWireguardPeerConfigs({
           inbound: inboundForLinks,
           remark: dbInbound.remark,
-          hostOverride: nodeAddress,
+          hostOverride: '',
           fallbackHostname,
         }),
       );
@@ -166,7 +147,7 @@ export default function InboundInfoModal({
         genWireguardPeerLinks({
           inbound: inboundForLinks,
           remark: dbInbound.remark,
-          hostOverride: nodeAddress,
+          hostOverride: '',
           fallbackHostname,
         }),
       );
@@ -178,7 +159,7 @@ export default function InboundInfoModal({
         genAmneziaWGPeerConfigs({
           inbound: inboundForLinks,
           remark: dbInbound.remark,
-          hostOverride: nodeAddress,
+          hostOverride: '',
           fallbackHostname,
         }),
       );
@@ -186,7 +167,7 @@ export default function InboundInfoModal({
         genAmneziaWGPeerLinks({
           inbound: inboundForLinks,
           remark: dbInbound.remark,
-          hostOverride: nodeAddress,
+          hostOverride: '',
           fallbackHostname,
         }),
       );
@@ -199,7 +180,7 @@ export default function InboundInfoModal({
           inbound: inboundForLinks,
           remark: dbInbound.remark,
           client: (clientSet ?? {}) as Parameters<typeof genAllLinks>[0]['client'],
-          hostOverride: nodeAddress,
+          hostOverride: '',
           fallbackHostname,
         }),
       );
@@ -208,7 +189,6 @@ export default function InboundInfoModal({
       setAmneziawgConfigs([]);
       setAmneziawgLinks([]);
     }
-
     if (clientSet?.subId) {
       setSubLink((subSettings?.subURI || '') + clientSet.subId);
       setSubJsonLink(
@@ -218,10 +198,8 @@ export default function InboundInfoModal({
       setSubLink('');
       setSubJsonLink('');
     }
-
     setClientIpsArray([]);
     setClientIpsText('');
-
     if (ipLimitEnable && (clientSet?.limitIp ?? 0) > 0 && stats?.email) {
       void HttpUtil.post(`/panel/api/clients/ips/${stats.email}`).then((msg) => {
         if (!msg?.success) {
@@ -249,21 +227,18 @@ export default function InboundInfoModal({
       });
     }
   }
-
   // The expiry tag colours against the current time; a state-backed clock keeps
   // render pure and still refreshes the tag while the modal stays open.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!open) return;
-    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    const id = window.setInterval(() => setNow(Date.now()), 60000);
     return () => window.clearInterval(id);
   }, [open]);
-
   const isEnable = useMemo(() => {
     if (clientSettings) return !!clientSettings.enable;
     return dbInbound?.enable ?? true;
   }, [clientSettings, dbInbound]);
-
   const isDepleted = useMemo(() => {
     if (!clientStats || !clientSettings) return false;
     const total = clientStats.total ?? 0;
@@ -273,20 +248,17 @@ export default function InboundInfoModal({
     if (expiry > 0 && now >= expiry) return true;
     return false;
   }, [clientStats, clientSettings, now]);
-
   const remainingStats = useMemo(() => {
     if (!clientStats || !clientSettings) return '-';
     const remained = clientStats.total - clientStats.up - clientStats.down;
     return remained > 0 ? SizeFormatter.sizeFormat(remained) : '-';
   }, [clientStats, clientSettings]);
-
   const isWireguard = !!dbInbound?.isWireguard;
   const wgSecretKey = inbound?.settings?.secretKey as string | undefined;
   const wgPubKey = useMemo(
     () => (isWireguard && wgSecretKey ? Wireguard.generateKeypair(wgSecretKey).publicKey : ''),
     [isWireguard, wgSecretKey],
   );
-
   const formatLastOnline = useCallback(
     (email: string) => {
       const ts = lastOnlineMap[email];
@@ -295,7 +267,6 @@ export default function InboundInfoModal({
     },
     [lastOnlineMap, datepicker],
   );
-
   const networkLabel = inbound?.stream?.network || '';
   const securityLabel = inbound?.stream?.security || 'none';
   const securityColor = securityLabel === 'none' ? 'red' : 'green';
@@ -303,7 +274,6 @@ export default function InboundInfoModal({
   const serverNameLabel = inbound?.serverName || '';
   const showClientTab = !!clientSettings;
   const showSubscriptionTab = !!(subSettings?.enable && clientSettings?.subId);
-
   if (!dbInbound || !inbound) {
     return (
       <Modal
@@ -315,7 +285,6 @@ export default function InboundInfoModal({
       />
     );
   }
-
   const clientTab = (
     <>
       <table className="info-table block">
@@ -615,7 +584,6 @@ export default function InboundInfoModal({
       )}
     </>
   );
-
   const inboundTab = (
     <>
       <dl className="info-list">
@@ -878,7 +846,11 @@ export default function InboundInfoModal({
           {(() => {
             const s = inbound.settings;
             const df = s.domainFronting as
-              | { ip?: string; port?: number; proxyProtocol?: boolean }
+              | {
+                  ip?: string;
+                  port?: number;
+                  proxyProtocol?: boolean;
+                }
               | undefined;
             const frontingTarget =
               df && (df.ip || df.port) ? `${df.ip ?? ''}${df.port ? `:${df.port}` : ''}` : '';
@@ -968,76 +940,79 @@ export default function InboundInfoModal({
           )}
           {inbound.settings.auth === 'password' && Array.isArray(inbound.settings.accounts) && (
             <>
-              {(inbound.settings.accounts as { user: string; pass: string }[]).map(
-                (account, idx) => (
-                  <div key={idx} className="info-row">
-                    <dt>
-                      {t('username')} #{idx + 1}
-                    </dt>
-                    <dd className="account-row">
-                      <Tag color="green" className="value-tag">
-                        {account.user}
-                      </Tag>
-                      <span className="account-sep">:</span>
-                      <Tag className="value-tag">{account.pass}</Tag>
-                      <Tooltip title={t('copy')}>
+              {(
+                inbound.settings.accounts as {
+                  user: string;
+                  pass: string;
+                }[]
+              ).map((account, idx) => (
+                <div key={idx} className="info-row">
+                  <dt>
+                    {t('username')} #{idx + 1}
+                  </dt>
+                  <dd className="account-row">
+                    <Tag color="green" className="value-tag">
+                      {account.user}
+                    </Tag>
+                    <span className="account-sep">:</span>
+                    <Tag className="value-tag">{account.pass}</Tag>
+                    <Tooltip title={t('copy')}>
+                      <Button
+                        size="small"
+                        type="text"
+                        icon={<CopyOutlined />}
+                        aria-label={t('copy')}
+                        onClick={() => copyText(`${account.user}:${account.pass}`, t)}
+                      />
+                    </Tooltip>
+                    <Space size={4} wrap className="share-buttons">
+                      <Tooltip
+                        title={`socks5://${account.user}:${account.pass}@${dbInbound.address}:${dbInbound.port}`}
+                      >
                         <Button
                           size="small"
-                          type="text"
-                          icon={<CopyOutlined />}
-                          aria-label={t('copy')}
-                          onClick={() => copyText(`${account.user}:${account.pass}`, t)}
-                        />
+                          onClick={() =>
+                            copyText(
+                              `socks5://${account.user}:${account.pass}@${dbInbound.address}:${dbInbound.port}`,
+                              t,
+                            )
+                          }
+                        >
+                          SOCKS5
+                        </Button>
                       </Tooltip>
-                      <Space size={4} wrap className="share-buttons">
-                        <Tooltip
-                          title={`socks5://${account.user}:${account.pass}@${dbInbound.address}:${dbInbound.port}`}
+                      <Tooltip
+                        title={`http://${account.user}:${account.pass}@${dbInbound.address}:${dbInbound.port}`}
+                      >
+                        <Button
+                          size="small"
+                          onClick={() =>
+                            copyText(
+                              `http://${account.user}:${account.pass}@${dbInbound.address}:${dbInbound.port}`,
+                              t,
+                            )
+                          }
                         >
-                          <Button
-                            size="small"
-                            onClick={() =>
-                              copyText(
-                                `socks5://${account.user}:${account.pass}@${dbInbound.address}:${dbInbound.port}`,
-                                t,
-                              )
-                            }
-                          >
-                            SOCKS5
-                          </Button>
-                        </Tooltip>
-                        <Tooltip
-                          title={`http://${account.user}:${account.pass}@${dbInbound.address}:${dbInbound.port}`}
+                          HTTP
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="https://t.me/socks?server=...&port=...&user=...&pass=...">
+                        <Button
+                          size="small"
+                          onClick={() =>
+                            copyText(
+                              `https://t.me/socks?server=${encodeURIComponent(dbInbound.address)}&port=${dbInbound.port}&user=${encodeURIComponent(account.user)}&pass=${encodeURIComponent(account.pass)}`,
+                              t,
+                            )
+                          }
                         >
-                          <Button
-                            size="small"
-                            onClick={() =>
-                              copyText(
-                                `http://${account.user}:${account.pass}@${dbInbound.address}:${dbInbound.port}`,
-                                t,
-                              )
-                            }
-                          >
-                            HTTP
-                          </Button>
-                        </Tooltip>
-                        <Tooltip title="https://t.me/socks?server=...&port=...&user=...&pass=...">
-                          <Button
-                            size="small"
-                            onClick={() =>
-                              copyText(
-                                `https://t.me/socks?server=${encodeURIComponent(dbInbound.address)}&port=${dbInbound.port}&user=${encodeURIComponent(account.user)}&pass=${encodeURIComponent(account.pass)}`,
-                                t,
-                              )
-                            }
-                          >
-                            Telegram
-                          </Button>
-                        </Tooltip>
-                      </Space>
-                    </dd>
-                  </div>
-                ),
-              )}
+                          Telegram
+                        </Button>
+                      </Tooltip>
+                    </Space>
+                  </dd>
+                </div>
+              ))}
             </>
           )}
           {inbound.settings.auth === 'noauth' && (
@@ -1085,30 +1060,33 @@ export default function InboundInfoModal({
         Array.isArray(inbound.settings?.accounts) &&
         (inbound.settings!.accounts as unknown[]).length > 0 && (
           <dl className="info-list info-list-block">
-            {(inbound.settings!.accounts as { user: string; pass: string }[]).map(
-              (account, idx) => (
-                <div key={idx} className="info-row">
-                  <dt>
-                    {t('username')} #{idx + 1}
-                  </dt>
-                  <dd className="account-row">
-                    <Tag color="green" className="value-tag">
-                      {account.user}
-                    </Tag>
-                    <span className="account-sep">:</span>
-                    <Tag className="value-tag">{account.pass}</Tag>
-                    <Tooltip title={t('copy')}>
-                      <Button
-                        size="small"
-                        icon={<CopyOutlined />}
-                        aria-label={t('copy')}
-                        onClick={() => copyText(`${account.user}:${account.pass}`, t)}
-                      />
-                    </Tooltip>
-                  </dd>
-                </div>
-              ),
-            )}
+            {(
+              inbound.settings!.accounts as {
+                user: string;
+                pass: string;
+              }[]
+            ).map((account, idx) => (
+              <div key={idx} className="info-row">
+                <dt>
+                  {t('username')} #{idx + 1}
+                </dt>
+                <dd className="account-row">
+                  <Tag color="green" className="value-tag">
+                    {account.user}
+                  </Tag>
+                  <span className="account-sep">:</span>
+                  <Tag className="value-tag">{account.pass}</Tag>
+                  <Tooltip title={t('copy')}>
+                    <Button
+                      size="small"
+                      icon={<CopyOutlined />}
+                      aria-label={t('copy')}
+                      onClick={() => copyText(`${account.user}:${account.pass}`, t)}
+                    />
+                  </Tooltip>
+                </dd>
+              </div>
+            ))}
           </dl>
         )}
 
@@ -1326,13 +1304,11 @@ export default function InboundInfoModal({
       )}
     </>
   );
-
   const tabItems = [];
   if (showClientTab) {
     tabItems.push({ key: 'client', label: t('pages.inbounds.client'), children: clientTab });
   }
   tabItems.push({ key: 'inbound', label: t('pages.xray.rules.inbound'), children: inboundTab });
-
   return (
     <Modal
       open={open}

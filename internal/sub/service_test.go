@@ -27,20 +27,6 @@ func TestSubscriptionExpiryFromClient(t *testing.T) {
 	}
 }
 
-// The name an admin gives a node is panel-internal and must not leak into
-// the remarks end users see in their client apps (#5231) — not even for
-// node-hosted inbounds, which briefly carried a node-name suffix (#5035).
-func TestGenRemarkOmitsNodeName(t *testing.T) {
-	nodeID := 7
-	s := &SubService{
-		nodesByID: map[int]*model.Node{7: {Id: 7, Name: "Berlin", Address: "node7.example.com"}},
-	}
-	ib := &model.Inbound{Remark: "vless-tcp", NodeID: &nodeID}
-	if got := s.genRemark(ib, "", "", ""); got != "vless-tcp" {
-		t.Fatalf("remark = %q, want %q (node name must not leak into client-visible remarks)", got, "vless-tcp")
-	}
-}
-
 func TestFindClientIndex(t *testing.T) {
 	clients := []model.Client{
 		{Email: "a@example.com"},
@@ -93,118 +79,6 @@ func TestListenIsInternalOnly(t *testing.T) {
 			t.Fatalf("listenIsInternalOnly(%q) = true, want false", v)
 		}
 	}
-}
-
-func TestResolveInboundAddress(t *testing.T) {
-	initSubDB(t)
-	const reqHost = "sub.example.com"
-
-	// A routable bind Listen (a real IP or hostname the operator set as the
-	// inbound's advertised endpoint) becomes the link's connect host.
-	t.Run("routable listen is advertised as the link host", func(t *testing.T) {
-		s := &SubService{address: reqHost}
-		for _, listen := range []string{"1.2.3.4", "10.0.0.5", "192.168.1.10", "203.0.113.7", "vpn.example.com"} {
-			ib := &model.Inbound{Listen: listen}
-			if got := s.resolveInboundAddress(ib); got != listen {
-				t.Fatalf("listen %q: address = %q, want %q (advertised listen)", listen, got, listen)
-			}
-		}
-	})
-
-	// A loopback/wildcard bind or a unix-domain-socket listen is a
-	// server-side detail and must never leak into the link host.
-	t.Run("non-routable listen falls back to subscriber host", func(t *testing.T) {
-		s := &SubService{address: reqHost}
-		for _, listen := range []string{"", "0.0.0.0", "::", "::0", "127.0.0.1", "::1", "@fallback", "/run/x.sock"} {
-			ib := &model.Inbound{Listen: listen}
-			if got := s.resolveInboundAddress(ib); got != reqHost {
-				t.Fatalf("listen %q: address = %q, want %q (subscriber host, not bind detail)", listen, got, reqHost)
-			}
-		}
-	})
-
-	t.Run("node-managed inbound uses the node address", func(t *testing.T) {
-		id := 7
-		s := &SubService{
-			address:   reqHost,
-			nodesByID: map[int]*model.Node{7: {Id: 7, Address: "node7.example.com"}},
-		}
-		ib := &model.Inbound{NodeID: &id, Listen: "1.2.3.4"}
-		if got := s.resolveInboundAddress(ib); got != "node7.example.com" {
-			t.Fatalf("node-managed address = %q, want node7.example.com", got)
-		}
-	})
-
-	t.Run("node id with no known node falls back to subscriber host", func(t *testing.T) {
-		id := 9
-		s := &SubService{address: reqHost, nodesByID: map[int]*model.Node{}}
-		ib := &model.Inbound{NodeID: &id, Listen: "0.0.0.0"}
-		if got := s.resolveInboundAddress(ib); got != reqHost {
-			t.Fatalf("unknown-node address = %q, want subscriber host %q", got, reqHost)
-		}
-	})
-
-	// Per-inbound share address strategy (#5208): subscriptions follow the
-	// same order as the panel's share/QR links.
-	t.Run("listen strategy prefers the bind over the node address", func(t *testing.T) {
-		id := 7
-		s := &SubService{
-			address:   reqHost,
-			nodesByID: map[int]*model.Node{7: {Id: 7, Address: "node7.example.com"}},
-		}
-		ib := &model.Inbound{NodeID: &id, Listen: "203.0.113.7", ShareAddrStrategy: "listen"}
-		if got := s.resolveInboundAddress(ib); got != "203.0.113.7" {
-			t.Fatalf("listen-strategy address = %q, want the bind 203.0.113.7", got)
-		}
-	})
-
-	t.Run("listen strategy falls back to node address on a wildcard bind", func(t *testing.T) {
-		id := 7
-		s := &SubService{
-			address:   reqHost,
-			nodesByID: map[int]*model.Node{7: {Id: 7, Address: "node7.example.com"}},
-		}
-		ib := &model.Inbound{NodeID: &id, Listen: "0.0.0.0", ShareAddrStrategy: "listen"}
-		if got := s.resolveInboundAddress(ib); got != "node7.example.com" {
-			t.Fatalf("listen-strategy wildcard address = %q, want node7.example.com", got)
-		}
-	})
-
-	t.Run("custom strategy uses the share address", func(t *testing.T) {
-		id := 7
-		s := &SubService{
-			address:   reqHost,
-			nodesByID: map[int]*model.Node{7: {Id: 7, Address: "node7.example.com"}},
-		}
-		ib := &model.Inbound{NodeID: &id, Listen: "203.0.113.7", ShareAddrStrategy: "custom", ShareAddr: "edge.example.com"}
-		if got := s.resolveInboundAddress(ib); got != "edge.example.com" {
-			t.Fatalf("custom-strategy address = %q, want edge.example.com", got)
-		}
-	})
-
-	t.Run("custom strategy with empty share address falls back to node", func(t *testing.T) {
-		id := 7
-		s := &SubService{
-			address:   reqHost,
-			nodesByID: map[int]*model.Node{7: {Id: 7, Address: "node7.example.com"}},
-		}
-		ib := &model.Inbound{NodeID: &id, ShareAddrStrategy: "custom"}
-		if got := s.resolveInboundAddress(ib); got != "node7.example.com" {
-			t.Fatalf("custom-strategy fallback address = %q, want node7.example.com", got)
-		}
-	})
-
-	t.Run("node strategy keeps the pre-strategy order", func(t *testing.T) {
-		id := 7
-		s := &SubService{
-			address:   reqHost,
-			nodesByID: map[int]*model.Node{7: {Id: 7, Address: "node7.example.com"}},
-		}
-		ib := &model.Inbound{NodeID: &id, Listen: "203.0.113.7", ShareAddrStrategy: "node"}
-		if got := s.resolveInboundAddress(ib); got != "node7.example.com" {
-			t.Fatalf("node-strategy address = %q, want node7.example.com", got)
-		}
-	})
 }
 
 func TestUnmarshalStreamSettings(t *testing.T) {

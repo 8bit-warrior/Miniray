@@ -1,27 +1,66 @@
 # Miniray
 
-Miniray is a panel based on the GPL-licensed v3.9.0 upstream project, undergoing a standalone-core and SQLite-only refactor.
+Miniray is a SQLite-based proxy management panel with local inbounds, clients, subscriptions and Xray configuration. It includes Xray-core **v26.6.27**, TUIC, AmneziaWG and MTProto support. The web panel and proxy services run independently. XDNS settings are translated to the bundled core format; options unavailable in v26.6.27 are rejected with an explicit error.
 
-## Operational lifecycle (Linux systemd)
+## Install on Linux
 
-The web panel, Xray core, and additional proxy protocol supervisor are independent systemd services. The **panel offline** setting is intended to stop only the HTTP interface and subscription listeners. The Xray service remains running. After going offline, `miniray start-panel` starts the panel again. This does not disable normal system boot start.
+Supports **amd64/x86_64** and **arm64/aarch64** Linux hosts running systemd. Run as root, with `curl`, `tar` and `sha256sum` installed:
 
-- `miniray start-panel` / `miniray stop-panel`: independently control the web panel.
-- `miniray start-core` / `miniray stop-core`: explicitly control proxy traffic.
-- `miniray enable-panel` / `miniray disable-panel`: control panel boot autostart without changing proxy boot autostart.
-- `miniray enable-core` / `miniray disable-core`: independently control the proxy core and protocol supervisor boot settings.
-- `miniray status`: show each service and its boot autostart state.
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh)
+```
 
-**Work in progress:** full Linux/Windows tests and a successful CI build are required before publishing `v0.0.1`. Do not deploy this in production yet.
+The installer downloads the latest release, verifies its SHA-256 checksum, installs Miniray and registers its services. To install a specific version:
 
-Licensed under the included [LICENSE](LICENSE). The upstream source tag is `v3.9.0`.
+```bash
+MINIRAY_UPDATE_TAG=v0.0.1 bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh)
+```
 
-## Migrating an existing 3x-ui installation (Linux)
+Run `miniray` to open the management menu. Run the installation command again to update an existing installation. Existing database paths and disabled service autostart settings are preserved.
 
-The Linux installer detects a systemd-managed 3x-ui installation and asks two separate case-insensitive `y/n` questions: whether to uninstall it, and whether to import its supported configuration. The installer does not uninstall anything without an explicit `y`. Existing Miniray installations are updated without prompting for another migration.
+## Migrating from 3x-ui
 
-For SQLite, the installer creates a consistent snapshot of `/etc/x-ui/x-ui.db` (or the configured `XUI_DB_FOLDER`) before removing the old installation. If uninstalling, it retains a root-only permanent backup under `/var/backups/miniray/`, including the old panel's configuration directory and environment file. When importing, the new Miniray binary reads the temporary snapshot **after installation** and creates a separate SQLite database. The original database is never mounted as Miniray's active database.
+On a first installation, the installer detects an existing systemd installation and asks two separate questions:
 
-Imported: supported local inbounds, associated clients and usage counters, inbound fallbacks and compatible panel, subscription and Xray settings. One legacy administrator's username/password hash is transferred, but existing sessions, API tokens, two-factor state, node/group/host records and unsupported protocols are excluded. References to certificates previously stored beneath `/etc/x-ui/` are rebased to preserved files beneath `/etc/miniray/imported-legacy-files/` when uninstalling the old panel. Certificate paths outside that directory must still exist on the target host.
+```text
+Uninstall 3x-ui before installing Miniray? [y/n]:
+Import supported 3x-ui configuration into Miniray? [y/n]:
+```
 
-If the user keeps 3x-ui installed, Miniray remains stopped and boot-disabled to avoid conflicting listeners; start and enable Miniray only after resolving those conflicts. Imports require a fresh Miniray database. PostgreSQL legacy databases are not supported and will not be removed automatically as part of migration. The installer operates on host systemd services; Docker-based legacy installations require a separate migration procedure.
+Both answers accept uppercase or lowercase. Before removing the old installation, Miniray creates a consistent SQLite snapshot and a root-only backup under `/var/backups/miniray/`. It installs and imports successfully before deleting the old panel; an import failure preserves the old installation and restores its service.
+
+Supported local inbounds, clients, associations, traffic counters, compatible settings and the administrator password hash are imported into a new Miniray database. Certificates beneath the old configuration directory are preserved and their paths are updated. Removed features, remote inbounds, sessions, API tokens and two-factor state are excluded. Certificates outside the old configuration directory must remain available at their original paths.
+
+If the old installation is kept, Miniray remains stopped with autostart disabled until port conflicts are resolved. Imports require a fresh Miniray database. Legacy PostgreSQL and Docker installations require separate migration.
+
+## Service management
+
+| Command | Action |
+| --- | --- |
+| `miniray start-panel` / `miniray stop-panel` | Start or stop the web panel and subscription listeners |
+| `miniray enable-panel` / `miniray disable-panel` | Enable or disable panel autostart |
+| `miniray start-core` / `miniray stop-core` | Start or stop the proxy core and protocol supervisor |
+| `miniray enable-core` / `miniray disable-core` | Enable or disable proxy autostart |
+| `miniray status` | Show service and autostart status |
+
+Stopping the panel closes its listening ports while proxies keep running. Start it again with `miniray start-panel`. Panel autostart and proxy autostart are independent; both are enabled on a fresh installation.
+
+When upgrading an earlier Miniray database, a backup named `miniray-before-simplification-*.db` is saved beside it before the removed tables are retired. Local inbound settings, client usage and compatible subscription endpoint overrides are retained.
+
+## Windows and Docker
+
+Download the amd64 or arm64 ZIP from [Releases](https://github.com/8bit-warrior/Miniray/releases), extract it and run `miniray.exe` from the extracted directory. The Linux installation command requires systemd. Docker deployment is optional; see [deploy/README.md](deploy/README.md).
+
+## Build
+
+Requires Go 1.27.1, a C compiler, Node.js 26 and npm 11 or newer:
+
+```bash
+cd frontend
+npm ci
+npm run build
+cd ..
+CGO_ENABLED=1 go build -trimpath -o miniray .
+```
+
+Licensed under [GPL-3.0](LICENSE). Based on the [upstream v3.9.0 source](https://github.com/MHSanaei/3x-ui/tree/v3.9.0).

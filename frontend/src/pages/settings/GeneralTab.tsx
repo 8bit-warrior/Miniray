@@ -31,7 +31,11 @@ interface GeneralTabProps {
   onOfflineValidationChange?: (valid: boolean) => void;
 }
 
-export default function GeneralTab({ allSetting, updateSetting, onOfflineValidationChange }: GeneralTabProps) {
+export default function GeneralTab({
+  allSetting,
+  updateSetting,
+  onOfflineValidationChange,
+}: GeneralTabProps) {
   const { t } = useTranslation();
   const { isMobile } = useMediaQuery();
 
@@ -180,10 +184,17 @@ export default function GeneralTab({ allSetting, updateSetting, onOfflineValidat
     <Tabs
       defaultActiveKey="1"
       items={[
-        {key:'panel-auto-offline',label:'面板自动离线',children:(
-          <PanelAutoOfflineTab allSetting={allSetting} updateSetting={updateSetting}
-            onValidityChange={onOfflineValidationChange}/>
-        )},
+        {
+          key: 'panel-auto-offline',
+          label: '面板自动离线',
+          children: (
+            <PanelAutoOfflineTab
+              allSetting={allSetting}
+              updateSetting={updateSetting}
+              onValidityChange={onOfflineValidationChange}
+            />
+          ),
+        },
         {
           key: '1',
           label: catTabLabel(<SettingOutlined />, t('pages.settings.panelSettings'), isMobile),

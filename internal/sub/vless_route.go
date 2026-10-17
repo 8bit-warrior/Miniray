@@ -28,7 +28,7 @@ func applyVlessRoute(id, route string) string {
 	return u.String()
 }
 
-func hostVlessRoute(ep map[string]any) string {
+func externalProxyVlessRoute(ep map[string]any) string {
 	v, _ := ep["vlessRoute"].(string)
 	return v
 }

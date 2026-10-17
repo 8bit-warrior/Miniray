@@ -1,36 +1,52 @@
 package database
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"testing"
 
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 )
 
-func TestFreshInstallFastPathMarksResetIpLimitSeeder(t *testing.T) {
-	if err := InitDB(filepath.Join(t.TempDir(), "miniray.db")); err != nil {
-		t.Fatalf("InitDB: %v", err)
+func TestStartupPreservesIPLimitsWithoutFail2ban(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "miniray.db")
+	t.Setenv("MINIRAY_ENABLE_FAIL2BAN", "false")
+	if err := InitDB(path); err != nil {
+		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = CloseDB() })
-
-	if err := db.Where("1 = 1").Delete(&model.HistoryOfSeeders{}).Error; err != nil {
-		t.Fatalf("reset seeder history: %v", err)
+	inbound := model.Inbound{Tag: "limited", Protocol: model.VLESS, Port: 24443, Settings: `{"clients":[{"email":"limited@example.test","limitIp":6}]}`}
+	record := model.ClientRecord{Email: "limited@example.test", LimitIP: 2}
+	if err := db.Create(&inbound).Error; err != nil {
+		t.Fatal(err)
 	}
-	if err := db.Where("1 = 1").Delete(&model.User{}).Error; err != nil {
-		t.Fatalf("reset users: %v", err)
+	if err := db.Create(&record).Error; err != nil {
+		t.Fatal(err)
 	}
-
-	if err := runSeeders(true); err != nil {
-		t.Fatalf("runSeeders: %v", err)
+	if err := db.Where("seeder_name = ?", "ResetIpLimitNoFail2ban").Delete(&model.HistoryOfSeeders{}).Error; err != nil {
+		t.Fatal(err)
 	}
-
-	var cnt int64
-	if err := db.Model(&model.HistoryOfSeeders{}).
-		Where("seeder_name = ?", "ResetIpLimitNoFail2ban").
-		Count(&cnt).Error; err != nil {
-		t.Fatalf("count seeder history: %v", err)
+	if err := InitDB(path); err != nil {
+		t.Fatal(err)
 	}
-	if cnt != 1 {
-		t.Fatal("fresh-install fast path must mark ResetIpLimitNoFail2ban done so it cannot wipe admin-set IP limits on the next boot")
+	if err := db.First(&inbound, inbound.Id).Error; err != nil {
+		t.Fatal(err)
+	}
+	var settings struct {
+		Clients []struct {
+			LimitIP int `json:"limitIp"`
+		} `json:"clients"`
+	}
+	if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
+		t.Fatal(err)
+	}
+	if len(settings.Clients) != 1 || settings.Clients[0].LimitIP != 6 {
+		t.Fatalf("startup changed embedded limits: %s", inbound.Settings)
+	}
+	if err := db.First(&record, record.Id).Error; err != nil {
+		t.Fatal(err)
+	}
+	if record.LimitIP != 2 {
+		t.Fatalf("startup changed client IP limit: got %d, want 2", record.LimitIP)
 	}
 }

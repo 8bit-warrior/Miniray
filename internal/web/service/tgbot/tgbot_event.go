@@ -97,20 +97,6 @@ func (t *Tgbot) formatEventMessage(e eventbus.Event) string {
 		}
 		return msg
 
-	case eventbus.EventNodeDown:
-		msg := header + "🔴 " + t.I18nBot("tgbot.messages.eventNodeDown", "Name=="+e.Source)
-		if data, ok := e.Data.(*eventbus.NodeHealthData); ok && data.XrayError != "" {
-			msg += "\n" + t.I18nBot("tgbot.messages.eventErrorDetail", "Error=="+data.XrayError)
-		}
-		return msg
-
-	case eventbus.EventNodeUp:
-		msg := header + "🟢 " + t.I18nBot("tgbot.messages.eventNodeUp", "Name=="+e.Source)
-		if data, ok := e.Data.(*eventbus.NodeHealthData); ok && data.LatencyMs > 0 {
-			msg += "\n" + t.I18nBot("tgbot.messages.eventDelayDetail", "Delay=="+fmt.Sprintf("%d", data.LatencyMs))
-		}
-		return msg
-
 	case eventbus.EventCPUHigh:
 		if data, ok := e.Data.(*eventbus.SystemMetricData); ok {
 			tgCpu, err := t.settingService.GetTgCpu()

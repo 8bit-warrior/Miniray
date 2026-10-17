@@ -23,12 +23,19 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Verify renamed project
         run: |
-          if git grep -niE '3x[-_]?ui|(^|[^[:alnum:]])x[-_]ui([^[:alnum:]]|$)' -- ':!LICENSE' ':!install.sh' ':!internal/database/import_legacy.go' ':!internal/database/import_legacy_test.go' ':!README.md'; then exit 1; fi
+          if git grep -niE '3x[-_]?ui|(^|[^[:alnum:]])x[-_]ui([^[:alnum:]]|$)' -- ':!LICENSE' ':!install.sh' ':!internal/database/import_legacy.go' ':!internal/database/import_legacy_test.go' ':!README.md' ':!tests/systemd_acceptance.py'; then exit 1; fi
       - name: Check installation scripts
         run: bash -n install.sh update.sh miniray.sh
       - name: Frontend package install
         working-directory: frontend
         run: npm ci
+      - name: Generated contract check
+        run: |
+          npm run gen --prefix frontend
+          git diff --exit-code -- frontend/src/generated frontend/public/openapi.json
+      - name: Frontend lint and formatting
+        working-directory: frontend
+        run: npm run lint && npm run format:check
       - name: Frontend type check
         working-directory: frontend
         run: npm run typecheck

@@ -63,17 +63,6 @@ describe('buildWireguardClientConfig', () => {
     expect(cfg).not.toContain('PresharedKey');
   });
 
-  it('uses the hosting node address as the endpoint host for node-managed inbounds', () => {
-    const cfg = buildWireguardClientConfig(
-      client,
-      { ...inbound, nodeAddress: 'node.example.net' },
-      'master.example.com',
-      '',
-    );
-    expect(cfg).toContain('Endpoint = node.example.net:51820');
-    expect(cfg).not.toContain('master.example.com');
-  });
-
   it('falls back to the panel host when the node address is blank', () => {
     const cfg = buildWireguardClientConfig(
       client,

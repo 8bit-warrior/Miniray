@@ -89,22 +89,6 @@ func TestGetApiTokenUsesGivenNameOnEmptyDatabase(t *testing.T) {
 	}
 }
 
-// -tokenScope has to reach both branches, or a fresh panel would mint an admin
-// token for a caller that asked for monitor.
-func TestGetApiTokenAppliesGivenScope(t *testing.T) {
-	newTokenCLIEnv(t)
-
-	GetApiToken(true, "ci-bot", model.ApiScopeMonitor)
-	if got := tokenRow(t, "ci-bot").Scope; got != model.ApiScopeMonitor {
-		t.Fatalf("minted scope = %q, want %q", got, model.ApiScopeMonitor)
-	}
-
-	GetApiToken(true, "ci-bot", model.ApiScopeNodeSync)
-	if got := tokenRow(t, "ci-bot").Scope; got != model.ApiScopeNodeSync {
-		t.Fatalf("regenerated scope = %q, want %q", got, model.ApiScopeNodeSync)
-	}
-}
-
 // install.sh records the token it gets on a fresh panel. A later bare
 // -getApiToken must rotate the fallback slot and leave that record valid.
 func TestGetApiTokenPreservesInstallTokenWhenRotating(t *testing.T) {

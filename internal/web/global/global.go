@@ -13,8 +13,8 @@ var (
 	webServer WebServer
 	subServer SubServer
 
-	restartHookMu sync.RWMutex
-	restartHook   func()
+	restartHookMu    sync.RWMutex
+	restartHook      func()
 	panelOfflineHook func()
 )
 
@@ -72,6 +72,20 @@ func TriggerRestart() bool {
 }
 
 // SetPanelOfflineHook registers an internal panel-only stop request.
-func SetPanelOfflineHook(fn func()){restartHookMu.Lock();defer restartHookMu.Unlock();panelOfflineHook=fn}
+func SetPanelOfflineHook(fn func()) {
+	restartHookMu.Lock()
+	defer restartHookMu.Unlock()
+	panelOfflineHook = fn
+}
+
 // TriggerPanelOffline queues a panel-only shutdown on the owning main loop.
-func TriggerPanelOffline()bool{restartHookMu.RLock();fn:=panelOfflineHook;restartHookMu.RUnlock();if fn==nil{return false};fn();return true}
+func TriggerPanelOffline() bool {
+	restartHookMu.RLock()
+	fn := panelOfflineHook
+	restartHookMu.RUnlock()
+	if fn == nil {
+		return false
+	}
+	fn()
+	return true
+}

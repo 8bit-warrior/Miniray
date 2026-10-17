@@ -16,7 +16,6 @@ import {
   message,
 } from 'antd';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
-
 import { HttpUtil, NumberFormatter, RandomUtil, SizeFormatter, Wireguard } from '@/utils';
 import type { RealityScanResult } from '@/generated/types';
 import {
@@ -45,7 +44,6 @@ import { Protocols, TRAFFIC_RESETS } from '@/schemas/primitives';
 import { SockoptStreamSettingsSchema } from '@/schemas/protocols/stream/sockopt';
 import { HysteriaStreamSettingsSchema } from '@/schemas/protocols/stream/hysteria';
 import { createHysteriaTlsSettingsWithDefaultCert } from '@/lib/xray/inbound-tls-defaults';
-import { NODE_ELIGIBLE_PROTOCOLS } from '@/lib/xray/node-protocols';
 import { VLESS_AUTH_LABEL_KEYS, vlessEncryptionAuthKind } from '@/lib/xray/vless-encryption';
 import { SniffingSchema } from '@/schemas/primitives/sniffing';
 import { TcpStreamSettingsSchema } from '@/schemas/protocols/stream/tcp';
@@ -57,7 +55,6 @@ import { XHttpStreamSettingsSchema } from '@/schemas/protocols/stream/xhttp';
 import { DateTimePicker } from '@/components/form';
 import { FinalMaskField } from '@/lib/xray/forms/fields';
 import './InboundFormModal.css';
-
 import { AdvancedAllEditor, AdvancedSliceEditor } from './advanced-editors';
 import { formatInboundIssue, formatInboundValidation } from './formatValidationError';
 import {
@@ -87,10 +84,7 @@ import { useSecurityActions } from './useSecurityActions';
 import { useInboundFallbacks } from './useInboundFallbacks';
 import FallbacksCard from './FallbacksCard';
 import SniffingTab from './SniffingTab';
-
 import type { DBInbound } from '@/models/dbinbound';
-import type { NodeRecord } from '@/api/queries/useNodesQuery';
-
 /* Render a field label with a hover tooltip icon instead of an `extra` help line below. */
 const labelWithHint = (label: string, hint: string) => (
   <span>
@@ -100,12 +94,10 @@ const labelWithHint = (label: string, hint: string) => (
     </Tooltip>
   </span>
 );
-
 const PROTOCOL_OPTIONS = Object.values(Protocols).map((p) => ({ value: p, label: p }));
-const SHARE_ADDR_STRATEGIES = ['node', 'listen', 'custom'] as const;
+const SHARE_ADDR_STRATEGIES = ['listen', 'custom'] as const;
 const SHARE_ADDR_HOSTNAME_RE =
   /^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$/;
-
 function isValidShareAddrInput(value: string): boolean {
   const v = value.trim();
   if (v.length === 0) return true;
@@ -129,12 +121,10 @@ function isValidShareAddrInput(value: string): boolean {
   }
   return SHARE_ADDR_HOSTNAME_RE.test(v);
 }
-
 interface RhfValidationIssue {
   path: PropertyKey[];
   message: string;
 }
-
 function firstRhfValidationIssue(
   value: unknown,
   path: PropertyKey[] = [],
@@ -151,7 +141,6 @@ function firstRhfValidationIssue(
   }
   return null;
 }
-
 function tabForValidationPath(path: PropertyKey[]): string {
   if (path[0] === 'settings') return 'protocol';
   if (path[0] === 'sniffing') return 'sniffing';
@@ -162,7 +151,6 @@ function tabForValidationPath(path: PropertyKey[]): string {
   }
   return 'basic';
 }
-
 interface InboundFormModalProps {
   open: boolean;
   onClose: () => void;
@@ -170,10 +158,7 @@ interface InboundFormModalProps {
   mode: 'add' | 'edit';
   dbInbound: DBInbound | null;
   dbInbounds: DBInbound[];
-  availableNodes?: NodeRecord[];
-  availableNodesFetched?: boolean;
 }
-
 function buildAddModeValues(): InboundFormValues {
   const settings = createDefaultInboundSettings('vless') ?? undefined;
   return rawInboundToFormValues({
@@ -192,7 +177,6 @@ function buildAddModeValues(): InboundFormValues {
     trafficReset: 'never',
   });
 }
-
 /*
  * Switching `network` swaps which per-network key (tcpSettings, wsSettings,
  * grpcSettings, ...) appears on the wire. Seed each network's blob with its
@@ -218,7 +202,6 @@ function newStreamSlice(n: string): Record<string, unknown> {
       return {};
   }
 }
-
 export default function InboundFormModal({
   open,
   onClose,
@@ -226,8 +209,6 @@ export default function InboundFormModal({
   mode,
   dbInbound,
   dbInbounds,
-  availableNodes,
-  availableNodesFetched = true,
 }: InboundFormModalProps) {
   const { t } = useTranslation();
   const [messageApi, messageContextHolder] = message.useMessage();
@@ -251,16 +232,7 @@ export default function InboundFormModal({
     moveFallback,
     addAllFallbacks,
   } = useInboundFallbacks(dbInbound, dbInbounds);
-
-  const selectableNodes = (availableNodes || []).filter((n) => n.enable);
   const protocol = (useWatch({ control, name: 'protocol' }) ?? '') as string;
-  const isNodeEligible = !!NODE_ELIGIBLE_PROTOCOLS[protocol];
-  /*
-   * The `node` share-address strategy only means something when the inbound can
-   * actually live on a node — otherwise the node address it would resolve to is
-   * always empty. Offer it only then; `listen`/`custom` work for local inbounds.
-   */
-  const nodeShareOptionAvailable = selectableNodes.length > 0 && isNodeEligible;
   const vlessEncryption = useWatch({ control, name: 'settings.encryption' }) ?? '';
   const ssMethod = useWatch({ control, name: 'settings.method' });
   const isSSWith2022 = isSS2022({
@@ -284,12 +256,10 @@ export default function InboundFormModal({
     protocol !== Protocols.WIREGUARD &&
     protocol !== Protocols.TUNNEL &&
     protocol !== Protocols.TUIC;
-
   const wPort = useWatch({ control, name: 'port' });
   const wListen = (useWatch({ control, name: 'listen' }) ?? '') as string;
   const isUdsListen = wListen.startsWith('/') || wListen.startsWith('@');
-  const wNodeId = useWatch({ control, name: 'nodeId' }) ?? null;
-  const shareAddrStrategy = useWatch({ control, name: 'shareAddrStrategy' }) ?? 'node';
+  const shareAddrStrategy = useWatch({ control, name: 'shareAddrStrategy' }) ?? 'listen';
   const wTag = (useWatch({ control, name: 'tag' }) ?? '') as string;
   const wSsNetwork = useWatch({ control, name: 'settings.network' });
   const wTunnelNetwork = useWatch({ control, name: 'settings.allowedNetwork' });
@@ -300,7 +270,6 @@ export default function InboundFormModal({
   const lastWrittenTagRef = useRef('');
   const currentTagInput = (): InboundTagInput => ({
     port: typeof wPort === 'number' ? wPort : 0,
-    nodeId: typeof wNodeId === 'number' ? wNodeId : null,
     protocol,
     streamSettings: { network },
     settings: { network: wSsNetwork, allowedNetwork: wTunnelNetwork, udp: mixedUdpOn },
@@ -309,7 +278,6 @@ export default function InboundFormModal({
     (protocol === Protocols.VLESS || protocol === Protocols.TROJAN) &&
     network === 'tcp' &&
     (security === 'tls' || security === 'reality');
-
   const {
     genRealityKeypair,
     clearRealityKeypair,
@@ -332,11 +300,9 @@ export default function InboundFormModal({
     setSaving,
     messageApi,
     modal,
-    nodeId: typeof wNodeId === 'number' ? wNodeId : null,
     setScanResult,
     setScanning,
   });
-
   const toggleSockopt = (on: boolean) => {
     if (on) {
       setV('streamSettings.sockopt', SockoptStreamSettingsSchema.parse({}));
@@ -349,12 +315,10 @@ export default function InboundFormModal({
     typeof wgSecretKey === 'string' && wgSecretKey.length > 0
       ? Wireguard.generateKeypair(wgSecretKey).publicKey
       : '';
-
   const regenInboundWg = () => {
     const kp = Wireguard.generateKeypair();
     setV('settings.secretKey', kp.privateKey);
   };
-
   // AmneziaWG uses the same Curve25519 keys as WireGuard, just nested under
   // settings.server instead of flat on settings — see amneziawg.ts. Unlike
   // WireGuard's Xray-native inbound (which re-derives its public key at
@@ -367,20 +331,17 @@ export default function InboundFormModal({
     typeof awgPrivateKey === 'string' && awgPrivateKey.length > 0
       ? Wireguard.generateKeypair(awgPrivateKey).publicKey
       : '';
-
   useEffect(() => {
     if (protocol === Protocols.AMNEZIAWG) {
       setV('settings.server.publicKey', awgPubKey);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [awgPubKey, protocol]);
-
   const regenInboundAwg = () => {
     const kp = Wireguard.generateKeypair();
     setV('settings.server.privateKey', kp.privateKey);
     setV('settings.server.publicKey', kp.publicKey);
   };
-
   // Randomizes the AmneziaWG 3.1 obfuscation set client-side; the shared
   // generator mirrors the Go backend's amneziawg.GenerateObfuscation31.
   const regenInboundAwgObfuscation = () => {
@@ -389,9 +350,14 @@ export default function InboundFormModal({
       setV(`settings.server.${field}`, value);
     }
   };
-
   const matchesVlessAuth = (
-    block: { id?: string; label?: string } | undefined | null,
+    block:
+      | {
+          id?: string;
+          label?: string;
+        }
+      | undefined
+      | null,
     authId: string,
   ) => {
     if (block?.id === authId) return true;
@@ -406,7 +372,6 @@ export default function InboundFormModal({
     if (authId === 'x25519_random') return label.includes('x25519') && label.includes('random');
     return false;
   };
-
   const getNewVlessEnc = async (authId: string) => {
     if (!authId) return;
     setSaving(true);
@@ -414,7 +379,12 @@ export default function InboundFormModal({
       const msg = await HttpUtil.get('/panel/api/server/getNewVlessEnc');
       if (!msg?.success) return;
       const obj = msg.obj as {
-        auths?: { decryption: string; encryption: string; label?: string; id?: string }[];
+        auths?: {
+          decryption: string;
+          encryption: string;
+          label?: string;
+          id?: string;
+        }[];
       };
       const block = (obj.auths || []).find((a) => matchesVlessAuth(a, authId));
       if (!block) return;
@@ -424,12 +394,10 @@ export default function InboundFormModal({
       setSaving(false);
     }
   };
-
   const clearVlessEnc = () => {
     setV('settings.decryption', 'none');
     setV('settings.encryption', 'none');
   };
-
   const vlessAuthKind = vlessEncryptionAuthKind(
     typeof vlessEncryption === 'string' ? vlessEncryption : '',
   );
@@ -439,7 +407,6 @@ export default function InboundFormModal({
     if (!vlessAuthKind) return t('pages.inbounds.vlessAuthCustom');
     return t(VLESS_AUTH_LABEL_KEYS[vlessAuthKind]);
   })();
-
   useEffect(() => {
     if (!open) return;
     const initial =
@@ -452,7 +419,6 @@ export default function InboundFormModal({
     const initialTag = (initial.tag ?? '') as string;
     autoTagRef.current = isAutoInboundTag(initialTag, {
       port: initial.port ?? 0,
-      nodeId: initial.nodeId ?? null,
       protocol: initial.protocol,
       streamSettings: (initial.streamSettings ?? {}) as Record<string, unknown>,
       settings: (initial.settings ?? {}) as Record<string, unknown>,
@@ -467,17 +433,14 @@ export default function InboundFormModal({
     } else {
       loadFallbacks(null);
     }
-
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [open, mode, dbInbound, methods]);
-
   useEffect(() => {
     if (!open) return;
     if (wTag === lastWrittenTagRef.current) return;
     autoTagRef.current = isAutoInboundTag(wTag, currentTagInput());
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [open, wTag]);
-
   useEffect(() => {
     if (!open || !autoTagRef.current) return;
     const next = composeInboundTag(currentTagInput());
@@ -486,38 +449,8 @@ export default function InboundFormModal({
       setV('tag', next);
     }
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [open, wPort, wNodeId, protocol, network, mixedUdpOn, wSsNetwork, wTunnelNetwork]);
+  }, [open, wPort, protocol, network, mixedUdpOn, wSsNetwork, wTunnelNetwork]);
 
-  /*
-   * Keep the strategy value inside the visible option set: when `node` isn't
-   * offered (no node, or a protocol that can't deploy to one) fall back to
-   * `listen`, which yields the same link for a local inbound. Mirrors how the
-   * protocol reset drops a nodeId that no longer applies.
-   * Only downgrade once the inputs this decision depends on are settled, so a
-   * persisted `node` strategy is never clobbered by transient mount state (#5375).
-   */
-  useEffect(() => {
-    if (!open) return;
-    if (!protocol) return;
-    const current = getV('shareAddrStrategy') as InboundFormValues['shareAddrStrategy'] | undefined;
-    if (protocol === Protocols.MTPROTO) {
-      if (current !== 'listen') setV('shareAddrStrategy', 'listen');
-      if (getV('shareAddr')) setV('shareAddr', '');
-      return;
-    }
-    if (!availableNodesFetched) return;
-    if (!nodeShareOptionAvailable && (current ?? 'node') === 'node') {
-      setV('shareAddrStrategy', 'listen');
-    }
-    /* eslint-disable-next-line react-hooks/exhaustive-deps */
-  }, [open, availableNodesFetched, protocol, nodeShareOptionAvailable, shareAddrStrategy]);
-
-  /*
-   * Protocol picker reset cascades through the form — clearing the settings DU
-   * branch and dropping a nodeId that no longer applies. Only a real user
-   * change (type === 'change') triggers it; programmatic setValue (advanced
-   * JSON edits, open reset) must not, matching the legacy onValuesChange.
-   */
   useEffect(() => {
     if (mode === 'edit') return;
     /* eslint-disable-next-line react-hooks/incompatible-library */
@@ -526,9 +459,7 @@ export default function InboundFormModal({
       const next = getV('protocol') as string;
       const settings = createDefaultInboundSettings(next) ?? undefined;
       setV('settings', settings);
-      if (!NODE_ELIGIBLE_PROTOCOLS[next]) {
-        setV('nodeId', null);
-      }
+
       if (next !== Protocols.VLESS) {
         setV('disableFlow', false);
       }
@@ -551,7 +482,11 @@ export default function InboundFormModal({
       } else if (next === Protocols.WIREGUARD || next === Protocols.TUNNEL) {
         setV('streamSettings', { security: 'none' });
       } else {
-        const current = getV('streamSettings') as { network?: string } | undefined;
+        const current = getV('streamSettings') as
+          | {
+              network?: string;
+            }
+          | undefined;
         if (current?.network === 'hysteria' || !current?.network) {
           setV('streamSettings', { network: 'tcp', security: 'none', tcpSettings: {} });
         }
@@ -560,7 +495,6 @@ export default function InboundFormModal({
     return () => sub.unsubscribe();
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [mode, methods]);
-
   const saveValues = async () => {
     // settings.fallbacks has no bound field; shouldUnregister=false keeps it from
     // the reset object. An edit sends no clients: the server keeps the stored ones.
@@ -586,7 +520,10 @@ export default function InboundFormModal({
       const msg = await HttpUtil.post(url, payload);
       if (msg?.success) {
         if (isFallbackHost) {
-          const obj = msg.obj as { id?: number; Id?: number } | null;
+          const obj = msg.obj as {
+            id?: number;
+            Id?: number;
+          } | null;
           const masterId = mode === 'edit' ? dbInbound!.id : (obj?.id ?? obj?.Id ?? 0);
           if (masterId) await saveFallbacks(masterId);
         }
@@ -597,7 +534,6 @@ export default function InboundFormModal({
       setSaving(false);
     }
   };
-
   /*
    * Field errors render inline, but every tab is force-rendered, so an error on
    * a hidden tab looks like a dead Save button — jump to it and say what broke.
@@ -608,12 +544,9 @@ export default function InboundFormModal({
     setActiveTab(tabForValidationPath(issue.path));
     messageApi.error(formatInboundIssue(issue, methods.getValues(), t));
   });
-
   const title =
     mode === 'edit' ? t('pages.inbounds.modifyInbound') : t('pages.inbounds.addInbound');
-
   const okText = mode === 'edit' ? t('pages.clients.submitEdit') : t('create');
-
   const basicTab = (
     <>
       {mode === 'add' && (
@@ -625,24 +558,6 @@ export default function InboundFormModal({
       <FormField name="remark" label={t('pages.inbounds.remark')}>
         <Input />
       </FormField>
-
-      {selectableNodes.length > 0 && isNodeEligible && (
-        <FormField name="nodeId" label={t('pages.inbounds.deployTo')}>
-          <Select
-            showSearch
-            disabled={mode === 'edit'}
-            placeholder={t('pages.inbounds.localPanel')}
-            allowClear
-            options={selectableNodes.map((n) => ({
-              value: n.id,
-              // Same rule as the clone target picker: only online is
-              // deployable (`unknown` = no heartbeat yet).
-              label: `${n.name}${n.status === 'online' ? '' : ` (${n.status || 'offline'})`}`,
-              disabled: n.status !== 'online',
-            }))}
-          />
-        </FormField>
-      )}
 
       <FormField name="protocol" label={t('pages.inbounds.protocol')}>
         <Select id="protocol" disabled={mode === 'edit'} options={PROTOCOL_OPTIONS} />
@@ -665,9 +580,7 @@ export default function InboundFormModal({
             )}
           >
             <Select
-              options={SHARE_ADDR_STRATEGIES.filter(
-                (strategy) => strategy !== 'node' || nodeShareOptionAvailable,
-              ).map((strategy) => ({
+              options={SHARE_ADDR_STRATEGIES.map((strategy) => ({
                 value: strategy,
                 label: t(`pages.inbounds.form.shareAddrStrategyOptions.${strategy}`),
               }))}
@@ -786,7 +699,6 @@ export default function InboundFormModal({
       </Form.Item>
     </>
   );
-
   const fallbacksCard = (
     <FallbacksCard
       fallbacks={fallbacks}
@@ -798,7 +710,6 @@ export default function InboundFormModal({
       addAllFallbacks={addAllFallbacks}
     />
   );
-
   const protocolTab = (
     <>
       {protocol === Protocols.WIREGUARD && (
@@ -851,7 +762,6 @@ export default function InboundFormModal({
         )}
     </>
   );
-
   /*
    * Switching `network` swaps which per-network key appears on the wire. Clear
    * the old network's blob and seed the new one with schema defaults, plus the
@@ -876,7 +786,9 @@ export default function InboundFormModal({
       const fm = (cleaned.finalmask as Record<string, unknown> | undefined) ?? {};
       const udp = Array.isArray(fm.udp) ? (fm.udp as unknown[]) : [];
       const hasMkcp = udp.some((m) => {
-        const entry = m as { type?: string };
+        const entry = m as {
+          type?: string;
+        };
         return entry?.type === 'mkcp-legacy';
       });
       if (!hasMkcp) {
@@ -889,14 +801,18 @@ export default function InboundFormModal({
       const fm = cleaned.finalmask as Record<string, unknown> | undefined;
       if (fm && Array.isArray(fm.udp)) {
         const udp = (fm.udp as unknown[]).filter(
-          (m) => (m as { type?: string })?.type !== 'mkcp-legacy',
+          (m) =>
+            (
+              m as {
+                type?: string;
+              }
+            )?.type !== 'mkcp-legacy',
         );
         cleaned.finalmask = { ...fm, udp };
       }
     }
     setV('streamSettings', cleaned);
   };
-
   const streamTab = (
     <>
       {hasSelectableTransport && (
@@ -918,8 +834,8 @@ export default function InboundFormModal({
       )}
 
       {/* Inbound Hysteria stream sub-form. The transport for hysteria
-          isn't user-selectable (always 'hysteria'), so the network
-          dropdown is hidden above. */}
+              isn't user-selectable (always 'hysteria'), so the network
+              dropdown is hidden above. */}
       {protocol === Protocols.HYSTERIA && <HysteriaFields />}
 
       {hasSelectableTransport && (
@@ -939,13 +855,13 @@ export default function InboundFormModal({
       )}
 
       {/* The legacy externalProxy section is replaced by the Hosts page; the
-          field is still parsed/rendered for backward compatibility but is no
-          longer editable here. */}
+              field is still parsed/rendered for backward compatibility but is no
+              longer editable here. */}
 
       <SockoptForm toggleSockopt={toggleSockopt} network={network} />
 
       {/* Transport masks don't apply to tunnel (a transparent forwarder), so
-          its stream tab is just sockopt + TProxy. */}
+              its stream tab is just sockopt + TProxy. */}
       {protocol !== Protocols.TUNNEL && (
         <Controller
           control={control}
@@ -963,11 +879,9 @@ export default function InboundFormModal({
       )}
     </>
   );
-
   const tlsOk = canEnableTls({ protocol, streamSettings: { network, security } });
   const realityOk = canEnableReality({ protocol, streamSettings: { network, security } });
   const tlsOnly = protocol === Protocols.HYSTERIA;
-
   const securityTab = (
     <>
       <Form.Item label={t('pages.inbounds.securityTab')}>
@@ -1013,7 +927,6 @@ export default function InboundFormModal({
       )}
     </>
   );
-
   const advancedTab = (
     <div className="advanced-shell">
       <div className="advanced-panel">
@@ -1106,9 +1019,7 @@ export default function InboundFormModal({
       </div>
     </div>
   );
-
   const sniffingTab = <SniffingTab />;
-
   return (
     <>
       {messageContextHolder}

@@ -1,39 +1,31 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Input, Modal, Select, Space, Spin, Table, Tag, Typography, message } from 'antd';
+import { Alert, Input, Modal, Space, Spin, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-
 import { HttpUtil } from '@/utils';
 import { formatInboundLabel } from '@/lib/inbounds/label';
 import type { DBInbound } from '@/models/dbinbound';
-
 interface AttachExistingClientsModalProps {
   open: boolean;
   target: DBInbound | null;
   onClose: () => void;
   onAttached?: () => void;
 }
-
 interface BulkAttachResult {
   attached?: string[];
   skipped?: string[];
   errors?: string[];
 }
-
 interface ClientRow {
   email: string;
-  group: string;
   enable: boolean;
   alreadyAttached: boolean;
 }
-
 interface RawClient {
   email?: string;
-  group?: string;
   enable?: boolean;
   inboundIds?: number[] | null;
 }
-
 export default function AttachExistingClientsModal({
   open,
   target,
@@ -47,8 +39,6 @@ export default function AttachExistingClientsModal({
   const [clientRows, setClientRows] = useState<ClientRow[]>([]);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [search, setSearch] = useState('');
-  const [groupFilter, setGroupFilter] = useState<string | undefined>(undefined);
-
   // Reset during render, not in an effect, so the first frame is already clean.
   const openTarget = open ? target : null;
   const [syncedTarget, setSyncedTarget] = useState(openTarget);
@@ -57,10 +47,8 @@ export default function AttachExistingClientsModal({
     if (openTarget) {
       setLoading(true);
       setSearch('');
-      setGroupFilter(undefined);
     }
   }
-
   useEffect(() => {
     if (!open || !target) return;
     let cancelled = false;
@@ -71,7 +59,6 @@ export default function AttachExistingClientsModal({
         const rows: ClientRow[] = list
           .map((c) => ({
             email: (c?.email || '').trim(),
-            group: (c?.group || '').trim(),
             enable: c?.enable !== false,
             alreadyAttached: Array.isArray(c?.inboundIds) && c.inboundIds.includes(target.id),
           }))
@@ -86,27 +73,17 @@ export default function AttachExistingClientsModal({
       cancelled = true;
     };
   }, [open, target]);
-
-  const groupOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const r of clientRows) if (r.group) set.add(r.group);
-    return [...set].sort((a, b) => a.localeCompare(b)).map((g) => ({ value: g, label: g }));
-  }, [clientRows]);
-
   const attachableCount = useMemo(
     () => clientRows.filter((r) => !r.alreadyAttached).length,
     [clientRows],
   );
-
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return clientRows.filter((r) => {
-      if (groupFilter && r.group !== groupFilter) return false;
       if (!q) return true;
-      return r.email.toLowerCase().includes(q) || r.group.toLowerCase().includes(q);
+      return r.email.toLowerCase().includes(q);
     });
-  }, [clientRows, search, groupFilter]);
-
+  }, [clientRows, search]);
   const columns: ColumnsType<ClientRow> = useMemo(
     () => [
       {
@@ -114,19 +91,6 @@ export default function AttachExistingClientsModal({
         dataIndex: 'email',
         key: 'email',
         ellipsis: true,
-      },
-      {
-        title: t('pages.clients.group'),
-        dataIndex: 'group',
-        key: 'group',
-        width: 150,
-        ellipsis: true,
-        render: (group: string) =>
-          group ? (
-            <Tag color="geekblue">{group}</Tag>
-          ) : (
-            <Typography.Text type="secondary">—</Typography.Text>
-          ),
       },
       {
         title: t('enable'),
@@ -145,7 +109,6 @@ export default function AttachExistingClientsModal({
     ],
     [t],
   );
-
   async function submit() {
     if (!target || selectedEmails.length === 0) return;
     setSaving(true);
@@ -176,9 +139,7 @@ export default function AttachExistingClientsModal({
       setSaving(false);
     }
   }
-
   const noClients = !loading && clientRows.length === 0;
-
   return (
     <Modal
       open={open}
@@ -212,18 +173,6 @@ export default function AttachExistingClientsModal({
                   placeholder={t('pages.inbounds.attachClientsSearchPlaceholder')}
                   style={{ width: 260 }}
                 />
-                {groupOptions.length > 0 && (
-                  <Select
-                    allowClear
-                    aria-label={t('pages.clients.group')}
-                    value={groupFilter}
-                    onChange={(v) => setGroupFilter(v)}
-                    options={groupOptions}
-                    placeholder={t('pages.clients.group')}
-                    style={{ minWidth: 160 }}
-                    showSearch={{ optionFilterProp: 'label' }}
-                  />
-                )}
               </Space>
               <Typography.Text type="secondary">
                 {t('pages.inbounds.attachClientsSelectedCount', {

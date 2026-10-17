@@ -4,6 +4,7 @@
 package xray
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/config"
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/util/common"
+	"github.com/8bit-warrior/Miniray/internal/util/maskcompat"
 	wgutil "github.com/8bit-warrior/Miniray/internal/util/wireguard"
 
 	"github.com/xtls/xray-core/app/proxyman/command"
@@ -136,6 +138,9 @@ func (x *XrayAPI) AddInbound(inbound []byte) error {
 	if x.HandlerServiceClient == nil {
 		return common.NewError("xray HandlerServiceClient is not initialized")
 	}
+	if err := requirePinnedReload(inbound); err != nil {
+		return err
+	}
 	client := *x.HandlerServiceClient
 
 	conf := new(conf.InboundDetourConfig)
@@ -216,6 +221,9 @@ func validateWireguardRemoteDNS(settings *serial.TypedMessage) error {
 func (x *XrayAPI) AddOutbound(outbound []byte) error {
 	if x.HandlerServiceClient == nil {
 		return common.NewError("xray HandlerServiceClient is not initialized")
+	}
+	if err := requirePinnedReload(outbound); err != nil {
+		return err
 	}
 	client := *x.HandlerServiceClient
 
@@ -946,4 +954,16 @@ func mapToSlice[T any](m map[string]*T) []*T {
 		result = append(result, v)
 	}
 	return result
+}
+
+// XDNS protobuf payloads changed after the bundled core; use its JSON reload path.
+func requirePinnedReload(data []byte) error {
+	pinned, err := maskcompat.PinnedConfigJSON(data)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(pinned, data) {
+		return common.NewError("XDNS transport changes require a core configuration reload")
+	}
+	return nil
 }

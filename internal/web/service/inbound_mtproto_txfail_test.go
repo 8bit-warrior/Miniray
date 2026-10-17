@@ -15,7 +15,7 @@ func TestUpdateInboundLocalMtprotoDefersPushUntilCommit(t *testing.T) {
 	setupConflictDB(t)
 
 	mgr := runtime.NewManager(runtime.LocalDeps{APIPort: func() int { return 0 }})
-	fake := &fakeNodeRuntime{}
+	fake := &fakeRuntime{}
 	mgr.SetLocalRuntimeOverride(fake)
 	runtime.SetManager(mgr)
 	t.Cleanup(func() { runtime.SetManager(nil) })
@@ -51,7 +51,7 @@ func TestSetInboundEnableRoutedMtprotoRequestsRestart(t *testing.T) {
 	setupConflictDB(t)
 
 	mgr := runtime.NewManager(runtime.LocalDeps{APIPort: func() int { return 0 }})
-	mgr.SetLocalRuntimeOverride(&fakeNodeRuntime{})
+	mgr.SetLocalRuntimeOverride(&fakeRuntime{})
 	runtime.SetManager(mgr)
 	t.Cleanup(func() { runtime.SetManager(nil) })
 

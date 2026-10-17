@@ -88,6 +88,53 @@ func TestMetadataForSubRequestOmitsUnconfiguredProfileURL(t *testing.T) {
 	}
 }
 
+func TestMetadataForSubRequestUsesStableClientIdentity(t *testing.T) {
+	initSubDB(t)
+	db := database.GetDB()
+	first := model.ClientRecord{
+		Email:  "john doe@example.com",
+		SubID:  "sub-123",
+		UUID:   "abcdef12-3456-7890-abcd-ef1234567890",
+		TgID:   42,
+		Enable: true,
+	}
+	second := model.ClientRecord{
+		Email:  "jane@example.com",
+		SubID:  "sub-123",
+		UUID:   "fedcba98-3456-7890-abcd-ef1234567890",
+		TgID:   99,
+		Enable: true,
+	}
+	if err := db.Create(&first).Error; err != nil {
+		t.Fatalf("seed first client: %v", err)
+	}
+	if err := db.Create(&second).Error; err != nil {
+		t.Fatalf("seed second client: %v", err)
+	}
+
+	a := &SUBController{
+		subTitle:       "isVPN — {{EMAIL}}",
+		subSupportUrl:  "https://support.example/?email={{EMAIL}}&tg={{TELEGRAM_ID}}",
+		subProfileUrl:  "https://profile.example/account/{{ID}}",
+		subProfileMode: service.SubProfileModeCustom,
+		subAnnounce:    "Subscription {{SUB_ID}}",
+	}
+	metadata := a.metadataForSubRequest(func() *SubService { return &SubService{} }, "sub-123", "https://sub.example/sub-123")
+
+	if metadata.Title != "isVPN — john doe@example.com" {
+		t.Fatalf("Title = %q", metadata.Title)
+	}
+	if metadata.SupportURL != "https://support.example/?email=john+doe%40example.com&tg=42" {
+		t.Fatalf("SupportURL = %q", metadata.SupportURL)
+	}
+	if metadata.ProfileURL != "https://profile.example/account/abcdef12-3456-7890-abcd-ef1234567890" {
+		t.Fatalf("ProfileURL = %q", metadata.ProfileURL)
+	}
+	if metadata.Announce != "Subscription sub-123" {
+		t.Fatalf("Announce = %q", metadata.Announce)
+	}
+}
+
 func TestSubscriptionProfileURLRequiresExplicitConfiguration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	initSubDB(t)
@@ -142,52 +189,5 @@ func TestSubscriptionProfileURLRequiresExplicitConfiguration(t *testing.T) {
 				})
 			}
 		})
-	}
-}
-
-func TestMetadataForSubRequestUsesStableClientIdentity(t *testing.T) {
-	initSubDB(t)
-	db := database.GetDB()
-	first := model.ClientRecord{
-		Email:  "john doe@example.com",
-		SubID:  "sub-123",
-		UUID:   "abcdef12-3456-7890-abcd-ef1234567890",
-		TgID:   42,
-		Enable: true,
-	}
-	second := model.ClientRecord{
-		Email:  "jane@example.com",
-		SubID:  "sub-123",
-		UUID:   "fedcba98-3456-7890-abcd-ef1234567890",
-		TgID:   99,
-		Enable: true,
-	}
-	if err := db.Create(&first).Error; err != nil {
-		t.Fatalf("seed first client: %v", err)
-	}
-	if err := db.Create(&second).Error; err != nil {
-		t.Fatalf("seed second client: %v", err)
-	}
-
-	a := &SUBController{
-		subTitle:       "isVPN — {{EMAIL}}",
-		subSupportUrl:  "https://support.example/?email={{EMAIL}}&tg={{TELEGRAM_ID}}",
-		subProfileUrl:  "https://profile.example/account/{{ID}}",
-		subProfileMode: service.SubProfileModeCustom,
-		subAnnounce:    "Subscription {{SUB_ID}}",
-	}
-	metadata := a.metadataForSubRequest(func() *SubService { return &SubService{} }, "sub-123", "https://sub.example/sub-123")
-
-	if metadata.Title != "isVPN — john doe@example.com" {
-		t.Fatalf("Title = %q", metadata.Title)
-	}
-	if metadata.SupportURL != "https://support.example/?email=john+doe%40example.com&tg=42" {
-		t.Fatalf("SupportURL = %q", metadata.SupportURL)
-	}
-	if metadata.ProfileURL != "https://profile.example/account/abcdef12-3456-7890-abcd-ef1234567890" {
-		t.Fatalf("ProfileURL = %q", metadata.ProfileURL)
-	}
-	if metadata.Announce != "Subscription sub-123" {
-		t.Fatalf("Announce = %q", metadata.Announce)
 	}
 }

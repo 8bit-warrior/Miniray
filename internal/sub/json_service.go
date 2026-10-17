@@ -148,9 +148,6 @@ func (s *SubJsonService) GetJson(subId string, host string, alwaysReturnArray bo
 			continue
 		}
 		subReq.projectThroughFallbackMaster(inbound)
-		if hostEps := subReq.hostEndpoints(inbound, "json"); len(hostEps) > 0 {
-			injectExternalProxy(inbound, hostEps)
-		}
 
 		var inboundConfigs []json_util.RawMessage
 		for _, client := range clients {
@@ -568,12 +565,8 @@ func (s *SubJsonService) buildBalancerConfig(balancer *model.SubBalancer, entrie
 func (s *SubJsonService) getConfig(subReq *SubService, inbound *model.Inbound, client model.Client, host string) []json_util.RawMessage {
 	var newJsonArray []json_util.RawMessage
 	stream := s.streamData(inbound.StreamSettings, subKey(client))
+	subReq.prepareExternalProxies(stream, inbound, "json")
 
-	// When externalProxy is empty the JSON config falls back to a
-	// synthetic one whose `dest` is the host the client connects to.
-	// For node-managed inbounds we want the node's address — request
-	// host won't reach the right xray. resolveInboundAddress already
-	// implements the node→subscriber-host fallback chain.
 	defaultDest := subReq.resolveInboundAddress(inbound)
 	if defaultDest == "" {
 		defaultDest = host
@@ -603,7 +596,6 @@ func (s *SubJsonService) getConfig(subReq *SubService, inbound *model.Inbound, c
 	}
 
 	delete(stream, "externalProxy")
-	network, _ := stream["network"].(string)
 
 	for _, ep := range externalProxies {
 		extPrxy, ok := ep.(map[string]any)
@@ -612,7 +604,6 @@ func (s *SubJsonService) getConfig(subReq *SubService, inbound *model.Inbound, c
 		}
 		// Expand the host's {{VAR}} remark template for this client (no-op for
 		// the synthetic/legacy entry) before it's used as the config remark.
-		subReq.renderHostRemark(inbound, client, extPrxy, network)
 		inbound.Listen, _ = extPrxy["dest"].(string)
 		if port, ok := extPrxy["port"].(float64); ok {
 			inbound.Port = int(port)
@@ -635,12 +626,12 @@ func (s *SubJsonService) getConfig(subReq *SubService, inbound *model.Inbound, c
 		if hasExternalProxy {
 			applyExternalProxyTLSToStream(extPrxy, newStream, security)
 		}
-		applyHostStreamOverrides(extPrxy, newStream)
+		applyExternalProxyStreamOverrides(extPrxy, newStream)
 		if finalmask, ok := newStream["finalmask"].(map[string]any); ok {
 			newStream["finalmask"] = withLegacyFragmentRanges(finalmask)
 		}
 		streamSettings, _ := json.MarshalIndent(newStream, "", "  ")
-		hostMux := hostMuxOverride(extPrxy)
+		hostMux := externalProxyMuxOverride(extPrxy)
 
 		var newOutbounds []json_util.RawMessage
 
@@ -649,7 +640,7 @@ func (s *SubJsonService) getConfig(subReq *SubService, inbound *model.Inbound, c
 			newOutbounds = append(newOutbounds, s.genVnext(inbound, streamSettings, client, jsonMux(mux, hostMux)))
 		case "vless":
 			vc := client
-			vc.ID = applyVlessRoute(client.ID, hostVlessRoute(extPrxy))
+			vc.ID = applyVlessRoute(client.ID, externalProxyVlessRoute(extPrxy))
 			// Same gate the raw link and the Clash proxy apply: a flow left
 			// over from a transport Vision supported produces an outbound
 			// xray refuses to start.

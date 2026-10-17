@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/8bit-warrior/Miniray/internal/crypto/nodetoken"
+	"github.com/8bit-warrior/Miniray/internal/crypto/secretcodec"
 	"github.com/8bit-warrior/Miniray/internal/database/dbtest"
 	piaprotocol "github.com/8bit-warrior/Miniray/internal/pia"
 )
@@ -212,15 +212,15 @@ func enablePiaTokenEncryption(t *testing.T) {
 	for i := range k {
 		k[i] = byte(i + 1)
 	}
-	ring := &nodetoken.Keyring{ActiveID: "t1", Keys: map[string][32]byte{"t1": k}}
-	codec, err := nodetoken.NewCodec(nodetoken.ModeRequired, ring)
+	ring := &secretcodec.Keyring{ActiveID: "t1", Keys: map[string][32]byte{"t1": k}}
+	codec, err := secretcodec.NewCodec(secretcodec.ModeRequired, ring)
 	if err != nil {
 		t.Fatalf("new codec: %v", err)
 	}
-	nodetoken.Init(codec)
+	secretcodec.Init(codec)
 	t.Cleanup(func() {
-		off, _ := nodetoken.NewCodec(nodetoken.ModeOff, nil)
-		nodetoken.Init(off)
+		off, _ := secretcodec.NewCodec(secretcodec.ModeOff, nil)
+		secretcodec.Init(off)
 	})
 }
 
@@ -241,7 +241,7 @@ func TestPiaLoginEncryptsTokenWhenRequired(t *testing.T) {
 	if err := json.Unmarshal([]byte(stored), &parsed); err != nil {
 		t.Fatal(err)
 	}
-	if !nodetoken.IsEncrypted(parsed.Token) {
+	if !secretcodec.IsEncrypted(parsed.Token) {
 		t.Fatalf("token at rest is not encrypted: %q", parsed.Token)
 	}
 	data, err := svc.GetPiaData()
@@ -279,8 +279,8 @@ func TestPiaEncryptedTokenRejectedWhenEncryptionOff(t *testing.T) {
 	if _, err := svc.Login("p1234567", "password-long-enough"); err != nil {
 		t.Fatal(err)
 	}
-	off, _ := nodetoken.NewCodec(nodetoken.ModeOff, nil)
-	nodetoken.Init(off)
+	off, _ := secretcodec.NewCodec(secretcodec.ModeOff, nil)
+	secretcodec.Init(off)
 	if _, err := svc.AddKey("useast1"); err == nil || piaprotocol.CodeOf(err) != piaprotocol.CodeTokenRejected {
 		t.Fatalf("addKey with encrypted token and encryption off: %v", err)
 	}
@@ -289,7 +289,7 @@ func TestPiaEncryptedTokenRejectedWhenEncryptionOff(t *testing.T) {
 func TestPiaWrongAADCiphertextRejected(t *testing.T) {
 	svc := setupPiaService(t)
 	enablePiaTokenEncryption(t)
-	enc, err := nodetoken.Encrypt(1, "tokentokentokentoken12")
+	enc, err := secretcodec.EncryptBound([]byte("wrong-association"), "tokentokentokentoken12")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +322,7 @@ func TestPiaPlaintextMigratesWhenEncryptionEnabled(t *testing.T) {
 		t.Fatalf("want ciphertext after migrate: %q err=%v", after, err)
 	}
 	var parsed piaStored
-	if err := json.Unmarshal([]byte(after), &parsed); err != nil || !nodetoken.IsEncrypted(parsed.Token) {
+	if err := json.Unmarshal([]byte(after), &parsed); err != nil || !secretcodec.IsEncrypted(parsed.Token) {
 		t.Fatalf("migrated token: %+v err=%v", parsed, err)
 	}
 }
@@ -334,16 +334,16 @@ func TestPiaReencryptsTokenToActiveKey(t *testing.T) {
 		k1[i] = byte(i + 1)
 		k2[i] = byte(i + 2)
 	}
-	c1, err := nodetoken.NewCodec(nodetoken.ModeRequired, &nodetoken.Keyring{
+	c1, err := secretcodec.NewCodec(secretcodec.ModeRequired, &secretcodec.Keyring{
 		ActiveID: "k1", Keys: map[string][32]byte{"k1": k1, "k2": k2},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	nodetoken.Init(c1)
+	secretcodec.Init(c1)
 	t.Cleanup(func() {
-		off, _ := nodetoken.NewCodec(nodetoken.ModeOff, nil)
-		nodetoken.Init(off)
+		off, _ := secretcodec.NewCodec(secretcodec.ModeOff, nil)
+		secretcodec.Init(off)
 	})
 	if _, err := svc.Login("p1234567", "password-long-enough"); err != nil {
 		t.Fatal(err)
@@ -352,13 +352,13 @@ func TestPiaReencryptsTokenToActiveKey(t *testing.T) {
 	if err != nil || !strings.Contains(before, "enc:v1:k1:") {
 		t.Fatalf("want k1 ciphertext: %q err=%v", before, err)
 	}
-	c2, err := nodetoken.NewCodec(nodetoken.ModeRequired, &nodetoken.Keyring{
+	c2, err := secretcodec.NewCodec(secretcodec.ModeRequired, &secretcodec.Keyring{
 		ActiveID: "k2", Keys: map[string][32]byte{"k1": k1, "k2": k2},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	nodetoken.Init(c2)
+	secretcodec.Init(c2)
 	if _, err := svc.GetPiaData(); err != nil {
 		t.Fatal(err)
 	}

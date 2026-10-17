@@ -15,24 +15,18 @@ import {
 } from 'antd';
 import { CloudDownloadOutlined, SyncOutlined } from '@ant-design/icons';
 import { useFormContext, useWatch } from 'react-hook-form';
-
 import { FormField } from '@/components/form/rhf';
 import { HttpUtil } from '@/utils';
-
 export default function TuicFields() {
   const { t } = useTranslation();
   const { control, setValue } = useFormContext();
   const [loadingPanelCert, setLoadingPanelCert] = useState(false);
-
   const sni = (useWatch({ control, name: 'settings.server.sni' }) ?? '') as string;
   const certificate = (useWatch({ control, name: 'settings.server.certificate' }) ?? '') as string;
   const privateKey = (useWatch({ control, name: 'settings.server.private_key' }) ?? '') as string;
-  const nodeId = useWatch({ control, name: 'nodeId' }) as number | null | undefined;
-
   const handleSniChange = (newSni: string) => {
     setValue('settings.server.sni', newSni);
   };
-
   const autofillFromSni = () => {
     const cleanSni = (sni || '').trim();
     if (!cleanSni) {
@@ -42,19 +36,18 @@ export default function TuicFields() {
     setValue('settings.server.certificate', `/root/cert/${cleanSni}/fullchain.pem`);
     setValue('settings.server.private_key', `/root/cert/${cleanSni}/privkey.pem`);
   };
-
   const setCertFromPanel = async () => {
     setLoadingPanelCert(true);
     try {
-      const msg =
-        typeof nodeId === 'number'
-          ? await HttpUtil.get(`/panel/api/nodes/webCert/${nodeId}`, undefined, { silent: true })
-          : await HttpUtil.post('/panel/api/setting/all', undefined, { silent: true });
+      const msg = await HttpUtil.post('/panel/api/setting/all', undefined, { silent: true });
       if (!msg?.success) {
         message.warning(msg?.msg || t('pages.inbounds.setDefaultCertEmpty'));
         return;
       }
-      const obj = msg.obj as { webCertFile?: string; webKeyFile?: string };
+      const obj = msg.obj as {
+        webCertFile?: string;
+        webKeyFile?: string;
+      };
       if (!obj?.webCertFile && !obj?.webKeyFile) {
         message.warning(t('pages.inbounds.setDefaultCertEmpty'));
         return;
@@ -72,7 +65,6 @@ export default function TuicFields() {
       setLoadingPanelCert(false);
     }
   };
-
   const certOptions = sni
     ? [
         { value: `/root/cert/${sni}/fullchain.pem` },
@@ -80,7 +72,6 @@ export default function TuicFields() {
         { value: '/root/cert.pem' },
       ]
     : [{ value: '/root/cert.pem' }];
-
   const keyOptions = sni
     ? [
         { value: `/root/cert/${sni}/privkey.pem` },
@@ -88,7 +79,6 @@ export default function TuicFields() {
         { value: '/root/privkey.pem' },
       ]
     : [{ value: '/root/privkey.pem' }];
-
   const advancedItems = [
     {
       key: 'advanced',
@@ -142,7 +132,6 @@ export default function TuicFields() {
       ),
     },
   ];
-
   return (
     <>
       <Form.Item label={t('pages.inbounds.publicKey')}>
