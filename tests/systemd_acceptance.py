@@ -47,7 +47,7 @@ def fixture(corrupt=False):
     Path("/usr/local/x-ui").mkdir()
     Path("/usr/local/x-ui/x-ui").write_text("legacy test installation\n")
     Path("/etc/systemd/system/x-ui.service").write_text(
-        f"[Unit]\\nDescription=Legacy installer fixture\\n[Service]\\nExecStart=/usr/bin/python3 {work / 'legacy_listener.py'}\\n[Install]\\nWantedBy=multi-user.target\\n"
+        f"[Unit]\nDescription=Legacy installer fixture\n[Service]\nExecStart=/usr/bin/python3 {work / 'legacy_listener.py'}\n[Install]\nWantedBy=multi-user.target\n"
     )
     if corrupt:
         Path("/etc/x-ui/x-ui.db").write_bytes(b"broken sqlite fixture")
