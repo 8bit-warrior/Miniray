@@ -839,9 +839,16 @@ Commands:
 `
 }
 
+func panelServiceIsActive() bool {
+	if os.Getenv("MINIRAY_SERVICE_MANAGER") == "openrc" {
+		return exec.CommandContext(context.Background(), "rc-service", "miniray", "status").Run() == nil
+	}
+	return exec.CommandContext(context.Background(), "systemctl", "is-active", "--quiet", "miniray.service").Run() == nil
+}
+
 func runProxyAgent() {
 	if runtime.GOOS != "linux" || os.Getenv("MINIRAY_SEPARATE_CORE") != "1" {
-		log.Fatal("proxy agent requires Linux systemd with MINIRAY_SEPARATE_CORE=1")
+		log.Fatal("proxy agent requires Linux with MINIRAY_SEPARATE_CORE=1")
 	}
 	logger.InitLogger(logging.INFO)
 
@@ -885,7 +892,7 @@ func runProxyAgent() {
 			xrayService.ApplyPendingRestart()
 		case <-trafficTicker.C:
 			xrayWatchdog.Run()
-			if exec.CommandContext(context.Background(), "systemctl", "is-active", "--quiet", "miniray.service").Run() != nil {
+			if !panelServiceIsActive() {
 				xrayTrafficJob.Run()
 				ipLimitJob.Run()
 			}

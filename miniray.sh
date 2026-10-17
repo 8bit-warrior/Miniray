@@ -8,32 +8,60 @@ ROOT=/usr/local/miniray
 require_root() {
   if (( EUID != 0 )); then echo 'Run as root' >&2; exit 1; fi
 }
+if command -v systemctl >/dev/null && [[ -d /run/systemd/system ]]; then
+  MANAGER=systemd
+else
+  MANAGER=openrc
+fi
+svc() {
+  local command="$1" unit="$2"
+  if [[ "$MANAGER" == openrc ]]; then rc-service "${unit%.service}" "$command"; else systemctl "$command" "$unit"; fi
+}
+enabled() {
+  if [[ "$MANAGER" == openrc ]]; then rc-update show default | grep -qE "^[[:space:]]*${1%.service}[[:space:]]"; else systemctl is-enabled --quiet "$1"; fi
+}
+toggle() {
+  if [[ "$MANAGER" == openrc ]]; then
+    rc-update "$1" "${2%.service}" default
+  else
+    systemctl "$([[ "$1" == add ]] && echo enable || echo disable)" "$2"
+  fi
+}
 show_status() {
   for unit in "$PANEL" "$CORE" "$AGENT"; do
-    printf '%s: running=%s boot=%s\n' "$unit" \
-      "$(systemctl is-active "$unit" 2>/dev/null || :)" \
-      "$(systemctl is-enabled "$unit" 2>/dev/null || :)"
+    printf '%s: running=%s boot=%s\n' "$unit" "$(svc status "$unit" >/dev/null 2>&1 && echo active || echo inactive)" "$(enabled "$unit" && echo enabled || echo disabled)"
   done
 }
 action() {
   case "$1" in
-    start-panel) systemctl start "$PANEL";;
-    stop-panel) systemctl stop "$PANEL";;
-    restart-panel) systemctl restart "$PANEL";;
-    start-core) systemctl start "$CORE" "$AGENT";;
-    stop-core) systemctl stop "$AGENT" "$CORE";;
-    restart-core) systemctl restart "$CORE" "$AGENT";;
-    start) systemctl start "$CORE" "$AGENT" "$PANEL";;
-    stop) systemctl stop "$PANEL" "$AGENT" "$CORE";;
-    restart) systemctl restart "$CORE" "$AGENT" "$PANEL";;
+    start-panel) svc start "$PANEL";;
+    stop-panel) svc stop "$PANEL";;
+    restart-panel) svc restart "$PANEL";;
+    start-core) svc start "$CORE"; svc start "$AGENT";;
+    stop-core) svc stop "$AGENT"; svc stop "$CORE";;
+    restart-core) svc restart "$CORE"; svc restart "$AGENT";;
+    start) svc start "$CORE"; svc start "$AGENT"; svc start "$PANEL";;
+    stop) svc stop "$PANEL"; svc stop "$AGENT"; svc stop "$CORE";;
+    restart) svc restart "$CORE"; svc restart "$AGENT"; svc restart "$PANEL";;
     status) show_status;;
-    enable-panel|enable) systemctl enable "$PANEL";;
-    disable-panel|disable) systemctl disable "$PANEL";;
-    enable-core) systemctl enable "$CORE" "$AGENT";;
-    disable-core) systemctl disable "$CORE" "$AGENT";;
-    logs) journalctl -u "$PANEL" -u "$CORE" -u "$AGENT" --no-pager -n 100;;
-    panel-logs) journalctl -u "$PANEL" --no-pager -n 100;;
-    core-logs) journalctl -u "$CORE" -u "$AGENT" --no-pager -n 100;;
+    enable-panel|enable) toggle add "$PANEL";;
+    disable-panel|disable) toggle del "$PANEL";;
+    enable-core) toggle add "$CORE"; toggle add "$AGENT";;
+    disable-core) toggle del "$CORE"; toggle del "$AGENT";;
+    logs|panel-logs|core-logs)
+      if [[ "$MANAGER" == openrc ]]; then
+        case "$1" in
+          panel-logs) tail -n 100 /var/log/miniray/panel.log;;
+          core-logs) tail -n 100 /var/log/miniray/core.log /var/log/miniray/agent.log;;
+          *) tail -n 100 /var/log/miniray/panel.log /var/log/miniray/core.log /var/log/miniray/agent.log;;
+        esac
+      else
+        case "$1" in
+          panel-logs) journalctl -u "$PANEL" --no-pager -n 100;;
+          core-logs) journalctl -u "$CORE" -u "$AGENT" --no-pager -n 100;;
+          *) journalctl -u "$PANEL" -u "$CORE" -u "$AGENT" --no-pager -n 100;;
+        esac
+      fi;;
     initial-password) "$ROOT/miniray" initial-password;;
     settings) "$ROOT/miniray" setting -show;;
     reset-settings) "$ROOT/miniray" setting -reset;;
@@ -57,7 +85,7 @@ Miniray independent panel and proxy services
 EOF
 }
 require_root
-command -v systemctl >/dev/null || { echo 'systemd is required' >&2; exit 1; }
+if [[ "$MANAGER" == openrc ]]; then command -v rc-service >/dev/null || exit 1; fi
 case "${1:-}" in
   -h|--help|help) usage; exit 0;;
   '') ;;

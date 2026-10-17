@@ -17,9 +17,36 @@ import (
 )
 
 const coreUnit = "miniray-core.service"
+const coreOpenRCPIDFile = "/run/miniray-core.pid"
+
+func openRCEnabled() bool { return os.Getenv("MINIRAY_SERVICE_MANAGER") == "openrc" }
+
+func coreServiceAction(action string) error {
+	var cmd *exec.Cmd
+	if openRCEnabled() {
+		cmd = exec.CommandContext(context.Background(), "rc-service", "miniray-core", action)
+	} else {
+		cmd = exec.CommandContext(context.Background(), "systemctl", action, coreUnit)
+	}
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%s: %w: %s", action, err, out)
+	}
+	return nil
+}
+
 
 func independentCoreEnabled() bool { return os.Getenv("MINIRAY_SEPARATE_CORE") == "1" }
 func corePID() (int, error) {
+	if openRCEnabled() {
+		if err := exec.CommandContext(context.Background(), "rc-service", "miniray-core", "status").Run(); err != nil {
+			return 0, nil
+		}
+		data, err := os.ReadFile(coreOpenRCPIDFile)
+		if err != nil {
+			return 0, fmt.Errorf("read OpenRC core PID: %w", err)
+		}
+		return strconv.Atoi(strings.TrimSpace(string(data)))
+	}
 	out, err := exec.CommandContext(context.Background(), "systemctl", "show", "--property=MainPID", "--value", coreUnit).Output()
 	if err != nil {
 		return 0, fmt.Errorf("query core service: %w", err)
@@ -100,8 +127,8 @@ func (p *process) startIndependentCore(configPath string, oldData, newData []byt
 	if pid > 0 {
 		action = "restart"
 	}
-	if out, err := exec.CommandContext(context.Background(), "systemctl", action, coreUnit).CombinedOutput(); err != nil {
-		return fmt.Errorf("systemctl %s: %w: %s", action, err, out)
+	if err := coreServiceAction(action); err != nil {
+		return fmt.Errorf("start independent core: %w", err)
 	}
 	var last error
 	for i := 0; i < 30; i++ {
@@ -118,8 +145,5 @@ func (p *process) startIndependentCore(configPath string, oldData, newData []byt
 }
 
 func stopIndependentCore() error {
-	if out, err := exec.CommandContext(context.Background(), "systemctl", "stop", coreUnit).CombinedOutput(); err != nil {
-		return fmt.Errorf("stop core: %w: %s", err, out)
-	}
-	return nil
+	return coreServiceAction("stop")
 }

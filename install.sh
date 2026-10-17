@@ -9,6 +9,10 @@ if [[ -z "${MINIRAY_DB_FOLDER:-}" && -f /etc/default/miniray ]]; then
   saved_db_folder=${saved_db_folder%\"}; saved_db_folder=${saved_db_folder#\"}
   if [[ -n "$saved_db_folder" ]]; then DB_FOLDER="$saved_db_folder"; fi
 fi
+if [[ -f /etc/conf.d/miniray && -z "${MINIRAY_DB_FOLDER:-}" ]]; then
+  source /etc/conf.d/miniray
+  DB_FOLDER="${MINIRAY_DB_FOLDER:-$DB_FOLDER}"
+fi
 DB_PATH="$DB_FOLDER/miniray.db"
 LEGACY_DB_FOLDER="${XUI_DB_FOLDER:-/etc/x-ui}"
 LEGACY_DB_TYPE="sqlite"
@@ -23,7 +27,49 @@ fi
 LEGACY_DB="$LEGACY_DB_FOLDER/x-ui.db"
 
 (( EUID == 0 )) || { echo 'Run as root' >&2; exit 1; }
-for cmd in curl tar sha256sum systemctl install cp sed; do
+if command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]; then
+  SERVICE_MANAGER=systemd
+elif command -v rc-service >/dev/null 2>&1 && command -v rc-update >/dev/null 2>&1; then
+  SERVICE_MANAGER=openrc
+else
+  echo 'Requires systemd or OpenRC' >&2; exit 1
+fi
+service_action() {
+  local action="$1" unit="$2"
+  if [[ "$SERVICE_MANAGER" == openrc ]]; then
+    rc-service "${unit%.service}" "$action"
+  else
+    systemctl "$action" "$unit"
+  fi
+}
+service_active() {
+  if [[ "$SERVICE_MANAGER" == openrc ]]; then
+    rc-service "${1%.service}" status >/dev/null 2>&1
+  else
+    systemctl is-active --quiet "$1"
+  fi
+}
+service_enabled() {
+  if [[ "$SERVICE_MANAGER" == openrc ]]; then
+    rc-update show default | grep -qE "^[[:space:]]*${1%.service}[[:space:]]"
+  else
+    systemctl is-enabled --quiet "$1"
+  fi
+}
+service_enable() {
+  if [[ "$SERVICE_MANAGER" == openrc ]]; then rc-update add "${1%.service}" default; else systemctl enable "$1"; fi
+}
+service_disable() {
+  if [[ "$SERVICE_MANAGER" == openrc ]]; then rc-update del "${1%.service}" default; else systemctl disable "$1"; fi
+}
+legacy_service_exists() {
+  if [[ "$SERVICE_MANAGER" == openrc ]]; then
+    [[ -e /etc/init.d/x-ui ]]
+  else
+    systemctl list-unit-files x-ui.service --no-legend 2>/dev/null | grep -q '^x-ui.service'
+  fi
+}
+for cmd in curl tar sha256sum install cp sed; do
   command -v "$cmd" >/dev/null || { echo "Missing $cmd" >&2; exit 1; }
 done
 case "$(uname -m)" in
@@ -46,7 +92,7 @@ IMPORT_LEGACY=0
 COEXIST=0
 EXISTING_MINIRAY=0
 if [[ -f "$ROOT/miniray" || -f "$DB_PATH" ]]; then EXISTING_MINIRAY=1; fi
-if systemctl list-unit-files x-ui.service --no-legend 2>/dev/null | grep -q '^x-ui.service' ||
+if legacy_service_exists ||
    [[ -e /usr/local/x-ui/x-ui || -e "$LEGACY_DB" || -e /usr/bin/x-ui || -e /usr/local/bin/x-ui ]]; then
   LEGACY_FOUND=1
   [[ -r /dev/tty ]] || { echo 'Select a 3x-ui installation strategy in an interactive terminal.' >&2; exit 1; }
@@ -95,19 +141,25 @@ ROOT_WAS_ABSENT=0
 finish_install() {
   local status=$?
   if (( status != 0 && LEGACY_REMOVED == 0 && EXISTING_MINIRAY == 0 && STAGED_INSTALL == 1 )); then
-    systemctl stop miniray.service miniray-agent.service miniray-core.service 2>/dev/null || :
+    service_action stop miniray.service 2>/dev/null || :
+    service_action stop miniray-agent.service 2>/dev/null || :
+    service_action stop miniray-core.service 2>/dev/null || :
   fi
   if (( status != 0 && LEGACY_STOPPED == 1 && LEGACY_REMOVED == 0 && LEGACY_WAS_ACTIVE == 1 )); then
-    systemctl start x-ui.service || :
+    service_action start x-ui.service || :
   fi
   if (( status != 0 && LEGACY_REMOVED == 0 && EXISTING_MINIRAY == 0 )); then
     if (( CREATED_DB == 1 )); then
       rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm" "$DB_FOLDER/initial-admin-password"
     fi
     if (( UNIT_STAGED == 1 )); then
-      systemctl disable miniray.service miniray-agent.service miniray-core.service 2>/dev/null || :
-      rm -f /etc/systemd/system/miniray.service /etc/systemd/system/miniray-core.service /etc/systemd/system/miniray-agent.service
-      systemctl daemon-reload || :
+      for unit in miniray.service miniray-agent.service miniray-core.service; do service_disable "$unit" 2>/dev/null || :; done
+      if [[ "$SERVICE_MANAGER" == openrc ]]; then
+        rm -f /etc/init.d/miniray /etc/init.d/miniray-agent /etc/init.d/miniray-core
+      else
+        rm -f /etc/systemd/system/miniray.service /etc/systemd/system/miniray-core.service /etc/systemd/system/miniray-agent.service
+        systemctl daemon-reload || :
+      fi
     fi
     if (( WRAPPER_STAGED == 1 )); then rm -f /usr/local/bin/miniray; fi
     if (( STAGED_INSTALL == 1 )); then
@@ -137,7 +189,7 @@ tar -tzf "$TMP/$ASSET" | grep -vE '(^miniray/|^miniray$)' && {
   echo 'Unexpected archive paths' >&2
   exit 1
 } || :
-tar --no-same-owner -xzf "$TMP/$ASSET" -C "$TMP"
+tar -xzf "$TMP/$ASSET" -C "$TMP"
 test -x "$TMP/miniray/miniray"
 test -x "$TMP/miniray/bin/xray-linux-$ARCH"
 if (( COEXIST == 1 && EXISTING_MINIRAY == 0 )); then
@@ -145,25 +197,25 @@ if (( COEXIST == 1 && EXISTING_MINIRAY == 0 )); then
   test -s "$TMP/miniray/coexist_ports.py"
 fi
 
-PANEL_BOOT=$(systemctl is-enabled miniray.service 2>/dev/null || :)
-CORE_BOOT=$(systemctl is-enabled miniray-core.service 2>/dev/null || :)
-AGENT_BOOT=$(systemctl is-enabled miniray-agent.service 2>/dev/null || :)
+PANEL_BOOT=$(service_enabled miniray.service && echo enabled || echo disabled)
+CORE_BOOT=$(service_enabled miniray-core.service && echo enabled || echo disabled)
+AGENT_BOOT=$(service_enabled miniray-agent.service && echo enabled || echo disabled)
 PANEL_ACTIVE=1
 AGENT_ACTIVE=1
 if (( EXISTING_MINIRAY == 1 )); then
   PANEL_ACTIVE=0
   AGENT_ACTIVE=0
-  if systemctl is-active --quiet miniray.service; then PANEL_ACTIVE=1; fi
-  if systemctl is-active --quiet miniray-agent.service; then AGENT_ACTIVE=1; fi
+  if service_active miniray.service; then PANEL_ACTIVE=1; fi
+  if service_active miniray-agent.service; then AGENT_ACTIVE=1; fi
 fi
 
 LEGACY_ASSETS=''
 if (( REMOVE_LEGACY == 1 )); then
-  if systemctl list-unit-files x-ui.service --no-legend 2>/dev/null | grep -q '^x-ui.service'; then
-    if systemctl is-active --quiet x-ui.service; then LEGACY_WAS_ACTIVE=1; fi
-    systemctl stop x-ui.service
+  if legacy_service_exists; then
+    if service_active x-ui.service; then LEGACY_WAS_ACTIVE=1; fi
+    service_action stop x-ui.service
     LEGACY_STOPPED=1
-    if systemctl is-active --quiet x-ui.service; then
+    if service_active x-ui.service; then
       echo 'Cannot stop the old panel. No files were removed.' >&2
       exit 1
     fi
@@ -187,7 +239,7 @@ if (( REMOVE_LEGACY == 1 )); then
   fi
 fi
 
-systemctl stop miniray.service 2>/dev/null || :
+service_action stop miniray.service 2>/dev/null || :
 STAGED_INSTALL=1
 install -d -m 0700 "$DB_FOLDER"
 mkdir -p "$ROOT/bin" /var/log/miniray
@@ -223,6 +275,16 @@ case "$(. /etc/os-release; echo "${ID:-}")" in
   *) UNIT=debian;;
 esac
 UNIT_STAGED=1
+if [[ "$SERVICE_MANAGER" == openrc ]]; then
+  for name in miniray miniray-core miniray-agent; do
+    if [[ "$ROOT" == /usr/local/miniray ]]; then
+      install -m 0755 "$ROOT/openrc/$name" "/etc/init.d/$name"
+    else
+      sed "s|/usr/local/miniray|${escaped_root//|/\\|}|g" "$ROOT/openrc/$name" > "/etc/init.d/$name"
+      chmod 755 "/etc/init.d/$name"
+    fi
+  done
+else
 for service in miniray-core.service miniray-agent.service "miniray.service.$UNIT"; do
   unit_name=${service%%.service*}.service
   if [[ "$service" == miniray.service.* ]]; then unit_name=miniray.service; fi
@@ -234,6 +296,7 @@ for service in miniray-core.service miniray-agent.service "miniray.service.$UNIT
   fi
 done
 systemctl daemon-reload
+fi
 
 if [[ ! -f "$DB_PATH" ]]; then
   CREATED_DB=1
@@ -250,6 +313,11 @@ if (( COEXIST == 1 && EXISTING_MINIRAY == 0 )); then
   python3 "$TMP/miniray/coexist_ports.py" "$DB_PATH" "$TMP/miniray/bin/template.json" "$LEGACY_DB"
 fi
 
+if [[ "$SERVICE_MANAGER" == openrc ]]; then
+  install -d -m 0755 /etc/conf.d
+  printf 'MINIRAY_SERVICE_MANAGER="openrc"\nMINIRAY_SEPARATE_CORE="1"\nMINIRAY_DB_FOLDER="%s"\n' "$DB_FOLDER" > /etc/conf.d/miniray
+  chmod 600 /etc/conf.d/miniray
+fi
 if [[ -n "${MINIRAY_DB_FOLDER:-}" || "$DB_FOLDER" != /etc/miniray ]]; then
   install -d -m 0755 /etc/default
   touch /etc/default/miniray
@@ -258,24 +326,30 @@ if [[ -n "${MINIRAY_DB_FOLDER:-}" || "$DB_FOLDER" != /etc/miniray ]]; then
   printf 'MINIRAY_DB_FOLDER="%s"\n' "$DB_FOLDER" >> /etc/default/miniray
 fi
 
-[[ "$CORE_BOOT" == disabled || "$CORE_BOOT" == masked ]] || systemctl enable miniray-core.service
-[[ "$AGENT_BOOT" == disabled || "$AGENT_BOOT" == masked ]] || systemctl enable miniray-agent.service
-[[ "$PANEL_BOOT" == disabled || "$PANEL_BOOT" == masked ]] || systemctl enable miniray.service
+if (( EXISTING_MINIRAY == 0 )); then
+  service_enable miniray-core.service
+  service_enable miniray-agent.service
+  service_enable miniray.service
+else
+  [[ "$CORE_BOOT" == disabled || "$CORE_BOOT" == masked ]] || service_enable miniray-core.service
+  [[ "$AGENT_BOOT" == disabled || "$AGENT_BOOT" == masked ]] || service_enable miniray-agent.service
+  [[ "$PANEL_BOOT" == disabled || "$PANEL_BOOT" == masked ]] || service_enable miniray.service
+fi
 if (( AGENT_ACTIVE == 1 )); then
-  systemctl restart miniray-agent.service
-  systemctl is-active --quiet miniray-agent.service
+  service_action restart miniray-agent.service
+  service_active miniray-agent.service
 fi
 if (( PANEL_ACTIVE == 1 )); then
-  systemctl start miniray.service
-  systemctl is-active --quiet miniray.service
+  service_action start miniray.service
+  service_active miniray.service
 fi
 if (( LEGACY_FOUND == 1 )); then
   if (( EXISTING_MINIRAY == 0 )); then
     for attempt in {1..60}; do
-      if systemctl is-active --quiet miniray-core.service; then break; fi
+      if service_active miniray-core.service; then break; fi
       sleep 0.5
     done
-    systemctl is-active --quiet miniray-core.service || {
+    service_active miniray-core.service || {
       echo 'Miniray proxy core did not start. See journalctl -u miniray-agent -u miniray-core.' >&2
       exit 1
     }
@@ -283,14 +357,14 @@ if (( LEGACY_FOUND == 1 )); then
   if (( COEXIST == 1 )); then
     echo 'Miniray installed alongside 3x-ui; the legacy service state was preserved.'
   elif (( REMOVE_LEGACY == 1 )); then
-    systemctl is-active --quiet miniray-agent.service
-    systemctl is-active --quiet miniray.service
+    service_active miniray-agent.service
+    service_active miniray.service
     "$ROOT/bin/xray" -test -c "$ROOT/bin/config.json"
-    systemctl disable x-ui.service 2>/dev/null || :
-    rm -f /etc/systemd/system/x-ui.service /usr/lib/systemd/system/x-ui.service /lib/systemd/system/x-ui.service
+    service_disable x-ui.service 2>/dev/null || :
+    if [[ "$SERVICE_MANAGER" == systemd ]]; then rm -f /etc/systemd/system/x-ui.service /usr/lib/systemd/system/x-ui.service /lib/systemd/system/x-ui.service; fi
     rm -rf /usr/local/x-ui /etc/x-ui
     rm -f /usr/bin/x-ui /usr/local/bin/x-ui
-    systemctl daemon-reload
+    if [[ "$SERVICE_MANAGER" == systemd ]]; then systemctl daemon-reload; else rm -f /etc/init.d/x-ui; fi
     LEGACY_REMOVED=1
     echo "3x-ui uninstalled; its database and configuration backup is at $BACKUP_DIR"
   fi

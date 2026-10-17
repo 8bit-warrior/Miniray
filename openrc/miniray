@@ -1,0 +1,18 @@
+#!/sbin/openrc-run
+description="Miniray miniray"
+command="/usr/local/miniray/miniray"
+command_args=""
+command_background=true
+pidfile="/run/miniray.pid"
+directory="/usr/local/miniray"
+output_log="/var/log/miniray/panel.log"
+error_log="${output_log}"
+export MINIRAY_SEPARATE_CORE=1
+export MINIRAY_SERVICE_MANAGER=openrc
+depend() {
+  need net
+}
+start_pre() {
+  checkpath -d -m 0700 /var/log/miniray
+  checkpath -d -m 0700 /etc/miniray
+}

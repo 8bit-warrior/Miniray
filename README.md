@@ -4,7 +4,7 @@ Miniray is a SQLite-based proxy management panel with local inbounds, clients, s
 
 ## Install on Linux
 
-Supports **amd64/x86_64** and **arm64/aarch64** Linux hosts running systemd. Run as root, with `curl`, `tar` and `sha256sum` installed:
+Supports **amd64/x86_64** and **arm64/aarch64** Linux hosts running systemd or Alpine Linux with OpenRC. Run as root, with `bash`, `curl`, `tar`, `sha256sum` and `install` installed. On Alpine install dependencies using `apk add bash curl tar coreutils`:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh)
@@ -48,13 +48,13 @@ Supported local inbounds, clients, associations, traffic counters, compatible se
 | `miniray enable-core` / `miniray disable-core` | Enable or disable proxy autostart |
 | `miniray status` | Show service and autostart status |
 
-Stopping the panel closes its listening ports while proxies keep running. Start it again with `miniray start-panel`. Panel autostart and proxy autostart are independent; both are enabled on a fresh installation.
+On Alpine Linux, OpenRC units are installed under `/etc/init.d/`; environment is stored in `/etc/conf.d/miniray`. Logs are written under `/var/log/miniray/`.\n\nStopping the panel closes its listening ports while proxies keep running. Start it again with `miniray start-panel`. Panel autostart and proxy autostart are independent; both are enabled on a fresh installation.
 
 When upgrading an earlier Miniray database, a backup named `miniray-before-simplification-*.db` is saved beside it before the removed tables are retired. Local inbound settings, client usage and compatible subscription endpoint overrides are retained.
 
 ## Windows and Docker
 
-Download the amd64 or arm64 ZIP from [Releases](https://github.com/8bit-warrior/Miniray/releases), extract it and run `miniray.exe` from the extracted directory. The Linux installation command requires systemd. Docker deployment is optional; see [deploy/README.md](deploy/README.md).
+Download the amd64 or arm64 ZIP from [Releases](https://github.com/8bit-warrior/Miniray/releases), extract it and run `miniray.exe` from the extracted directory. The Linux installation command supports systemd and OpenRC. Docker deployment is optional; see [deploy/README.md](deploy/README.md).
 
 ## Build
 

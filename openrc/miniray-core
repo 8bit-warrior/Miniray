@@ -1,0 +1,19 @@
+#!/sbin/openrc-run
+description="Miniray miniray-core"
+command="/usr/local/miniray/bin/xray"
+command_args="-c /usr/local/miniray/bin/config.json"
+command_background=true
+pidfile="/run/miniray-core.pid"
+directory="/usr/local/miniray"
+output_log="/var/log/miniray/core.log"
+error_log="${output_log}"
+export MINIRAY_SEPARATE_CORE=1
+export MINIRAY_SERVICE_MANAGER=openrc
+depend() {
+  need net
+}
+start_pre() {
+  checkpath -d -m 0700 /var/log/miniray
+  checkpath -d -m 0700 /etc/miniray
+  [ -f /usr/local/miniray/bin/config.json ] || return 1
+}
