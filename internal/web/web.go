@@ -309,7 +309,8 @@ const (
 // jobs) which the panel relies on for periodic maintenance and monitoring.
 func (s *Server) startTask(restartXray bool, loc *time.Location) {
 	if restartXray {
-		err := s.xrayService.RestartXray(true)
+		force := os.Getenv("MINIRAY_SEPARATE_CORE") != "1"
+		err := s.xrayService.RestartXray(force)
 		if err != nil {
 			logger.Warning("start xray failed:", err)
 		}
@@ -515,7 +516,7 @@ func (s *Server) memoryAlarmWanted() bool {
 
 // Start initializes and starts the web server with configured settings, routes, and background jobs.
 func (s *Server) Start() (err error) {
-	return s.start(os.Getenv("MINIRAY_SEPARATE_CORE") != "1", true)
+	return s.start(true, true)
 }
 
 func (s *Server) StartPanelOnly() (err error) {
