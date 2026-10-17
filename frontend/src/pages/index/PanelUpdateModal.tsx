@@ -146,7 +146,7 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
           accordion
           defaultActiveKey="stable"
           onChange={(value) => {
-            if (value === 'actions') void fetchBuilds();
+            if (value.includes('actions')) void fetchBuilds();
           }}
           items={[
             {
