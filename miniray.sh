@@ -101,29 +101,53 @@ core_version() {
 }
 
 status_header() {
-  local version
+  local version rule
   version=$("$ROOT/miniray" -v)
   if [[ "$version" != v* && "$version" != dev+* ]]; then version="v$version"; fi
   color '1;36' "  M I N I R A Y   $version"
   printf '\n'
-  color '36' '  ──────────────────────────────────────────────────'
+  printf -v rule '%*s' "$((MENU_WIDTH + 2))" ''
+  color '36' "  ${rule// /─}"
   printf '\n'
-  printf '  %s  %s   %s %s\n' "$(tr_text '面板' 'Panel')" "$(state_text "$PANEL")" "$(tr_text '开机自启:' 'Autostart:')" "$(boot_text "$PANEL")"
+  printf '  %s  %s   %s %s\n' "$(tr_text 'Web面板' 'Web panel')" "$(state_text "$PANEL")" "$(tr_text '开机自启:' 'Autostart:')" "$(boot_text "$PANEL")"
   printf '  Xray v%s  %s   %s %s\n' "$(core_version)" "$(state_text "$CORE")" "$(tr_text '开机自启:' 'Autostart:')" "$(boot_text "$CORE")"
 }
 
+MENU_WIDTH=54
+
+menu_text_width() {
+  local LC_ALL=C value="$1" byte i width=0
+  for ((i=0; i<${#value}; i++)); do
+    printf -v byte '%d' "'${value:i:1}"
+    if ((byte < 128 || (byte >= 192 && byte <= 223))); then
+      ((width += 1))
+    elif ((byte >= 224 && byte <= 244)); then
+      ((width += 2))
+    fi
+  done
+  printf '%d' "$width"
+}
+
 menu_item() {
-  printf '  │  %2s   %s\n' "$1" "$2"
+  local content spaces
+  printf -v content '  %2s   %s' "$1" "$2"
+  spaces=$((MENU_WIDTH - $(menu_text_width "$content")))
+  printf '  │%s%*s│\n' "$content" "$spaces" ''
 }
 
 menu_group() {
+  local title="$1" spaces fill
+  spaces=$((MENU_WIDTH - 3 - $(menu_text_width "$title")))
+  printf -v fill '%*s' "$spaces" ''
   printf '\n'
-  color '36' "  ┌─ $1 ─────────────────────────────────────────────"
+  color '36' "  ┌─ $title ${fill// /─}┐"
   printf '\n'
 }
 
 menu_end_group() {
-  color '36' '  └──────────────────────────────────────────────────'
+  local fill
+  printf -v fill '%*s' "$MENU_WIDTH" ''
+  color '36' "  └${fill// /─}┘"
   printf '\n'
 }
 
@@ -136,21 +160,22 @@ render_menu() {
   if enabled "$PANEL"; then menu_item 2 "$(tr_text '禁用面板开机自启' 'Disable panel autostart')"; else menu_item 2 "$(tr_text '启用面板开机自启' 'Enable panel autostart')"; fi
   menu_item 3 "$(tr_text '重启面板' 'Restart panel')"
   menu_item 4 "$(tr_text '修改 Web 端口' 'Change web port')"
-  menu_item 5 "$(tr_text '重置用户名和密码' 'Reset username and password')"
-  menu_item 6 "$(tr_text '查看 Web 面板信息' 'Show web panel information')"
+  menu_item 5 "$(tr_text '修改 Web Path' 'Change web path')"
+  menu_item 6 "$(tr_text '重置用户名和密码' 'Reset username and password')"
+  menu_item 7 "$(tr_text '查看 Web 面板信息' 'Show web panel information')"
   menu_end_group
 
   menu_group "$(tr_text 'Xray 核心' 'Xray core')"
-  if running "$CORE"; then menu_item 7 "$(tr_text '停止代理核心' 'Stop proxy core')"; else menu_item 7 "$(tr_text '启动代理核心' 'Start proxy core')"; fi
-  if enabled "$CORE"; then menu_item 8 "$(tr_text '禁用核心开机自启' 'Disable core autostart')"; else menu_item 8 "$(tr_text '启用核心开机自启' 'Enable core autostart')"; fi
-  menu_item 9 "$(tr_text '重启代理核心' 'Restart proxy core')"
+  if running "$CORE"; then menu_item 8 "$(tr_text '停止代理核心' 'Stop proxy core')"; else menu_item 8 "$(tr_text '启动代理核心' 'Start proxy core')"; fi
+  if enabled "$CORE"; then menu_item 9 "$(tr_text '禁用核心开机自启' 'Disable core autostart')"; else menu_item 9 "$(tr_text '启用核心开机自启' 'Enable core autostart')"; fi
+  menu_item 10 "$(tr_text '重启代理核心' 'Restart proxy core')"
   menu_end_group
 
   menu_group "$(tr_text '系统工具' 'System tools')"
-  menu_item 10 "$(tr_text '查看日志' 'View logs')"
-  menu_item 11 "$(tr_text '更新 Miniray' 'Update Miniray')"
-  if [[ "$MENU_LANG" == zh ]]; then menu_item 12 '切换至 English'; else menu_item 12 'Switch to 中文'; fi
-  menu_item 13 "$(tr_text '完整卸载 Miniray' 'Uninstall Miniray')"
+  menu_item 11 "$(tr_text '查看日志' 'View logs')"
+  if [[ "$MENU_LANG" == zh ]]; then menu_item 12 'English'; else menu_item 12 '中文'; fi
+  menu_item 13 "$(tr_text '更新 Miniray' 'Update Miniray')"
+  menu_item 14 "$(tr_text '完整卸载 Miniray' 'Uninstall Miniray')"
   menu_item 0 "$(tr_text '退出' 'Exit')"
   menu_end_group
   printf '\n'
@@ -185,6 +210,20 @@ change_port() {
   fi
   "$ROOT/miniray" setting -port "$value" || return
   if running "$PANEL"; then svc restart "$PANEL" || return; fi
+}
+
+change_path() {
+  local value
+  read -r -p "$(tr_text '新的 Web Path (例如 /panel/): ' 'New web path (e.g. /panel/): ')" value || return
+  if [[ -z "$value" || "$value" =~ [[:space:]?#] ]]; then
+    printf '%s\n' "$(tr_text '请输入有效的 Web Path。' 'Enter a valid web path.')"
+    return 1
+  fi
+  [[ "$value" == /* ]] || value="/$value"
+  [[ "$value" == */ ]] || value="$value/"
+  "$ROOT/miniray" setting -webBasePath "$value" || return
+  if running "$PANEL"; then svc restart "$PANEL" || return; fi
+  web_info
 }
 
 reset_credentials() {
@@ -304,13 +343,14 @@ action() {
       fi;;
     web-info) web_info;;
     change-port) change_port;;
+    change-path) change_path;;
     reset-credentials) reset_credentials;;
     initial-password) "$ROOT/miniray" initial-password;;
     settings) "$ROOT/miniray" setting -show;;
     reset-settings) "$ROOT/miniray" setting -reset;;
     version) "$ROOT/miniray" -v;;
     update|install) bash "$ROOT/update.sh";;
-    uninstall) MENU_LANG=$(language); uninstall_miniray;;
+    uninstall) uninstall_miniray;;
     *) return 2;;
   esac
 }
@@ -323,7 +363,7 @@ Miniray / mr
   miniray enable-panel|disable-panel
   miniray start-core|stop-core|restart-core
   miniray enable-core|disable-core
-  miniray web-info|change-port|reset-credentials
+  miniray web-info|change-port|change-path|reset-credentials
   miniray logs|panel-logs|core-logs
   miniray update
   miniray uninstall
@@ -335,29 +375,30 @@ case "${1:-}" in
 esac
 (( EUID == 0 )) || { echo 'Run as root' >&2; exit 1; }
 if [[ "$MANAGER" == openrc ]]; then command -v rc-service >/dev/null 2>&1; fi
+MENU_LANG=$(language)
 case "${1:-}" in
   '') ;;
   *) action "$1" || { usage; exit 2; }; exit;;
 esac
 
-MENU_LANG=$(language)
 while true; do
   render_menu
-  read -r -p "$(tr_text '选择功能 [0-13]: ' 'Select an option [0-13]: ')" choice || break
+  read -r -p "$(tr_text '选择功能 [0-14]: ' 'Select an option [0-14]: ')" choice || break
   if ! case "$choice" in
     1) if running "$PANEL"; then action stop-panel; else action start-panel; fi;;
     2) if enabled "$PANEL"; then action disable-panel; else action enable-panel; fi;;
     3) action restart-panel;;
     4) change_port;;
-    5) reset_credentials;;
-    6) web_info;;
-    7) if running "$CORE"; then action stop-core; else action start-core; fi;;
-    8) if enabled "$CORE"; then action disable-core; else action enable-core; fi;;
-    9) action restart-core;;
-    10) action logs;;
-    11) action update;;
+    5) change_path;;
+    6) reset_credentials;;
+    7) web_info;;
+    8) if running "$CORE"; then action stop-core; else action start-core; fi;;
+    9) if enabled "$CORE"; then action disable-core; else action enable-core; fi;;
+    10) action restart-core;;
+    11) action logs;;
     12) if [[ "$MENU_LANG" == zh ]]; then set_language en; else set_language zh; fi;;
-    13) uninstall_miniray; if (( UNINSTALLED == 1 )); then exit 0; fi;;
+    13) action update;;
+    14) uninstall_miniray; if (( UNINSTALLED == 1 )); then exit 0; fi;;
     0) exit 0;;
     *) printf '%s\n' "$(tr_text '无效选项。' 'Invalid option.')";;
   esac; then

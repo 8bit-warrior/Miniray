@@ -18,9 +18,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/in
 MINIRAY_UPDATE_TAG=v0.0.3 bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh)
 ```
 
-执行 `miniray` 或 `mr` 均可打开中文管理菜单。菜单采用单页分块布局：顶部标题显示当前 Miniray 版本号，随后两行显示面板和 Xray 核心的实时状态、核心版本及各自的开机自启状态；下方分为面板管理、Xray 核心和系统工具三块，每行一个功能。Web 管理界面的桌面侧边栏和移动端抽屉也会在顶部显示当前版本号。可在菜单中切换至 English，语言选择会保存，更新后仍然保留。
+执行 `miniray` 或 `mr` 均可打开中文管理菜单。菜单采用单页分块布局：顶部首行显示当前 Miniray 版本号，随后两行显示 Web 面板和 Xray 核心的实时状态、核心版本及各自的开机自启状态；下方分为面板管理、Xray 核心和系统工具三块，每行一个功能。分组使用等宽、左右闭合的边框。Web 管理界面的桌面侧边栏和移动端抽屉也会在顶部显示当前版本号。语言切换固定为菜单 12，中文界面显示 `English`，英文界面显示 `中文`；语言选择会保存，更新后仍然保留。
 
-面板管理提供按状态切换的启动/停止和开机自启开关、重启面板、修改 Web 端口、重置管理员用户名和密码，以及查看面板地址与用户名。输入新密码时不会显示输入内容，密码通过标准输入交给后台处理，不会出现在进程命令行中。修改端口后，只有面板正在运行时才会重启面板，不会停止代理核心。
+面板管理提供按状态切换的启动/停止和开机自启开关、重启面板、修改 Web 端口、修改 Web Path、重置管理员用户名和密码，以及查看面板地址与用户名。输入新密码时不会显示输入内容，密码通过标准输入交给后台处理，不会出现在进程命令行中。修改 Web 端口或 Path 后，只有面板正在运行时才会重启面板，不会停止代理核心。修改 Path 时会补齐首尾斜杠，并显示修改后的面板地址。
 
 执行 `miniray update` 会先输出当前已安装版本号，再进行更新；更新时保留原有数据库路径和已禁用的服务开机自启设置。全新安装检测到遗留 Miniray 数据库时，会提示选择复用原数据库、清除旧数据库重新安装或取消。选择清除时会暂存旧数据库，安装失败则恢复。
 
@@ -55,6 +55,7 @@ Select [1/2/3]:
 | `miniray enable-core` / `miniray disable-core` | 启用或禁用代理服务开机自启 |
 | `miniray web-info` | 输出 Web 面板地址和管理员用户名（共两行） |
 | `miniray change-port` | 交互式修改 Web 面板端口 |
+| `miniray change-path` | 交互式修改 Web 面板路径 |
 | `miniray reset-credentials` | 交互式重置管理员用户名与密码 |
 
 在 Alpine Linux 中，OpenRC 服务脚本位于 `/etc/init.d/`，环境配置位于 `/etc/conf.d/miniray`，日志位于 `/var/log/miniray/`。

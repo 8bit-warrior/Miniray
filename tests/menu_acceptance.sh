@@ -16,7 +16,8 @@ case "$1" in
     action="$1"; shift
     [[ "${1:-}" != --quiet ]] || shift
     if [[ "$action" == is-active ]]; then test -f "$state/$1.running"; else test -f "$state/$1.enabled"; fi;;
-  start|restart) touch "$state/$2.running";;
+  status) test -f "$state/$2.running";;
+  start|restart) touch "$state/$2.running"; printf '%s %s\n' "$1" "$2" >> "$state/services";;
   stop) rm -f "$state/$2.running";;
   enable) touch "$state/$2.enabled";;
   disable) rm -f "$state/$2.enabled";;
@@ -61,12 +62,21 @@ cat > "$work/root/miniray" <<'MOCK'
 printf '%s\n' "$*" >> "$MINIRAY_TEST_STATE/commands"
 case "$1" in
   -v) echo "$MINIRAY_TEST_VERSION";;
-  panel-info) printf 'http://%s:2053/panel/\nadmin\n' "$2";;
+  panel-info)
+    path=/panel/
+    [[ ! -f "$MINIRAY_TEST_STATE/path" ]] || read -r path < "$MINIRAY_TEST_STATE/path"
+    printf 'http://%s:2053%s\nadmin\n' "$2" "$path";;
   reset-credentials)
     read -r username
     read -r password
     printf 'reset=%s;%s\n' "$username" "$password" >> "$MINIRAY_TEST_STATE/commands";;
-  setting) printf 'Port set successfully: 2054\n';;
+  setting)
+    if [[ "$2" == -webBasePath ]]; then
+      printf '%s\n' "$3" > "$MINIRAY_TEST_STATE/path"
+      printf 'Base URI path set successfully\n'
+    else
+      printf 'Port set successfully: 2054\n'
+    fi;;
 esac
 MOCK
 
@@ -88,11 +98,17 @@ grep -q 'Xray v26.6.27' "$work/default"
 grep -q "M I N I R A Y   v${MINIRAY_TEST_VERSION}" "$work/default"
 head -n 1 "$work/default" | grep -q "M I N I R A Y   v${MINIRAY_TEST_VERSION}"
 grep -q '完整卸载 Miniray' "$work/default"
+grep -q 'Web面板  已停止' "$work/default"
+grep -q '修改 Web Path' "$work/default"
+grep -qE '12[[:space:]]+English' "$work/default"
+! grep -q '切换至 English' "$work/default"
 grep -q '启动面板' "$work/default"
 ! grep -q '查看状态' "$work/default"
 
-printf '1\n\n2\n\n12\n6\n\n0\n' | bash "$SCRIPT" > "$work/english"
-grep -q 'Switch to 中文' "$work/english"
+printf '1\n\n2\n\n12\n7\n\n0\n' | bash "$SCRIPT" > "$work/english"
+grep -qE '12[[:space:]]+中文' "$work/english"
+! grep -q 'Switch to 中文' "$work/english"
+grep -q 'Web panel  Running' "$work/english"
 grep -q "M I N I R A Y   v${MINIRAY_TEST_VERSION}" "$work/english"
 grep -q 'http://192.0.2.42:2053/panel/' "$work/english"
 grep -q 'Username: admin' "$work/english"
@@ -100,13 +116,27 @@ test -f "$work/state/miniray.service.running"
 test -f "$work/state/miniray.service.enabled"
 test "$(cat "$work/state/lang")" = en
 
-printf '4\n70000\n\n4\n2054\n\n5\ntester\nsecret-key\nsecret-key\n\n0\n' | bash "$SCRIPT" > "$work/credentials"
+printf '5\nadmin-area\n\n7\n\n0\n' | bash "$SCRIPT" > "$work/path"
+grep -q 'http://192.0.2.42:2053/admin-area/' "$work/path"
+grep -q 'setting -webBasePath /admin-area/' "$work/state/commands"
+grep -q 'restart miniray.service' "$work/state/services"
+! grep -q 'restart miniray-core.service' "$work/state/services"
+
+printf '/dashboard/\n' | bash "$SCRIPT" change-path > "$work/cli-path"
+grep -q 'http://192.0.2.42:2053/dashboard/' "$work/cli-path"
+grep -q 'setting -webBasePath /dashboard/' "$work/state/commands"
+
+printf '5\nbad?query\n\n0\n' | bash "$SCRIPT" > "$work/invalid-path"
+grep -q 'Enter a valid web path' "$work/invalid-path"
+test "$(cat "$work/state/path")" = '/dashboard/'
+
+printf '4\n70000\n\n4\n2054\n\n6\ntester\nsecret-key\nsecret-key\n\n0\n' | bash "$SCRIPT" > "$work/credentials"
 grep -q 'Port must be between' "$work/credentials"
 grep -q 'Port set successfully' "$work/credentials"
 grep -q 'reset=tester;secret-key' "$work/state/commands"
 
 export MINIRAY_SERVICE_MANAGER=openrc
-printf '1\n\n2\n\n7\n\n8\n\n0\n' | bash "$SCRIPT" > "$work/openrc"
+printf '1\n\n2\n\n8\n\n9\n\n0\n' | bash "$SCRIPT" > "$work/openrc"
 test ! -e "$work/state/miniray.service.running"
 test ! -e "$work/state/miniray.service.enabled"
 test -f "$work/state/miniray-core.service.running"
@@ -114,4 +144,27 @@ test -f "$work/state/miniray-agent.service.running"
 test -f "$work/state/miniray-core.service.enabled"
 test -f "$work/state/miniray-agent.service.enabled"
 grep -q 'Start panel' "$work/openrc"
-printf 'Menu acceptance: systemd, OpenRC, bilingual, credentials, port and address passed\n'
+
+python3 - "$work/default" "$work/english" <<'PY'
+from pathlib import Path
+from unicodedata import east_asian_width
+import sys
+
+def width(text):
+    return sum(2 if east_asian_width(char) in ("F", "W") else 1 for char in text)
+
+expected = None
+for filename in sys.argv[1:]:
+    lines = Path(filename).read_text().splitlines()
+    borders = [line for line in lines if line.startswith(("  ┌", "  │", "  └"))]
+    assert borders
+    for line in borders:
+        assert line.endswith(("┐", "│", "┘")), (filename, line)
+        if expected is None:
+            expected = width(line)
+        assert width(line) == expected, (filename, width(line), expected, line)
+    separators = [line for line in lines if line.startswith("  ─")]
+    assert separators and all(width(line) == expected for line in separators)
+    assert sum(line.startswith("  ┌") for line in borders) == sum(line.startswith("  └") for line in borders)
+PY
+printf 'Menu acceptance: systemd, OpenRC, aligned frames, bilingual labels, credentials, port, path and address passed\n'

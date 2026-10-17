@@ -238,6 +238,20 @@ try:
                     time.sleep(0.5)
             else:
                 raise AssertionError("Web panel did not restart on the new port")
+            subprocess.run(
+                ["/usr/local/bin/mr", "change-path"],
+                input="admin-area\n", text=True, capture_output=True, check=True,
+            )
+            panel_url = f"http://127.0.0.1:{new_port}/admin-area/"
+            assert command("/usr/local/miniray/miniray", "panel-info", "127.0.0.1").stdout.splitlines()[0] == panel_url
+            for _ in range(30):
+                try:
+                    if urllib.request.urlopen(panel_url, timeout=1).status == 200:
+                        break
+                except OSError:
+                    time.sleep(0.5)
+            else:
+                raise AssertionError("Web panel did not restart on the new path")
         wait_active("miniray")
         wait_active("miniray-agent")
         wait_active("miniray-core")
