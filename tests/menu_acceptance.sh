@@ -167,4 +167,51 @@ for filename in sys.argv[1:]:
     assert separators and all(width(line) == expected for line in separators)
     assert sum(line.startswith("  ┌") for line in borders) == sum(line.startswith("  └") for line in borders)
 PY
-printf 'Menu acceptance: systemd, OpenRC, aligned frames, bilingual labels, credentials, port, path and address passed\n'
+
+python3 - "$SCRIPT" "$work/state/lang" <<'PY'
+import errno
+import os
+import pty
+import select
+import signal
+import sys
+import time
+from pathlib import Path
+
+for language in ("zh", "en"):
+    Path(sys.argv[2]).write_text(language + "\n", encoding="utf-8")
+    pid, fd = pty.fork()
+    if pid == 0:
+        os.environ["TERM"] = "xterm"
+        os.environ["MINIRAY_SERVICE_MANAGER"] = "systemd"
+        os.execvp("bash", ["bash", sys.argv[1]])
+    os.write(fd, b"0\n")
+    output = bytearray()
+    deadline = time.monotonic() + 12
+    try:
+        while time.monotonic() < deadline:
+            ready, _, _ = select.select([fd], [], [], 0.5)
+            if ready:
+                try:
+                    data = os.read(fd, 65536)
+                except OSError as exc:
+                    if exc.errno == errno.EIO:
+                        break
+                    raise
+                if not data:
+                    break
+                output.extend(data)
+        else:
+            os.kill(pid, signal.SIGKILL)
+            raise AssertionError("terminal menu timed out")
+        _, status = os.waitpid(pid, 0)
+        assert os.waitstatus_to_exitcode(status) == 0, output.decode(errors="replace")
+    finally:
+        os.close(fd)
+
+    rendered = output.decode(errors="replace")
+    assert rendered.count("\x1b[58G│") == 15, (language, rendered)
+    assert rendered.count("\x1b[5G") == 3, (language, rendered)
+    assert rendered.count("┐") == 3 and rendered.count("┘") == 3, (language, rendered)
+PY
+printf 'Menu acceptance: systemd, OpenRC, aligned TTY frames, bilingual labels, credentials, port, path and address passed\n'

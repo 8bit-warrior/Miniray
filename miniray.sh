@@ -131,17 +131,30 @@ menu_text_width() {
 menu_item() {
   local content spaces
   printf -v content '  %2s   %s' "$1" "$2"
-  spaces=$((MENU_WIDTH - $(menu_text_width "$content")))
-  printf '  │%s%*s│\n' "$content" "$spaces" ''
+  printf '  │%s' "$content"
+  if [[ -t 1 && "${TERM:-dumb}" != dumb ]]; then
+    printf '\033[%dG│\n' "$((MENU_WIDTH + 4))"
+  else
+    spaces=$((MENU_WIDTH - $(menu_text_width "$content")))
+    printf '%*s│\n' "$spaces" ''
+  fi
 }
 
 menu_group() {
   local title="$1" spaces fill
-  spaces=$((MENU_WIDTH - 3 - $(menu_text_width "$title")))
-  printf -v fill '%*s' "$spaces" ''
   printf '\n'
-  color '36' "  ┌─ $title ${fill// /─}┐"
-  printf '\n'
+  if [[ -t 1 && "${TERM:-dumb}" != dumb ]]; then
+    printf -v fill '%*s' "$MENU_WIDTH" ''
+    color '36' "  ┌${fill// /─}┐"
+    printf '\033[5G'
+    color '36' " $title "
+    printf '\n'
+  else
+    spaces=$((MENU_WIDTH - 3 - $(menu_text_width "$title")))
+    printf -v fill '%*s' "$spaces" ''
+    color '36' "  ┌─ $title ${fill// /─}┐"
+    printf '\n'
+  fi
 }
 
 menu_end_group() {
