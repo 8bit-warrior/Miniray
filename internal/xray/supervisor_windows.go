@@ -89,7 +89,9 @@ func IndependentCoreRunning() bool {
 	return err == nil && pid > 0 && verifyCorePID(pid) == nil
 }
 
-func StopIndependentCore() error { return stopIndependentCore() }
+func StopIndependentCore() error {
+	return stopIndependentCore()
+}
 
 func (p *process) startIndependentCore(path string, oldConfig, newConfig []byte, forceRestart bool) error {
 	pid, err := corePID()

@@ -152,8 +152,12 @@ func (s *XrayService) GetXrayResult() string {
 // GetXrayVersion returns the version of the running Xray process.
 func (s *XrayService) GetXrayVersion() string {
 	process := currentXrayProcess()
-	if process != nil && process.IsRunning() { return process.GetXrayVersion() }
-	if xray.IndependentCoreRunning() { return xray.InstalledVersion() }
+	if process != nil && process.IsRunning() {
+		return process.GetXrayVersion()
+	}
+	if xray.IndependentCoreRunning() {
+		return xray.InstalledVersion()
+	}
 	return "Unknown"
 }
 
@@ -1299,7 +1303,9 @@ func (s *XrayService) RestartXray(isForce bool) error {
 			logger.Info("Xray config changes applied through the core API, no restart needed")
 			return nil
 		}
-		if err := process.Stop(); err != nil { return err }
+		if err := process.Stop(); err != nil {
+			return err
+		}
 	} else if conflicts := bindConflicts(xrayConfig, nil); len(conflicts) > 0 {
 		// Nothing is running to protect and the core is the authority on what it
 		// can bind: start it and let its own error name the port it lost.
@@ -1309,7 +1315,7 @@ func (s *XrayService) RestartXray(isForce bool) error {
 	process = xray.NewProcess(xrayConfig)
 	xrayState.replace(process)
 	s.xrayAPI.StatsLastValues = nil
-	err = process.Start(isForce)
+	err = process.StartWithRestart(isForce)
 	if err != nil {
 		return err
 	}
@@ -1485,8 +1491,12 @@ func (s *XrayService) StopXray() error {
 	isManuallyStopped.Store(true)
 	logger.Debug("Attempting to stop Xray...")
 	process := currentXrayProcess()
-	if process != nil && process.IsRunning() { return process.Stop() }
-	if xray.IndependentCoreRunning() { return xray.StopIndependentCore() }
+	if process != nil && process.IsRunning() {
+		return process.Stop()
+	}
+	if xray.IndependentCoreRunning() {
+		return xray.StopIndependentCore()
+	}
 	return errors.New("xray is not running")
 }
 

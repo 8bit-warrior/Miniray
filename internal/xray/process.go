@@ -401,7 +401,9 @@ var installedVersionCache struct {
 func InstalledVersion() string {
 	path := GetBinaryPath()
 	info, err := os.Stat(path)
-	if err != nil { return "Unknown" }
+	if err != nil {
+		return "Unknown"
+	}
 	installedVersionCache.Lock()
 	defer installedVersionCache.Unlock()
 	if installedVersionCache.path == path && installedVersionCache.size == info.Size() &&
@@ -431,7 +433,15 @@ func (p *process) refreshVersion() {
 }
 
 // Start launches the Xray process with the current configuration.
-func (p *process) Start(forceRestart ...bool) (err error) {
+func (p *process) Start() error {
+	return p.start(false)
+}
+
+func (p *process) StartWithRestart(forceRestart bool) error {
+	return p.start(forceRestart)
+}
+
+func (p *process) start(forceRestart bool) (err error) {
 	if p.IsRunning() {
 		return errors.New("xray is already running")
 	}
@@ -459,7 +469,7 @@ func (p *process) Start(forceRestart ...bool) (err error) {
 	}
 	if p.configPath == "" && independentCoreEnabled() {
 		existing, _ := os.ReadFile(configPath)
-		return p.startIndependentCore(configPath, existing, data, len(forceRestart) > 0 && forceRestart[0])
+		return p.startIndependentCore(configPath, existing, data, forceRestart)
 	}
 	err = writeFileAtomic(configPath, data, 0o600)
 	if err != nil {

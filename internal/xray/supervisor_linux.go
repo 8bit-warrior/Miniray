@@ -109,16 +109,24 @@ func (p *process) adoptCore(pid int) error {
 }
 
 func IndependentCoreRunning() bool {
-	if !independentCoreEnabled() { return false }
+	if !independentCoreEnabled() {
+		return false
+	}
 	pid, err := corePID()
 	return err == nil && pid > 0 && verifyCorePID(pid) == nil
 }
 
 func StopIndependentCore() error {
 	pid, err := corePID()
-	if err != nil { return err }
-	if pid <= 0 { return errors.New("xray is not running") }
-	if err := verifyCorePID(pid); err != nil { return err }
+	if err != nil {
+		return err
+	}
+	if pid <= 0 {
+		return errors.New("xray is not running")
+	}
+	if err := verifyCorePID(pid); err != nil {
+		return err
+	}
 	return stopIndependentCore()
 }
 
