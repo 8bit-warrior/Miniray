@@ -270,7 +270,14 @@ if (( PANEL_ACTIVE == 1 )); then
 fi
 if (( LEGACY_FOUND == 1 )); then
   if (( EXISTING_MINIRAY == 0 )); then
-    systemctl is-active --quiet miniray-core.service
+    for attempt in {1..60}; do
+      if systemctl is-active --quiet miniray-core.service; then break; fi
+      sleep 0.5
+    done
+    systemctl is-active --quiet miniray-core.service || {
+      echo 'Miniray proxy core did not start. See journalctl -u miniray-agent -u miniray-core.' >&2
+      exit 1
+    }
   fi
   if (( COEXIST == 1 )); then
     echo 'Miniray installed alongside 3x-ui; the legacy service state was preserved.'
