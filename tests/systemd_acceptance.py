@@ -2,6 +2,8 @@
 
 import errno
 import http.server
+import socket
+import urllib.request
 import json
 import os
 from pathlib import Path
@@ -45,7 +47,7 @@ def fixture(corrupt=False):
     Path("/usr/local/x-ui").mkdir()
     Path("/usr/local/x-ui/x-ui").write_text("legacy test installation\n")
     Path("/etc/systemd/system/x-ui.service").write_text(
-        "[Unit]\nDescription=Legacy installer fixture\n[Service]\nExecStart=/bin/sleep infinity\n[Install]\nWantedBy=multi-user.target\n"
+        f"[Unit]\\nDescription=Legacy installer fixture\\n[Service]\\nExecStart=/usr/bin/python3 {work / 'legacy_listener.py'}\\n[Install]\\nWantedBy=multi-user.target\\n"
     )
     if corrupt:
         Path("/etc/x-ui/x-ui.db").write_bytes(b"broken sqlite fixture")
@@ -55,12 +57,14 @@ def fixture(corrupt=False):
             CREATE TABLE users(id INTEGER PRIMARY KEY, username TEXT, password TEXT);
             INSERT INTO users VALUES(1,'legacy-admin','$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy');
             CREATE TABLE settings(id INTEGER PRIMARY KEY, key TEXT, value TEXT);
-            INSERT INTO settings(key,value) VALUES('webPort','18443'),('webBasePath','/'),('subEnable','false');
+            INSERT INTO settings(key,value) VALUES('webPort','20530'),('webBasePath','/'),('subEnable','false');
             CREATE TABLE inbounds(id INTEGER PRIMARY KEY, user_id INTEGER, tag TEXT, protocol TEXT, port INTEGER, listen TEXT, settings TEXT, stream_settings TEXT, sniffing TEXT, enable INTEGER, node_id INTEGER);
             INSERT INTO inbounds VALUES(10,1,'local-socks','mixed',24442,'127.0.0.1','{"accounts":[],"udp":true}','{"network":"tcp","security":"none"}','{}',1,NULL);
             INSERT INTO inbounds VALUES(11,1,'remote-only','mixed',24443,'127.0.0.1','{"accounts":[],"udp":true}','{"network":"tcp","security":"none"}','{}',1,9);
         """)
         template = json.loads((repo / "internal/web/service/config.json").read_text())
+        template["inbounds"][0]["port"] = 62790
+        template["metrics"]["listen"] = "127.0.0.1:11112"
         # The fixture's proxy must reach its loopback HTTP test server.
         template["outbounds"].append({"protocol": "freedom", "tag": "acceptance-http", "settings": {"finalRules": [{"action": "allow", "ip": ["127.0.0.1"]}, {"action": "block"}]}})
         template["routing"]["rules"].insert(1, {"type": "field", "inboundTag": ["local-socks"], "ip": ["127.0.0.1"], "outboundTag": "acceptance-http"})
@@ -143,6 +147,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
         pass
 
 
+(work / "legacy_listener.py").write_text("""
+import socket
+import time
+sockets = []
+for port in (20530, 62790, 11112):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(("127.0.0.1", port))
+    sock.listen()
+    sockets.append(sock)
+while True:
+    time.sleep(60)
+""")
 (work / "bin").mkdir()
 curl = work / "bin/curl"
 curl.write_text("""#!/usr/bin/env python3
@@ -161,38 +177,54 @@ httpd = socketserver.TCPServer(("127.0.0.1", 0), Handler)
 threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
 try:
-    for name, answers, remove, imported in [
-        ("fresh", "", True, False),
-        ("remove-import", "Y\ny\n", True, True),
-        ("remove-only", "y\nN\n", True, False),
-        ("keep-import", "n\nY\n", False, True),
-        ("keep-only", "N\nn\n", False, False),
+    clean()
+    fixture()
+    install("3\n")
+    assert not Path("/usr/local/miniray").exists()
+    assert not Path("/etc/miniray").exists()
+    assert Path("/etc/x-ui/x-ui.db").exists()
+    wait_active("x-ui")
+    print("cancel-no-side-effects: passed", flush=True)
+
+    for name, answers, imported in [
+        ("fresh", "", False),
+        ("coexist", "9\n1\n", False),
+        ("migrate", "2\n", True),
     ]:
         clean()
         if name != "fresh":
             fixture()
         install(answers)
         assert_schema(imported)
-        if remove:
-            wait_active("miniray")
-            wait_active("miniray-agent")
-            if name != "fresh":
-                assert not Path("/usr/local/x-ui").exists()
-                assert list(Path("/var/backups/miniray").glob("**/*.db"))
-        else:
+        wait_active("miniray")
+        wait_active("miniray-agent")
+        wait_active("miniray-core")
+        if name == "coexist":
             wait_active("x-ui")
-            for unit in units[:3]:
-                assert command("systemctl", "is-active", "--quiet", unit, check=False).returncode != 0
-                assert command("systemctl", "is-enabled", "--quiet", unit, check=False).returncode != 0
-        if name == "remove-import":
-            wait_active("miniray-core")
+            assert Path("/etc/x-ui/x-ui.db").exists()
+            with sqlite3.connect("/etc/miniray/miniray.db") as db:
+                settings = dict(db.execute("SELECT key,value FROM settings"))
+            template = json.loads(settings["xrayTemplateConfig"])
+            ports = [int(settings["webPort"]), template["inbounds"][0]["port"], int(template["metrics"]["listen"].rsplit(":", 1)[-1])]
+            assert len(set(ports)) == 3, ports
+            assert not set(ports).intersection({20530, 62790, 11112, 24442}), ports
+            assert urllib.request.urlopen(f"http://127.0.0.1:{ports[0]}/", timeout=5).status == 200
+            assert socket.create_connection(("127.0.0.1", ports[1]), timeout=5)
+            install("2\n", succeeds=False)
+            wait_active("x-ui")
+            assert Path("/etc/x-ui/x-ui.db").exists()
+        else:
+            if name == "migrate":
+                assert not Path("/usr/local/x-ui").exists()
+                assert not Path("/etc/x-ui").exists()
+                assert list(Path("/var/backups/miniray").glob("**/*.db"))
+        if name == "migrate":
             assert_proxy()
             command("/usr/local/bin/miniray", "disable-panel")
             command("/usr/local/bin/miniray", "stop-panel")
             assert_proxy()
             assert command("systemctl", "is-enabled", "--quiet", "miniray-core").returncode == 0
             assert command("systemctl", "is-active", "--quiet", "miniray", check=False).returncode != 0
-            # Keep a real executable open while the installer replaces its path.
             mtg_path = Path("/usr/local/miniray/bin/mtg-linux-amd64")
             shutil.copyfile("/bin/sleep", mtg_path)
             sidecar = subprocess.Popen([str(mtg_path), "120"])
@@ -219,7 +251,7 @@ try:
         print(name + ": passed", flush=True)
     clean()
     fixture(corrupt=True)
-    install("y\nY\n", succeeds=False)
+    install("2\n", succeeds=False)
     wait_active("x-ui")
     assert Path("/usr/local/x-ui/x-ui").exists()
     assert Path("/etc/x-ui/x-ui.db").read_bytes() == b"broken sqlite fixture"

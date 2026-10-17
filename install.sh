@@ -40,43 +40,45 @@ case "$DB_FOLDER" in
   *) echo 'MINIRAY_DB_FOLDER must be absolute' >&2; exit 1;;
 esac
 
-ask_yn() {
-  local answer
-  if [[ ! -r /dev/tty ]]; then
-    echo 'Legacy migration requires an interactive terminal.' >&2
-    exit 1
-  fi
-  while true; do
-    read -r -p "$1 [y/n]: " answer </dev/tty || exit 1
-    case "${answer,,}" in
-      y) return 0;;
-      n) return 1;;
-    esac
-  done
-}
-
 LEGACY_FOUND=0
 REMOVE_LEGACY=0
 IMPORT_LEGACY=0
+COEXIST=0
 EXISTING_MINIRAY=0
 if [[ -f "$ROOT/miniray" || -f "$DB_PATH" ]]; then EXISTING_MINIRAY=1; fi
-if (( EXISTING_MINIRAY == 0 )); then
-  if systemctl list-unit-files x-ui.service --no-legend 2>/dev/null | grep -q '^x-ui.service' ||
-     [[ -e /usr/local/x-ui/x-ui || -e /etc/x-ui/x-ui.db || -e /usr/bin/x-ui || -e /usr/local/bin/x-ui ]]; then
-    LEGACY_FOUND=1
-    echo 'Detected an existing 3x-ui installation.'
-    if ask_yn 'Uninstall 3x-ui before installing Miniray?'; then REMOVE_LEGACY=1; fi
-    if ask_yn 'Import supported 3x-ui configuration into Miniray?'; then IMPORT_LEGACY=1; fi
-    if (( IMPORT_LEGACY == 1 || REMOVE_LEGACY == 1 )); then
-      if [[ "${LEGACY_DB_TYPE,,}" != sqlite ]]; then
-        echo "Cannot back up a legacy $LEGACY_DB_TYPE database; only SQLite is supported." >&2
-        exit 1
-      fi
-      if [[ ! -f "$LEGACY_DB" ]]; then
-        echo "Cannot back up: legacy SQLite database not found at $LEGACY_DB." >&2
-        exit 1
-      fi
+if systemctl list-unit-files x-ui.service --no-legend 2>/dev/null | grep -q '^x-ui.service' ||
+   [[ -e /usr/local/x-ui/x-ui || -e "$LEGACY_DB" || -e /usr/bin/x-ui || -e /usr/local/bin/x-ui ]]; then
+  LEGACY_FOUND=1
+  [[ -r /dev/tty ]] || { echo 'Select a 3x-ui installation strategy in an interactive terminal.' >&2; exit 1; }
+  echo 'Existing 3x-ui installation detected:'
+  echo '1) Coexist: install and run Miniray alongside 3x-ui'
+  echo '2) Migrate: uninstall 3x-ui and import supported data into Miniray'
+  echo '3) Cancel this installation'
+  while true; do
+    read -r -p 'Select [1/2/3]: ' choice </dev/tty || exit 1
+    case "$choice" in
+      1) COEXIST=1; break;;
+      2) REMOVE_LEGACY=1; IMPORT_LEGACY=1; break;;
+      3) echo 'Installation cancelled.'; exit 0;;
+      *) echo 'Invalid selection. Enter 1, 2 or 3.';;
+    esac
+  done
+  if (( IMPORT_LEGACY == 1 )); then
+    if (( EXISTING_MINIRAY == 1 )); then
+      echo 'Migration requires a fresh Miniray database. Existing Miniray data was not changed.' >&2
+      exit 1
     fi
+    if [[ "$LEGACY_DB_TYPE" != sqlite && "$LEGACY_DB_TYPE" != SQLite ]]; then
+      echo "Legacy $LEGACY_DB_TYPE databases cannot be imported; SQLite is required." >&2
+      exit 1
+    fi
+    if [[ ! -f "$LEGACY_DB" ]]; then
+      echo "Legacy SQLite database not found at $LEGACY_DB." >&2
+      exit 1
+    fi
+  fi
+  if (( COEXIST == 1 && EXISTING_MINIRAY == 0 )); then
+    command -v python3 >/dev/null || { echo 'Python 3 is required to isolate coexistence ports.' >&2; exit 1; }
   fi
 fi
 
@@ -92,6 +94,9 @@ ROOT_WAS_ABSENT=0
 [[ -e "$ROOT" ]] || ROOT_WAS_ABSENT=1
 finish_install() {
   local status=$?
+  if (( status != 0 && LEGACY_REMOVED == 0 && EXISTING_MINIRAY == 0 && STAGED_INSTALL == 1 )); then
+    systemctl stop miniray.service miniray-agent.service miniray-core.service 2>/dev/null || :
+  fi
   if (( status != 0 && LEGACY_STOPPED == 1 && LEGACY_REMOVED == 0 && LEGACY_WAS_ACTIVE == 1 )); then
     systemctl start x-ui.service || :
   fi
@@ -134,6 +139,10 @@ tar -tzf "$TMP/$ASSET" | grep -vE '(^miniray/|^miniray$)' && {
 tar --no-same-owner -xzf "$TMP/$ASSET" -C "$TMP"
 test -x "$TMP/miniray/miniray"
 test -x "$TMP/miniray/bin/xray-linux-$ARCH"
+if (( COEXIST == 1 && EXISTING_MINIRAY == 0 )); then
+  test -s "$TMP/miniray/bin/template.json"
+  test -s "$TMP/miniray/coexist_ports.py"
+fi
 
 PANEL_BOOT=$(systemctl is-enabled miniray.service 2>/dev/null || :)
 CORE_BOOT=$(systemctl is-enabled miniray-core.service 2>/dev/null || :)
@@ -148,40 +157,32 @@ if (( EXISTING_MINIRAY == 1 )); then
 fi
 
 LEGACY_ASSETS=''
-if (( LEGACY_FOUND == 1 )); then
-  if (( REMOVE_LEGACY == 1 )); then
-    if systemctl list-unit-files x-ui.service --no-legend 2>/dev/null | grep -q '^x-ui.service'; then
-      if systemctl is-active --quiet x-ui.service; then LEGACY_WAS_ACTIVE=1; fi
-      systemctl stop x-ui.service
-      LEGACY_STOPPED=1
-      if systemctl is-active --quiet x-ui.service; then
-        echo 'Cannot stop the old panel. No files were removed.' >&2
-        exit 1
-      fi
+if (( REMOVE_LEGACY == 1 )); then
+  if systemctl list-unit-files x-ui.service --no-legend 2>/dev/null | grep -q '^x-ui.service'; then
+    if systemctl is-active --quiet x-ui.service; then LEGACY_WAS_ACTIVE=1; fi
+    systemctl stop x-ui.service
+    LEGACY_STOPPED=1
+    if systemctl is-active --quiet x-ui.service; then
+      echo 'Cannot stop the old panel. No files were removed.' >&2
+      exit 1
     fi
   fi
-  if (( REMOVE_LEGACY == 1 || IMPORT_LEGACY == 1 )); then
-    "$TMP/miniray/miniray" snapshot-legacy --source "$LEGACY_DB" --out "$TMP/legacy.db"
-    test -s "$TMP/legacy.db"
+  "$TMP/miniray/miniray" snapshot-legacy --source "$LEGACY_DB" --out "$TMP/legacy.db"
+  test -s "$TMP/legacy.db"
+  install -d -m 0700 /var/backups/miniray
+  BACKUP_DIR=$(mktemp -d /var/backups/miniray/legacy-XXXXXXXX)
+  chmod 700 "$BACKUP_DIR"
+  install -m 0600 "$TMP/legacy.db" "$BACKUP_DIR/x-ui.db"
+  test -s "$BACKUP_DIR/x-ui.db"
+  if [[ -d /etc/x-ui ]]; then
+    cp -a /etc/x-ui "$BACKUP_DIR/config"
+    LEGACY_ASSETS="$DB_FOLDER/imported-legacy-files"
+    install -d -m 0700 "$LEGACY_ASSETS"
+    cp -a /etc/x-ui/. "$LEGACY_ASSETS/"
+    rm -f "$LEGACY_ASSETS/x-ui.db" "$LEGACY_ASSETS/x-ui.db-wal" "$LEGACY_ASSETS/x-ui.db-shm" "$LEGACY_ASSETS/install-result.env"
   fi
-  if (( REMOVE_LEGACY == 1 )); then
-    install -d -m 0700 /var/backups/miniray
-    BACKUP_DIR=$(mktemp -d /var/backups/miniray/legacy-XXXXXXXX)
-    chmod 700 "$BACKUP_DIR"
-    install -m 0600 "$TMP/legacy.db" "$BACKUP_DIR/x-ui.db"
-    test -s "$BACKUP_DIR/x-ui.db"
-    if [[ -d /etc/x-ui ]]; then
-      cp -a /etc/x-ui "$BACKUP_DIR/config"
-      if (( IMPORT_LEGACY == 1 )); then
-        LEGACY_ASSETS="$DB_FOLDER/imported-legacy-files"
-        install -d -m 0700 "$LEGACY_ASSETS"
-        cp -a /etc/x-ui/. "$LEGACY_ASSETS/"
-        rm -f "$LEGACY_ASSETS/x-ui.db" "$LEGACY_ASSETS/x-ui.db-wal" "$LEGACY_ASSETS/x-ui.db-shm" "$LEGACY_ASSETS/install-result.env"
-      fi
-    fi
-    if [[ -f /etc/default/x-ui ]]; then
-      install -m 0600 /etc/default/x-ui "$BACKUP_DIR/service-env"
-    fi
+  if [[ -f /etc/default/x-ui ]]; then
+    install -m 0600 /etc/default/x-ui "$BACKUP_DIR/service-env"
   fi
 fi
 
@@ -237,21 +238,15 @@ if [[ ! -f "$DB_PATH" ]]; then
   if (( IMPORT_LEGACY == 1 )); then
     args=(import-legacy --source "$TMP/legacy.db")
     if [[ -n "$LEGACY_ASSETS" ]]; then args+=(--assets "$LEGACY_ASSETS"); fi
-    "$ROOT/miniray" "${args[@]}"
+    MINIRAY_DB_FOLDER="$DB_FOLDER" "$ROOT/miniray" "${args[@]}"
   else
-    "$ROOT/miniray" init-db
+    MINIRAY_DB_FOLDER="$DB_FOLDER" "$ROOT/miniray" init-db
   fi
   CREATED_DB=1
 fi
 
-if (( REMOVE_LEGACY == 1 )); then
-  systemctl disable x-ui.service 2>/dev/null || :
-  rm -f /etc/systemd/system/x-ui.service /usr/lib/systemd/system/x-ui.service /lib/systemd/system/x-ui.service
-  rm -rf /usr/local/x-ui /etc/x-ui
-  rm -f /usr/bin/x-ui /usr/local/bin/x-ui
-  systemctl daemon-reload
-  LEGACY_REMOVED=1
-  echo "3x-ui uninstalled; its database and configuration backup is at $BACKUP_DIR"
+if (( COEXIST == 1 && EXISTING_MINIRAY == 0 )); then
+  python3 "$TMP/miniray/coexist_ports.py" "$DB_PATH" "$TMP/miniray/bin/template.json" "$LEGACY_DB"
 fi
 
 if [[ -n "${MINIRAY_DB_FOLDER:-}" || "$DB_FOLDER" != /etc/miniray ]]; then
@@ -262,20 +257,32 @@ if [[ -n "${MINIRAY_DB_FOLDER:-}" || "$DB_FOLDER" != /etc/miniray ]]; then
   printf 'MINIRAY_DB_FOLDER="%s"\n' "$DB_FOLDER" >> /etc/default/miniray
 fi
 
-if (( LEGACY_FOUND == 1 && REMOVE_LEGACY == 0 )); then
-  systemctl disable miniray.service miniray-core.service miniray-agent.service 2>/dev/null || :
-  echo '3x-ui was kept running. Miniray is installed but NOT started or enabled to avoid port conflicts.'
-else
-  [[ "$CORE_BOOT" == disabled || "$CORE_BOOT" == masked ]] || systemctl enable miniray-core.service
-  [[ "$AGENT_BOOT" == disabled || "$AGENT_BOOT" == masked ]] || systemctl enable miniray-agent.service
-  [[ "$PANEL_BOOT" == disabled || "$PANEL_BOOT" == masked ]] || systemctl enable miniray.service
-  if (( AGENT_ACTIVE == 1 )); then
-    systemctl restart miniray-agent.service
+[[ "$CORE_BOOT" == disabled || "$CORE_BOOT" == masked ]] || systemctl enable miniray-core.service
+[[ "$AGENT_BOOT" == disabled || "$AGENT_BOOT" == masked ]] || systemctl enable miniray-agent.service
+[[ "$PANEL_BOOT" == disabled || "$PANEL_BOOT" == masked ]] || systemctl enable miniray.service
+if (( AGENT_ACTIVE == 1 )); then
+  systemctl restart miniray-agent.service
+  systemctl is-active --quiet miniray-agent.service
+fi
+if (( PANEL_ACTIVE == 1 )); then
+  systemctl start miniray.service
+  systemctl is-active --quiet miniray.service
+fi
+if (( LEGACY_FOUND == 1 )); then
+  systemctl is-active --quiet miniray-core.service
+  if (( COEXIST == 1 )); then
+    systemctl is-active --quiet x-ui.service
+    echo 'Miniray and 3x-ui are running independently.'
+  elif (( REMOVE_LEGACY == 1 )); then
     systemctl is-active --quiet miniray-agent.service
-  fi
-  if (( PANEL_ACTIVE == 1 )); then
-    systemctl start miniray.service
     systemctl is-active --quiet miniray.service
+    systemctl disable x-ui.service 2>/dev/null || :
+    rm -f /etc/systemd/system/x-ui.service /usr/lib/systemd/system/x-ui.service /lib/systemd/system/x-ui.service
+    rm -rf /usr/local/x-ui /etc/x-ui
+    rm -f /usr/bin/x-ui /usr/local/bin/x-ui
+    systemctl daemon-reload
+    LEGACY_REMOVED=1
+    echo "3x-ui uninstalled; its database and configuration backup is at $BACKUP_DIR"
   fi
 fi
 

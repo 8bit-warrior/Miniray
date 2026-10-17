@@ -20,18 +20,23 @@ Run `miniray` to open the management menu. Run the installation command again to
 
 ## Migrating from 3x-ui
 
-On a first installation, the installer detects an existing systemd installation and asks two separate questions:
+When an existing 3x-ui installation is detected, the Linux installer offers exactly three strategies:
 
 ```text
-Uninstall 3x-ui before installing Miniray? [y/n]:
-Import supported 3x-ui configuration into Miniray? [y/n]:
+1) Coexist: install and run Miniray alongside 3x-ui
+2) Migrate: uninstall 3x-ui and import supported data into Miniray
+3) Cancel this installation
+Select [1/2/3]:
 ```
 
-Both answers accept uppercase or lowercase. Before removing the old installation, Miniray creates a consistent SQLite snapshot and a root-only backup under `/var/backups/miniray/`. It installs and imports successfully before deleting the old panel; an import failure preserves the old installation and restores its service.
+**1 — Coexist:** 3x-ui and its database remain untouched. A fresh Miniray installation starts alongside it with an independent SQLite database and isolated panel, Xray API, and metrics ports. Configured 3x-ui ports and currently occupied TCP ports are excluded. This strategy requires Python 3. Miniray has no inherited 3x-ui users or inbounds. If Miniray is already installed, its existing configuration is preserved.
 
-Supported local inbounds, clients, associations, traffic counters, compatible settings and the administrator password hash are imported into a new Miniray database. Certificates beneath the old configuration directory are preserved and their paths are updated. Removed features, remote inbounds, sessions, API tokens and two-factor state are excluded. Certificates outside the old configuration directory must remain available at their original paths.
+**2 — Migrate:** Before uninstalling 3x-ui, the installer stops the legacy service, creates a consistent SQLite snapshot and a root-only backup under `/var/backups/miniray/`, and selectively imports supported data. 3x-ui is removed only after the new Miniray services are running; on failure, the old service and database are preserved. This strategy requires a fresh Miniray database to avoid overwriting existing Miniray data.
 
-If the old installation is kept, Miniray remains stopped with autostart disabled until port conflicts are resolved. Imports require a fresh Miniray database. Legacy PostgreSQL and Docker installations require separate migration.
+Supported local inbounds, clients, associations, traffic counters, compatible settings, and the administrator password hash are imported. Certificates under the legacy configuration directory are copied and their paths updated. Removed features, remote inbounds, sessions, API tokens, and two-factor state are excluded. Certificates outside that directory must remain accessible at their original paths.
+
+**3 — Cancel:** Exits before downloading packages or modifying the installation. Invalid responses prompt again. Legacy PostgreSQL and Docker installations are not supported by the migration strategy.
+
 
 ## Service management
 
