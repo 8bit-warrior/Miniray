@@ -149,7 +149,6 @@
       "panelUpdateDesc": "Bu işlem miniray'yi en son sürüme güncelleyecek ve panel servisini yeniden başlatacaktır.",
       "currentPanelVersion": "Mevcut panel sürümü",
       "latestPanelVersion": "Panelin en son sürümü",
-      "panelUpToDate": "Panel güncel",
       "stableRelease": "Kararlı sürüm",
       "actionsBuilds": "GitHub Actions derlemeleri",
       "actionsBuildDesc": "Başarılı ve yapıtları geçerli derlemeler yeniden eskiye sıralanır. Eski derlemelerde deneysel değişiklikler olabilir.",

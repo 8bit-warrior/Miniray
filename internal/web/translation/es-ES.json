@@ -149,7 +149,6 @@
       "panelUpdateDesc": "Esto actualizará miniray a la última versión y reiniciará el servicio del panel.",
       "currentPanelVersion": "Versión actual del panel",
       "latestPanelVersion": "Última versión del panel",
-      "panelUpToDate": "El panel está actualizado",
       "stableRelease": "Versión estable",
       "actionsBuilds": "Compilaciones de GitHub Actions",
       "actionsBuildDesc": "Compilaciones completadas con éxito y artefactos vigentes, de la más reciente a la más antigua. Las anteriores pueden contener cambios experimentales.",

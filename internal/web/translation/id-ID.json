@@ -149,7 +149,6 @@
       "panelUpdateDesc": "Ini akan memperbarui miniray ke rilis terbaru dan me-restart layanan panel.",
       "currentPanelVersion": "Versi panel saat ini",
       "latestPanelVersion": "Versi panel terbaru",
-      "panelUpToDate": "Panel sudah terbaru",
       "stableRelease": "Rilis stabil",
       "actionsBuilds": "Build GitHub Actions",
       "actionsBuildDesc": "Build berhasil dengan artefak yang belum kedaluwarsa, diurutkan dari terbaru. Build lama mungkin berisi perubahan eksperimental.",

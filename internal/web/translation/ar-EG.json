@@ -149,7 +149,6 @@
       "panelUpdateDesc": "ده هيحدث miniray لآخر إصدار وهيعيد تشغيل خدمة البانل.",
       "currentPanelVersion": "إصدار البانل الحالي",
       "latestPanelVersion": "أحدث إصدار للبانل",
-      "panelUpToDate": "البانل محدث لآخر إصدار",
       "stableRelease": "إصدار مستقر",
       "actionsBuilds": "إصدارات GitHub Actions",
       "actionsBuildDesc": "تُعرض عمليات البناء الناجحة ذات الملفات غير المنتهية من الأحدث إلى الأقدم. قد تتضمن الإصدارات الأقدم تغييرات تجريبية.",

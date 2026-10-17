@@ -149,7 +149,6 @@
       "panelUpdateDesc": "Це оновить miniray до останнього релізу та перезапустить сервіс панелі.",
       "currentPanelVersion": "Поточна версія панелі",
       "latestPanelVersion": "Остання версія панелі",
-      "panelUpToDate": "Панель оновлено",
       "stableRelease": "Стабільний випуск",
       "actionsBuilds": "Збірки GitHub Actions",
       "actionsBuildDesc": "Успішні збірки з чинними артефактами, від новіших до старіших. Старі збірки можуть містити експериментальні зміни.",

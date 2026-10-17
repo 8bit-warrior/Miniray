@@ -149,7 +149,6 @@
       "panelUpdateDesc": "这将把 miniray 更新到最新版本并重启面板服务。",
       "currentPanelVersion": "当前面板版本",
       "latestPanelVersion": "最新面板版本",
-      "panelUpToDate": "面板已是最新",
       "stableRelease": "正式版本",
       "actionsBuilds": "Actions 构建版本",
       "actionsBuildDesc": "仅列出已成功完成且产物未过期的构建，按时间从新到旧排序。历史构建可能包含实验性改动。",
