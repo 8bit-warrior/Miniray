@@ -1,26 +1,28 @@
 # Miniray
 
-Miniray is a SQLite-based proxy management panel with local inbounds, clients, subscriptions and Xray configuration. It includes Xray-core **v26.6.27**, TUIC, AmneziaWG and MTProto support. The web panel and proxy services run independently. XDNS settings are translated to the bundled core format; options unavailable in v26.6.27 are rejected with an explicit error.
+Miniray 是一款基于 SQLite 的代理管理面板，支持本地入站、客户端、订阅和 Xray 配置管理。内置 Xray-core **v26.6.27**，并支持 TUIC、AmneziaWG 和 MTProto。Web 面板与代理服务独立运行。XDNS 设置会转换为内置核心支持的配置格式；对于 v26.6.27 不支持的选项，程序会明确报错。
 
-## Install on Linux
+## Linux 安装
 
-Supports **amd64/x86_64** and **arm64/aarch64** Linux hosts running systemd or Alpine Linux with OpenRC. Run as root, with `bash`, `curl`, `tar`, `sha256sum` and `install` installed. On Alpine install dependencies using `apk add bash curl tar coreutils`:
+支持 **amd64/x86_64** 和 **arm64/aarch64** 架构，适用于采用 systemd 的 Linux 系统及采用 OpenRC 的 Alpine Linux。
+
+以 root 用户执行安装命令。系统需要提供 `bash`、`curl`、`tar`、`sha256sum` 和 `install`。Alpine Linux 可先执行 `apk add bash curl tar coreutils` 安装依赖。
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh)
 ```
 
-The installer downloads the latest release, verifies its SHA-256 checksum, installs Miniray and registers its services. To install a specific version:
+安装脚本会下载最新发布版本、验证 SHA-256 校验和、安装 Miniray 并注册系统服务。如需安装指定版本：
 
 ```bash
 MINIRAY_UPDATE_TAG=v0.0.1 bash <(curl -fsSL https://raw.githubusercontent.com/8bit-warrior/Miniray/main/install.sh)
 ```
 
-Run `miniray` to open the management menu. Run the installation command again to update an existing installation. Existing database paths and disabled service autostart settings are preserved.
+执行 `miniray` 可打开管理菜单。再次执行安装命令即可更新现有安装，更新时会保留原有数据库路径和已禁用的服务开机自启设置。
 
-## Migrating from 3x-ui
+## 从 3x-ui 迁移
 
-When an existing 3x-ui installation is detected, the Linux installer offers exactly three strategies:
+当安装脚本检测到已有 3x-ui 时，会提供以下三种安装策略（下方为脚本当前的实际英文提示）：
 
 ```text
 1) Coexist: install and run Miniray alongside 3x-ui
@@ -29,36 +31,39 @@ When an existing 3x-ui installation is detected, the Linux installer offers exac
 Select [1/2/3]:
 ```
 
-**1 — Coexist:** 3x-ui and its database remain untouched. A fresh Miniray installation starts alongside it with an independent SQLite database and isolated panel, Xray API, and metrics ports. Configured 3x-ui ports and currently occupied TCP ports are excluded. This strategy requires Python 3. Miniray has no inherited 3x-ui users or inbounds. If Miniray is already installed, its existing configuration is preserved.
+**1 — 共存：** 保留 3x-ui 及其数据库不变。全新安装的 Miniray 使用独立的 SQLite 数据库，并为面板、Xray API 和监控指标分配独立端口，避开 3x-ui 已配置的端口和当前被占用的 TCP 端口。此策略需要 Python 3，不会继承 3x-ui 的用户或入站配置。若 Miniray 已安装，则保留其现有配置。
 
-**2 — Migrate:** Before uninstalling 3x-ui, the installer stops the legacy service, creates a consistent SQLite snapshot and a root-only backup under `/var/backups/miniray/`, and selectively imports supported data. 3x-ui is removed only after the new Miniray services are running; on failure, the old service and database are preserved. This strategy requires a fresh Miniray database to avoid overwriting existing Miniray data.
+**2 — 迁移：** 卸载 3x-ui 前，安装脚本会先停止旧服务，生成一致性的 SQLite 数据库快照，并在 `/var/backups/miniray/` 下创建仅 root 可访问的备份，然后选择性导入受支持的数据。只有在 Miniray 新服务成功运行后，才会移除 3x-ui；如果安装失败，则保留旧服务及数据库。为避免覆盖已有数据，该策略要求使用全新的 Miniray 数据库。
 
-Supported local inbounds, clients, associations, traffic counters, compatible settings, and the administrator password hash are imported. Certificates under the legacy configuration directory are copied and their paths updated. Removed features, remote inbounds, sessions, API tokens, and two-factor state are excluded. Certificates outside that directory must remain accessible at their original paths.
+迁移范围包括受支持的本地入站、客户端、关联关系、流量计数器、兼容设置以及管理员密码哈希。旧配置目录中的证书会被复制并更新引用路径。已移除的功能、远程入站、会话、API 令牌和双重验证状态不会导入。旧配置目录外的证书仍需在其原有路径保持可访问。
 
-**3 — Cancel:** Exits before downloading packages or modifying the installation. Invalid responses prompt again. Legacy PostgreSQL and Docker installations are not supported by the migration strategy.
+**3 — 取消：** 在下载软件包或修改现有安装前退出。输入无效选项时会重新提示。迁移策略不支持使用 PostgreSQL 数据库或通过 Docker 部署的旧版 3x-ui。
 
+## 服务管理
 
-## Service management
-
-| Command | Action |
+| 命令 | 功能 |
 | --- | --- |
-| `miniray start-panel` / `miniray stop-panel` | Start or stop the web panel and subscription listeners |
-| `miniray enable-panel` / `miniray disable-panel` | Enable or disable panel autostart |
-| `miniray start-core` / `miniray stop-core` | Start or stop the proxy core and protocol supervisor |
-| `miniray enable-core` / `miniray disable-core` | Enable or disable proxy autostart |
-| `miniray status` | Show service and autostart status |
+| `miniray start-panel` / `miniray stop-panel` | 启动或停止 Web 面板及订阅监听服务 |
+| `miniray enable-panel` / `miniray disable-panel` | 启用或禁用面板开机自启 |
+| `miniray start-core` / `miniray stop-core` | 启动或停止代理核心及协议管理进程 |
+| `miniray enable-core` / `miniray disable-core` | 启用或禁用代理服务开机自启 |
+| `miniray status` | 查看服务运行状态与开机自启状态 |
 
-On Alpine Linux, OpenRC units are installed under `/etc/init.d/`; environment is stored in `/etc/conf.d/miniray`. Logs are written under `/var/log/miniray/`.\n\nStopping the panel closes its listening ports while proxies keep running. Start it again with `miniray start-panel`. Panel autostart and proxy autostart are independent; both are enabled on a fresh installation.
+在 Alpine Linux 中，OpenRC 服务脚本位于 `/etc/init.d/`，环境配置位于 `/etc/conf.d/miniray`，日志位于 `/var/log/miniray/`。
 
-When upgrading an earlier Miniray database, a backup named `miniray-before-simplification-*.db` is saved beside it before the removed tables are retired. Local inbound settings, client usage and compatible subscription endpoint overrides are retained.
+停止面板会关闭面板监听端口，但代理服务继续运行。执行 `miniray start-panel` 即可重新启动面板。面板与代理服务的开机自启相互独立，首次安装时默认均为启用状态。
 
-## Windows and Docker
+升级早期版本的 Miniray 数据库时，程序会先在数据库同目录下创建 `miniray-before-simplification-*.db` 备份，再清理已移除的数据表。原有本地入站配置、客户端用量及兼容的订阅端点覆盖设置会被保留。
 
-Download the amd64 or arm64 ZIP from [Releases](https://github.com/8bit-warrior/Miniray/releases), extract it and run `miniray.exe` from the extracted directory. The Linux installation command supports systemd and OpenRC. Docker deployment is optional; see [deploy/README.md](deploy/README.md).
+## Windows 与 Docker
 
-## Build
+从 [Releases](https://github.com/8bit-warrior/Miniray/releases) 下载对应 amd64 或 arm64 架构的 ZIP 压缩包，解压后运行其中的 `miniray.exe`。Linux 安装脚本支持 systemd 和 OpenRC。
 
-Requires Go 1.27.1, a C compiler, Node.js 26 and npm 11 or newer:
+Docker 部署为可选方式，参见 [deploy/README.md](deploy/README.md)。
+
+## 源码构建
+
+需要 Go 1.27.1、C 编译器、Node.js 26，以及 npm 11 或更新版本。
 
 ```bash
 cd frontend
@@ -68,4 +73,4 @@ cd ..
 CGO_ENABLED=1 go build -trimpath -o miniray .
 ```
 
-Licensed under [GPL-3.0](LICENSE). Based on the [upstream v3.9.0 source](https://github.com/MHSanaei/3x-ui/tree/v3.9.0).
+本项目采用 [GPL-3.0](LICENSE) 许可证，基于 [3x-ui 上游 v3.9.0 源码](https://github.com/MHSanaei/3x-ui/tree/v3.9.0) 开发。
