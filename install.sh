@@ -105,6 +105,7 @@ finish_install() {
       rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm" "$DB_FOLDER/initial-admin-password"
     fi
     if (( UNIT_STAGED == 1 )); then
+      systemctl disable miniray.service miniray-agent.service miniray-core.service 2>/dev/null || :
       rm -f /etc/systemd/system/miniray.service /etc/systemd/system/miniray-core.service /etc/systemd/system/miniray-agent.service
       systemctl daemon-reload || :
     fi
