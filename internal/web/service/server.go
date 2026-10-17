@@ -1075,7 +1075,7 @@ func (s *ServerService) UpdateXray(version string) error {
 	}
 
 	// Download the new core before interrupting the running service.
-		zipFileName, err := s.downloadXRay(version)
+	zipFileName, err := s.downloadXRay(version)
 	if err != nil {
 		return err
 	}
