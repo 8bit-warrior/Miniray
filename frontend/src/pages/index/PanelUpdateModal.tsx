@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Collapse, Modal, Radio, Spin, Tag } from 'antd';
+import { Alert, Button, Collapse, Modal, Progress, Radio, Spin, Tag } from 'antd';
 import { CloudDownloadOutlined } from '@ant-design/icons';
 
 import { HttpUtil, PromiseUtil } from '@/utils';
@@ -10,6 +10,7 @@ import type { PanelUpdateStatus } from '@/generated/types';
 import './PanelUpdateModal.css';
 
 type UpdateOutcome = 'success' | 'failed' | 'timeout';
+type UpdatePhase = 'confirm' | 'downloading' | 'installing' | 'failed' | 'timeout';
 
 export interface PanelUpdateInfo {
   channel?: string;
@@ -28,21 +29,17 @@ interface ActionBuild {
   title: string;
 }
 
-interface BusyEvent {
-  busy: boolean;
-  tip?: string;
-}
-
 interface PanelUpdateModalProps {
   open: boolean;
   info: PanelUpdateInfo;
   onClose: () => void;
-  onBusy: (e: BusyEvent) => void;
 }
 
-export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelUpdateModalProps) {
+export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateModalProps) {
   const { t } = useTranslation();
-  const [modal, contextHolder] = Modal.useModal();
+  const [selectedUpdate, setSelectedUpdate] = useState<{ build?: ActionBuild } | null>(null);
+  const [phase, setPhase] = useState<UpdatePhase>('confirm');
+  const [percent, setPercent] = useState(0);
   const defaultKey = info.channel === 'development' ? 'actions' : 'stable';
   const [activeKey, setActiveKey] = useState(defaultKey);
   const [previousOpen, setPreviousOpen] = useState(open);
@@ -72,7 +69,7 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
 
   async function pollUpdateStatus(expectedRunId: string): Promise<UpdateOutcome> {
     await PromiseUtil.sleep(5000);
-    const deadline = Date.now() + 90_000;
+    const deadline = Date.now() + 120_000;
     while (Date.now() < deadline) {
       try {
         const msg = await HttpUtil.get<PanelUpdateStatus>(
@@ -82,6 +79,12 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
         );
         const status = msg?.obj ?? undefined;
         if (status?.runId === expectedRunId) {
+          if (status.state === 'installing') {
+            setPhase('installing');
+          } else if (status.state === 'downloading') {
+            setPhase('downloading');
+            if (status.progress >= 0 && status.progress < 100) setPercent(status.progress);
+          }
           if (status.state === 'success') return 'success';
           if (status.state === 'failed') return 'failed';
         }
@@ -94,56 +97,38 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
   }
 
   function updatePanel(build?: ActionBuild) {
-    modal.confirm({
-      title: t('pages.index.panelUpdateDialog'),
-      content: t('pages.index.panelUpdateDialogDesc').replace(
-        '#version#',
-        build?.version || info.latestVersion || '',
-      ),
-      okText: t('confirm'),
-      cancelText: t('cancel'),
-      onOk: async () => {
-        const baseTip = t('pages.index.dontRefresh');
-        const target = build?.version || info.latestVersion;
-        const tip = target ? baseTip + ' (' + target + ')' : baseTip;
-        onClose();
-        onBusy({ busy: true, tip });
-        const result = await HttpUtil.post<{ runId: string }>(
-          '/panel/api/server/updatePanel',
-          build ? { actionRunId: build.runId } : undefined,
-        );
-        if (!result?.success) {
-          onBusy({ busy: false });
-          return;
-        }
-        const outcome = await pollUpdateStatus(result.obj?.runId ?? '');
-        onBusy({ busy: false });
-        if (outcome === 'success') {
-          await PromiseUtil.sleep(800);
-          window.location.reload();
-          return;
-        }
-        modal[outcome === 'failed' ? 'error' : 'warning']({
-          title: t(
-            outcome === 'failed'
-              ? 'pages.index.panelUpdateFailedTitle'
-              : 'pages.index.panelUpdateUnknownTitle',
-          ),
-          content: t(
-            outcome === 'failed'
-              ? 'pages.index.panelUpdateFailedDesc'
-              : 'pages.index.panelUpdateUnknownDesc',
-          ),
-          okText: t('refresh'),
-          onOk: () => window.location.reload(),
-        });
-      },
-    });
+    setSelectedUpdate({ build });
+    setPhase('confirm');
+    setPercent(0);
+  }
+
+  async function confirmUpdate() {
+    const build = selectedUpdate?.build;
+    setPhase('downloading');
+    setPercent(0);
+    try {
+      const result = await HttpUtil.post<{ runId: string }>(
+        '/panel/api/server/updatePanel',
+        build ? { actionRunId: build.runId } : undefined,
+      );
+      if (!result?.success || !result.obj?.runId) {
+        setPhase('failed');
+        return;
+      }
+      const outcome = await pollUpdateStatus(result.obj.runId);
+      if (outcome === 'success') {
+        await PromiseUtil.sleep(800);
+        window.location.reload();
+      } else {
+        setPhase(outcome);
+      }
+    } catch {
+      setPhase('failed');
+    }
   }
 
   return (
     <>
-      {contextHolder}
       <Modal open={open} title={t('pages.index.updatePanel')} footer={null} onCancel={onClose}>
         <Collapse
           accordion
@@ -252,6 +237,41 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
             },
           ]}
         />
+      </Modal>
+      <Modal
+        open={selectedUpdate !== null}
+        title={t('pages.index.panelUpdateDialog')}
+        closable={phase === 'confirm' || phase === 'failed' || phase === 'timeout'}
+        maskClosable={phase === 'confirm'}
+        keyboard={phase === 'confirm'}
+        onCancel={() => setSelectedUpdate(null)}
+        footer={
+          phase === 'confirm'
+            ? [
+                <Button key="cancel" onClick={() => setSelectedUpdate(null)}>{t('cancel')}</Button>,
+                <Button key="ok" type="primary" onClick={() => void confirmUpdate()}>{t('confirm')}</Button>,
+              ]
+            : phase === 'failed' || phase === 'timeout'
+              ? [<Button key="close" type="primary" onClick={() => setSelectedUpdate(null)}>{t('confirm')}</Button>]
+              : null
+        }
+      >
+        {phase === 'confirm' && (
+          <p>{t('pages.index.panelUpdateDialogDesc').replace('#version#', selectedUpdate?.build?.version || info.latestVersion || '')}</p>
+        )}
+        {phase === 'downloading' && (
+          <div className="panel-update-download-progress">
+            <p>{t('pages.index.panelUpdateDownloading')}</p>
+            <Progress percent={percent} status="active" strokeLinecap="round" />
+          </div>
+        )}
+        {phase === 'installing' && <p className="panel-update-installing">{t('pages.index.panelUpdateInstalling')}</p>}
+        {(phase === 'failed' || phase === 'timeout') && (
+          <Alert type={phase === 'failed' ? 'error' : 'warning'} showIcon
+            title={t(phase === 'failed' ? 'pages.index.panelUpdateFailedTitle' : 'pages.index.panelUpdateUnknownTitle')}
+            description={t(phase === 'failed' ? 'pages.index.panelUpdateFailedDesc' : 'pages.index.panelUpdateUnknownDesc')}
+          />
+        )}
       </Modal>
     </>
   );

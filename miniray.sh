@@ -374,7 +374,7 @@ action() {
     settings) "$ROOT/miniray" setting -show;;
     reset-settings) "$ROOT/miniray" setting -reset;;
     version) "$ROOT/miniray" -v;;
-    update|install) bash "$ROOT/update.sh";;
+    update|install) MINIRAY_MENU_LANG="$MENU_LANG" bash "$ROOT/update.sh";;
     uninstall) uninstall_miniray;;
     *) return 2;;
   esac

@@ -205,6 +205,8 @@
       "xraySwitchVersionDialogDesc": "這將會把 Xray 版本變更為 #version#。",
       "xraySwitchVersionPopover": "Xray 更新成功",
       "panelUpdateDialog": "您確定要更新面板嗎？",
+      "panelUpdateDownloading": "正在下載更新檔案",
+      "panelUpdateInstalling": "下載完畢，正在安裝中",
       "panelUpdateDialogDesc": "這將把 miniray 更新到 #version# 並重新啟動面板服務。",
       "panelUpdateStartedPopover": "面板更新已開始",
       "panelUpdateFailedTitle": "面板更新失敗",

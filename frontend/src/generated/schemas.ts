@@ -2812,6 +2812,10 @@ export const SCHEMAS: Record<string, unknown> = {
         "format": "int64",
         "type": "integer"
       },
+      "progress": {
+        "example": 0,
+        "type": "integer"
+      },
       "runId": {
         "example": "1735689600123456789",
         "type": "string"
@@ -2824,6 +2828,7 @@ export const SCHEMAS: Record<string, unknown> = {
     "required": [
       "exitCode",
       "finishedAt",
+      "progress",
       "runId",
       "state"
     ],

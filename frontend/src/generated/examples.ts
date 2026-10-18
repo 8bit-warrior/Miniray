@@ -721,6 +721,7 @@ export const EXAMPLES: Record<string, unknown> = {
   "PanelUpdateStatus": {
     "exitCode": 0,
     "finishedAt": 1735689612,
+    "progress": 0,
     "runId": "1735689600123456789",
     "state": "success"
   },

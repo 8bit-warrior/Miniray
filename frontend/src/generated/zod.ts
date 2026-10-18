@@ -716,6 +716,7 @@ export type OutboundTraffics = z.infer<typeof OutboundTrafficsSchema>;
 export const PanelUpdateStatusSchema = z.object({
   exitCode: z.number().int(),
   finishedAt: z.number().int(),
+  progress: z.number().int(),
   runId: z.string(),
   state: z.string(),
 });

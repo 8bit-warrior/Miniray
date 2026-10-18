@@ -290,7 +290,6 @@ export default function IndexPage() {
             open={panelUpdateOpen}
             info={panelUpdateInfo}
             onClose={() => setPanelUpdateOpen(false)}
-            onBusy={setBusy}
           />
         </LazyMount>
         <LazyMount when={logsOpen}>

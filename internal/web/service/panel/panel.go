@@ -45,6 +45,8 @@ const (
 	// newest main commit; the dev update channel installs from it.
 	devReleaseTag = "dev-latest"
 
+	updateStateDownloading = "downloading"
+	updateStateInstalling = "installing"
 	updateStatePending = "pending"
 	updateStateSuccess = "success"
 	updateStateFailed  = "failed"
@@ -61,6 +63,7 @@ const (
 type PanelUpdateStatus struct {
 	RunID      string `json:"runId" example:"1735689600123456789"`
 	State      string `json:"state" example:"success"`
+	Progress   int    `json:"progress" example:"0"`
 	ExitCode   int    `json:"exitCode" example:"0"`
 	FinishedAt int64  `json:"finishedAt" example:"1735689612"`
 }
@@ -194,7 +197,7 @@ func (s *PanelService) GetUpdateStatus() *PanelUpdateStatus {
 	if err := json.Unmarshal(data, &status); err != nil {
 		return &PanelUpdateStatus{State: updateStatePending}
 	}
-	if status.State != updateStateSuccess && status.State != updateStateFailed {
+	if status.State != updateStateSuccess && status.State != updateStateFailed && status.State != updateStateDownloading && status.State != updateStateInstalling {
 		status.State = updateStatePending
 	}
 	return &status

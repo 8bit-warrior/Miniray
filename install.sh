@@ -146,6 +146,44 @@ if legacy_service_exists ||
 fi
 
 TMP=$(mktemp -d)
+record_update_progress() {
+  [[ -n "${MINIRAY_UPDATE_RUN_ID:-}" ]] || return 0
+  local state="$1" percent="$2" file="${MINIRAY_UPDATE_STATUS_FILE:-/etc/miniray/update-status.json}" tmp
+  mkdir -p "$(dirname "$file")"
+  tmp=$(mktemp "${file}.XXXXXX")
+  printf '{"runId":"%s","state":"%s","progress":%d}\n' "$MINIRAY_UPDATE_RUN_ID" "$state" "$percent" > "$tmp"
+  chmod 600 "$tmp"
+  mv -f "$tmp" "$file"
+}
+download_package() {
+  local destination="$1"
+  shift
+  if [[ -z "${MINIRAY_UPDATE_RUN_ID:-}" ]]; then
+    curl "$@" -o "$destination"
+    return
+  fi
+  record_update_progress downloading 0
+  local log="$TMP/download-progress.log" curl_pid raw percent last=-1
+  : > "$log"
+  curl "$@" --no-silent --progress-bar -o "$destination" 2>"$log" &
+  curl_pid=$!
+  while kill -0 "$curl_pid" 2>/dev/null; do
+    raw=$(LC_ALL=C grep -oE '[0-9]{1,3}(\.[0-9]+)?%' "$log" | tail -n 1 || :)
+    if [[ -n "$raw" ]]; then
+      percent=${raw%\%}
+      percent=${percent%%.*}
+      if (( percent > last && percent < 100 )); then
+        record_update_progress downloading "$percent"
+        last=$percent
+      fi
+    fi
+    sleep 0.25
+  done
+  if ! wait "$curl_pid"; then
+    cat "$log" >&2
+    return 1
+  fi
+}
 LEGACY_STOPPED=0
 LEGACY_REMOVED=0
 LEGACY_WAS_ACTIVE=0
@@ -258,8 +296,7 @@ PY
   ) || exit 1
   read -r ARTIFACT_ID EXPECTED_SHA EXPECTED_VERSION ACTION_COMMIT CHECK_SUITE_ID <<< "$ACTION_META"
   printf 'Downloading Actions run %s, artifact %s...\n' "$ACTION_RUN_ID" "$ARTIFACT_ID"
-  curl -fL --retry 4 --connect-timeout 15 --max-filesize 268435456 \
-    -o "$TMP/action.zip" \
+  download_package "$TMP/action.zip" -fL --retry 4 --connect-timeout 15 --max-filesize 268435456 \
     "https://nightly.link/8bit-warrior/Miniray/suites/$CHECK_SUITE_ID/artifacts/$ARTIFACT_ID"
   printf '%s  %s\n' "$EXPECTED_SHA" "$TMP/action.zip" | sha256sum -c -
   unzip -p "$TMP/action.zip" "$ASSET" > "$TMP/$ASSET"
@@ -273,10 +310,16 @@ else
   fi
   BASE="$REPO/releases/download/$VERSION"
   printf "Downloading %s from %s...\n" "$ASSET" "$VERSION"
-  curl -fsSL --retry 4 -o "$TMP/$ASSET" "$BASE/$ASSET"
+  download_package "$TMP/$ASSET" -fsSL --retry 4 "$BASE/$ASSET"
   curl -fsSL --retry 4 -o "$TMP/SHA256SUMS" "$BASE/SHA256SUMS"
   (cd "$TMP" && grep -F "  $ASSET" SHA256SUMS | sha256sum -c -)
 fi
+if [[ "${MINIRAY_MENU_LANG:-zh}" == en ]]; then
+  printf 'Installing...\n'
+else
+  printf '正在安装...\n'
+fi
+record_update_progress installing 100
 tar -tzf "$TMP/$ASSET" | grep -vE '(^miniray/|^miniray$)' && {
   echo 'Unexpected archive paths' >&2
   exit 1

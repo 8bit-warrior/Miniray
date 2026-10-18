@@ -666,6 +666,7 @@ export interface OutboundTraffics {
 export interface PanelUpdateStatus {
   exitCode: number;
   finishedAt: number;
+  progress: number;
   runId: string;
   state: string;
 }

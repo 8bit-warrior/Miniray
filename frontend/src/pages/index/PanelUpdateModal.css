@@ -56,3 +56,7 @@
   color: var(--ant-color-text-secondary);
   text-align: center;
 }
+
+.panel-update-download-progress { padding: 8px 2px 4px; }
+.panel-update-download-progress p { margin-bottom: 12px; color: var(--ant-color-text-secondary); }
+.panel-update-installing { margin: 0; padding: 12px 0; font-weight: 500; }

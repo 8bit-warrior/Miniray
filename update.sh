@@ -15,7 +15,17 @@ record_status() {
     mv -f "$tmp" "$STATUS_FILE"
   fi
 }
+record_update_progress() {
+  local state="$1" percent="$2" tmp
+  [[ -n "$RUN_ID" ]] || return 0
+  mkdir -p "$(dirname "$STATUS_FILE")"
+  tmp=$(mktemp "${STATUS_FILE}.XXXXXX")
+  printf '{"runId":"%s","state":"%s","progress":%d}\n' "$RUN_ID" "$state" "$percent" > "$tmp"
+  chmod 600 "$tmp"
+  mv -f "$tmp" "$STATUS_FILE"
+}
 trap 'record_status "$?"' EXIT
+record_update_progress downloading 0
 ROOT="${MINIRAY_MAIN_FOLDER:-/usr/local/miniray}"
 if [[ -x "$ROOT/miniray" ]]; then
   CURRENT_VERSION=$("$ROOT/miniray" -v)
