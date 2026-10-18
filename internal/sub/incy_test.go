@@ -27,7 +27,7 @@ func fullIncyConfig() IncyConfig {
 		NoLimitEnabled:                "0",
 		PerAppProxyEnable:             "1",
 		PerAppProxyMode:               "bypass",
-		PerAppProxyList:               "com.google.chrome,org.telegram.messenger",
+		PerAppProxyList:               "com.google.chrome,org.example.reader",
 		FragmentationEnable:           "1",
 		FragmentationLength:           "10-30",
 		FragmentationInterval:         "20-40",
@@ -93,7 +93,7 @@ func TestApplyIncyHeaders_AllDocumentedHeaders(t *testing.T) {
 		"No-Limit-Enabled":                  "0",
 		"Per-App-Proxy-Enable":              "1",
 		"Per-App-Proxy-Mode":                "bypass",
-		"Per-App-Proxy-List":                "com.google.chrome,org.telegram.messenger",
+		"Per-App-Proxy-List":                "com.google.chrome,org.example.reader",
 		"Fragmentation-Enable":              "1",
 		"Fragmentation-Length":              "10-30",
 		"Fragmentation-Interval":            "20-40",
@@ -193,8 +193,8 @@ func TestApplyIncyHeaders_PerAppListKeepsSeparators(t *testing.T) {
 	for _, tc := range []struct {
 		name, list, want string
 	}{
-		{"newline", "com.google.chrome\norg.telegram.messenger", "com.google.chrome,org.telegram.messenger"},
-		{"crlf and blank lines", "com.google.chrome\r\n\r\norg.telegram.messenger\r\n", "com.google.chrome,org.telegram.messenger"},
+		{"newline", "com.google.chrome\norg.example.reader", "com.google.chrome,org.example.reader"},
+		{"crlf and blank lines", "com.google.chrome\r\n\r\norg.example.reader\r\n", "com.google.chrome,org.example.reader"},
 		{"url", " https://example.com/apps.txt ", "https://example.com/apps.txt"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

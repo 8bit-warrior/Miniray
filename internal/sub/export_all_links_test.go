@@ -17,7 +17,7 @@ import (
 func TestInboundLinks_RemarkTemplateClientTokens(t *testing.T) {
 	seedSubDB(t)
 	db := database.GetDB()
-	settings := `{"clients":[{"id":"11111111-2222-4333-8444-000000000001","email":"john@e","subId":"subABC","comment":"vip","tgId":777,"enable":true}],"decryption":"none"}`
+	settings := `{"clients":[{"id":"11111111-2222-4333-8444-000000000001","email":"john@e","subId":"subABC","comment":"vip","enable":true}],"decryption":"none"}`
 	ib := &model.Inbound{
 		UserId: 1, Tag: "t", Enable: true, Listen: "203.0.113.5", Port: 4431,
 		Protocol: model.VLESS, Remark: "Germany", Settings: settings,
@@ -28,7 +28,7 @@ func TestInboundLinks_RemarkTemplateClientTokens(t *testing.T) {
 	}
 	client := &model.ClientRecord{
 		Email: "john@e", SubID: "subABC", UUID: "11111111-2222-4333-8444-000000000001",
-		Enable: true, Comment: "vip", TgID: 777,
+		Enable: true, Comment: "vip",
 	}
 	if err := db.Create(client).Error; err != nil {
 		t.Fatalf("seed client: %v", err)
@@ -37,7 +37,7 @@ func TestInboundLinks_RemarkTemplateClientTokens(t *testing.T) {
 		t.Fatalf("seed client_inbound: %v", err)
 	}
 
-	svc := NewSubService("{{INBOUND}}-{{EMAIL}}-{{COMMENT}}-{{SUB_ID}}-{{TELEGRAM_ID}}-{{SHORT_ID}}|📊{{TRAFFIC_LEFT}}|⏳{{DAYS_LEFT}}D")
+	svc := NewSubService("{{INBOUND}}-{{EMAIL}}-{{COMMENT}}-{{SUB_ID}}-{{SHORT_ID}}|📊{{TRAFFIC_LEFT}}|⏳{{DAYS_LEFT}}D")
 	svc.PrepareForRequest("req.example.com")
 	links := svc.inboundLinks(ib)
 
@@ -45,7 +45,7 @@ func TestInboundLinks_RemarkTemplateClientTokens(t *testing.T) {
 		t.Fatalf("links = %d, want 1: %v", len(links), links)
 	}
 	frag := links[0]
-	for _, want := range []string{"Germany-john", "vip", "subABC", "777", "11111111"} {
+	for _, want := range []string{"Germany-john", "vip", "subABC", "11111111"} {
 		if !strings.Contains(frag, want) {
 			t.Fatalf("remark missing client token %q: %s", want, frag)
 		}

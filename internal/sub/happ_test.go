@@ -30,8 +30,8 @@ func TestApplyCommonHeaders_HappClientHeaders(t *testing.T) {
 		FallbackUrl:         "https://backup.example.com/sub",
 		SubInfoColor:        "primary",
 		SubInfoText:         "Welcome to VIP Network",
-		SubInfoButtonText:   "Telegram",
-		SubInfoButtonLink:   "https://t.me/example",
+		SubInfoButtonText:   "Helpdesk",
+		SubInfoButtonLink:   "https://help.example",
 		SubExpire:           true,
 		SubExpireButtonLink: "https://renew.example.com",
 		NotificationExpire:  true,
@@ -79,7 +79,7 @@ func TestApplyCommonHeaders_HappClientHeaders(t *testing.T) {
 	if h.Get("Sub-Info-Color") != "blue" || h.Get("Sub-Info-Text") != "Welcome to VIP Network" {
 		t.Fatalf("Sub-Info = %s / %s, want blue / Welcome to VIP Network", h.Get("Sub-Info-Color"), h.Get("Sub-Info-Text"))
 	}
-	if h.Get("Sub-Info-Button-Text") != "Telegram" || h.Get("Sub-Info-Button-Link") != "https://t.me/example" {
+	if h.Get("Sub-Info-Button-Text") != "Helpdesk" || h.Get("Sub-Info-Button-Link") != "https://help.example" {
 		t.Fatalf("Sub-Info button = %s / %s", h.Get("Sub-Info-Button-Text"), h.Get("Sub-Info-Button-Link"))
 	}
 	if h.Get("Sub-Expire") != "1" || h.Get("Sub-Expire-Button-Link") != "https://renew.example.com" {

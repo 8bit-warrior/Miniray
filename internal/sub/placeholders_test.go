@@ -19,7 +19,6 @@ func TestRenderSubPlaceholders(t *testing.T) {
 			Email:  "Ilnur",
 			ID:     "abcdef12-3456-7890-abcd-ef1234567890",
 			SubID:  "sub-123",
-			TgID:   42,
 			Enable: true,
 		}},
 		HasCtx: true,
@@ -33,9 +32,9 @@ func TestRenderSubPlaceholders(t *testing.T) {
 	}{
 		{
 			name: "identity tokens",
-			tmpl: "{{EMAIL}}/{{ID}}/{{SHORT_ID}}/{{SUB_ID}}/{{TELEGRAM_ID}}",
+			tmpl: "{{EMAIL}}/{{ID}}/{{SHORT_ID}}/{{SUB_ID}}",
 			data: data,
-			want: "Ilnur/abcdef12-3456-7890-abcd-ef1234567890/abcdef12/sub-123/42",
+			want: "Ilnur/abcdef12-3456-7890-abcd-ef1234567890/abcdef12/sub-123",
 		},
 		{
 			name: "no template",
@@ -95,14 +94,12 @@ func TestMetadataForSubRequestUsesStableClientIdentity(t *testing.T) {
 		Email:  "john doe@example.com",
 		SubID:  "sub-123",
 		UUID:   "abcdef12-3456-7890-abcd-ef1234567890",
-		TgID:   42,
 		Enable: true,
 	}
 	second := model.ClientRecord{
 		Email:  "jane@example.com",
 		SubID:  "sub-123",
 		UUID:   "fedcba98-3456-7890-abcd-ef1234567890",
-		TgID:   99,
 		Enable: true,
 	}
 	if err := db.Create(&first).Error; err != nil {
@@ -114,7 +111,7 @@ func TestMetadataForSubRequestUsesStableClientIdentity(t *testing.T) {
 
 	a := &SUBController{
 		subTitle:       "isVPN — {{EMAIL}}",
-		subSupportUrl:  "https://support.example/?email={{EMAIL}}&tg={{TELEGRAM_ID}}",
+		subSupportUrl:  "https://support.example/?email={{EMAIL}}",
 		subProfileUrl:  "https://profile.example/account/{{ID}}",
 		subProfileMode: service.SubProfileModeCustom,
 		subAnnounce:    "Subscription {{SUB_ID}}",
@@ -124,7 +121,7 @@ func TestMetadataForSubRequestUsesStableClientIdentity(t *testing.T) {
 	if metadata.Title != "isVPN — john doe@example.com" {
 		t.Fatalf("Title = %q", metadata.Title)
 	}
-	if metadata.SupportURL != "https://support.example/?email=john+doe%40example.com&tg=42" {
+	if metadata.SupportURL != "https://support.example/?email=john+doe%40example.com" {
 		t.Fatalf("SupportURL = %q", metadata.SupportURL)
 	}
 	if metadata.ProfileURL != "https://profile.example/account/abcdef12-3456-7890-abcd-ef1234567890" {

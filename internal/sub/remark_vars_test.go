@@ -21,7 +21,6 @@ func TestExpandRemarkVars(t *testing.T) {
 	client := model.Client{
 		Email:     "john@example.com",
 		ID:        "3f2a9c1b-aaaa-bbbb-cccc-1234567890ab",
-		TgID:      123456789,
 		SubID:     "subABC",
 		Comment:   "vip",
 		Reset:     30,
@@ -42,7 +41,6 @@ func TestExpandRemarkVars(t *testing.T) {
 		{"{{HOST}}", ""},           // no host remark in ctx → empty
 		{"{{ID}}", client.ID},
 		{"{{SHORT_ID}}", "3f2a9c1b"},
-		{"{{TELEGRAM_ID}}", "123456789"},
 		{"{{SUB_ID}}", "subABC"},
 		{"{{COMMENT}}", "vip"},
 		{"{{RESET_DAYS}}", "30"},
@@ -86,10 +84,6 @@ func TestExpandRemarkVars_EdgeCases(t *testing.T) {
 	}
 	if got := expandRemarkVars("{{TRAFFIC_LEFT_BYTES}}", unlimited); got != "0" {
 		t.Errorf("unlimited TRAFFIC_LEFT_BYTES = %q, want 0", got)
-	}
-	// TgID zero → empty.
-	if got := expandRemarkVars("{{TELEGRAM_ID}}", unlimited); got != "" {
-		t.Errorf("zero TgID = %q, want empty", got)
 	}
 	// Over-quota usage clamps left to 0, not negative.
 	over := expandCtx(model.Client{}, xray.ClientTraffic{Enable: true, Total: gb, Up: 2 * gb}, nil)
