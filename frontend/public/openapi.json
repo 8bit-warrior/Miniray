@@ -601,7 +601,6 @@
               "mixed",
               "tunnel",
               "tun",
-              "mtproto",
               "amneziawg",
               "tuic"
             ],
@@ -729,9 +728,6 @@
             "type": "integer"
           },
           "listen": {
-            "type": "string"
-          },
-          "mtprotoDomain": {
             "type": "string"
           },
           "network": {
