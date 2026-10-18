@@ -142,9 +142,9 @@ func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
 			logger.Debug("stable release lookup failed:", stableErr)
 		}
 		info := &PanelUpdateInfo{
-			Channel:            "development",
-			CurrentVersion:     currentVersion,
-			CurrentCommit:      shortCommit(currentCommit),
+			Channel:             "development",
+			CurrentVersion:      currentVersion,
+			CurrentCommit:       shortCommit(currentCommit),
 			StableLatestVersion: stableLatest,
 		}
 		if len(builds) == 0 {
