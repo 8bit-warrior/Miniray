@@ -37,6 +37,14 @@ func parse(v string) ([3]int, bool) {
 		return result, false
 	}
 	for i, part := range parts {
+		if part == "" || (len(part) > 1 && part[0] == '0') {
+			return result, false
+		}
+		for _, ch := range part {
+			if ch < '0' || ch > '9' {
+				return result, false
+			}
+		}
 		n, err := strconv.Atoi(part)
 		if err != nil {
 			return result, false

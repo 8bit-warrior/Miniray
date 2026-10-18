@@ -513,10 +513,7 @@ func resolveUpdateFolders() (string, string) {
 
 func isNewerVersion(latest string, current string) bool {
 	cmp, ok := version.Compare(latest, current)
-	if !ok {
-		return version.Normalize(latest) != version.Normalize(current)
-	}
-	return cmp > 0
+	return ok && cmp > 0
 }
 
 func shellQuote(value string) string {

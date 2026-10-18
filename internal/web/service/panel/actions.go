@@ -34,6 +34,7 @@ type ActionBuild struct {
 	Version   string `json:"version"`
 	CreatedAt string `json:"createdAt"`
 	Title     string `json:"title"`
+	FullSHA   string `json:"-"`
 }
 
 func actionsJSON(path string, target any) error {
@@ -63,6 +64,7 @@ func (s *PanelService) ListActionBuilds() ([]ActionBuild, error) {
 			Status       string `json:"status"`
 			Conclusion   string `json:"conclusion"`
 			CreatedAt    string `json:"created_at"`
+			StartedAt    string `json:"run_started_at"`
 			DisplayTitle string `json:"display_title"`
 		} `json:"workflow_runs"`
 	}
@@ -96,7 +98,8 @@ func (s *PanelService) ListActionBuilds() ([]ActionBuild, error) {
 	builds := make([]ActionBuild, 0, len(runs.WorkflowRuns))
 	for _, run := range runs.WorkflowRuns {
 		if run.ID <= 0 || run.HeadBranch != "main" || run.Status != "completed" || run.Conclusion != "success" ||
-			!isCommitSHA(run.HeadSHA) || !strings.EqualFold(available[run.ID], run.HeadSHA) {
+			!isCommitSHA(run.HeadSHA) || len(run.HeadSHA) != 40 ||
+			!strings.EqualFold(available[run.ID], run.HeadSHA) || run.StartedAt == "" {
 			continue
 		}
 		version := "dev+" + shortCommit(run.HeadSHA)
@@ -104,8 +107,9 @@ func (s *PanelService) ListActionBuilds() ([]ActionBuild, error) {
 			RunID:     strconv.FormatInt(run.ID, 10),
 			Commit:    shortCommit(run.HeadSHA),
 			Version:   version,
-			CreatedAt: run.CreatedAt,
+			CreatedAt: run.StartedAt,
 			Title:     run.DisplayTitle,
+			FullSHA:   strings.ToLower(run.HeadSHA),
 		})
 	}
 	sort.Slice(builds, func(i, j int) bool {
@@ -140,20 +144,18 @@ func isDevelopmentBuildNewer(builds []ActionBuild, currentCommit string) (bool, 
 	if len(builds) == 0 || !isCommitSHA(currentCommit) {
 		return false, nil
 	}
-	latestCommit := builds[0].Commit
-	if commitsEqual(latestCommit, currentCommit) {
+	latestCommit := builds[0].FullSHA
+	if len(latestCommit) != 40 || !isCommitSHA(latestCommit) || commitsEqual(latestCommit, currentCommit) {
 		return false, nil
 	}
-	for _, build := range builds[1:] {
-		if commitsEqual(build.Commit, currentCommit) {
-			return true, nil
-		}
-	}
+	// The newest successfully started run is a candidate, not evidence of
+	// commit ancestry. Rebuilds and divergent branches must not trigger updates.
 	var comparison struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
+		AheadBy int    `json:"ahead_by"`
 	}
 	if err := actionsJSON("/compare/"+currentCommit+"..."+latestCommit, &comparison); err != nil {
 		return false, err
 	}
-	return comparison.Status == "ahead", nil
+	return comparison.Status == "ahead" && comparison.AheadBy > 0, nil
 }

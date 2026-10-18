@@ -23,10 +23,10 @@ func TestListActionBuildsSuccessOrderAndArtifactEligibility(t *testing.T) {
 			}
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"workflow_runs": []map[string]any{
-					{"id": 101, "head_sha": shaOld, "head_branch": "main", "status": "completed", "conclusion": "success", "created_at": "2026-10-15T12:00:00Z", "display_title": "older change"},
-					{"id": 103, "head_sha": shaOther, "head_branch": "main", "status": "completed", "conclusion": "success", "created_at": "2026-10-17T12:00:00Z", "display_title": "expired change"},
-					{"id": 102, "head_sha": shaNew, "head_branch": "main", "status": "completed", "conclusion": "success", "created_at": "2026-10-16T12:00:00Z", "display_title": "newer change"},
-					{"id": 104, "head_sha": shaOther, "head_branch": "main", "status": "completed", "conclusion": "success", "created_at": "2026-10-18T12:00:00Z", "display_title": "mismatched artifact"},
+					{"id": 101, "head_sha": shaOld, "head_branch": "main", "status": "completed", "conclusion": "success", "created_at": "2026-10-15T11:30:00Z", "run_started_at": "2026-10-15T12:00:00Z", "display_title": "older change"},
+					{"id": 103, "head_sha": shaOther, "head_branch": "main", "status": "completed", "conclusion": "success", "created_at": "2026-10-17T11:30:00Z", "run_started_at": "2026-10-17T12:00:00Z", "display_title": "expired change"},
+					{"id": 102, "head_sha": shaNew, "head_branch": "main", "status": "completed", "conclusion": "success", "created_at": "2026-10-16T11:30:00Z", "run_started_at": "2026-10-16T12:00:00Z", "display_title": "newer change"},
+					{"id": 104, "head_sha": shaOther, "head_branch": "main", "status": "completed", "conclusion": "success", "created_at": "2026-10-18T11:30:00Z", "run_started_at": "2026-10-18T12:00:00Z", "display_title": "mismatched artifact"},
 				},
 			})
 		case "/actions/artifacts":
