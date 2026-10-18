@@ -77,6 +77,16 @@ func localize(localizer *i18n.Localizer, key string, params ...string) string {
 	return msg
 }
 
+// Browser languages are mapped to the only two translations shipped with the panel.
+func browserLanguage(raw string) string {
+	first := strings.ToLower(strings.TrimSpace(strings.SplitN(raw, ",", 2)[0]))
+	first = strings.TrimSpace(strings.SplitN(first, ";", 2)[0])
+	if first == "zh" || strings.HasPrefix(first, "zh-") || strings.HasPrefix(first, "zh_") {
+		return "zh-CN"
+	}
+	return "en-US"
+}
+
 // LocalizerFor returns a new Localizer for the given language tag using the global bundle.
 func LocalizerFor(lang string) *i18n.Localizer {
 	bundleMu.RLock()
@@ -84,11 +94,11 @@ func LocalizerFor(lang string) *i18n.Localizer {
 	if i18nBundle == nil {
 		return nil
 	}
-	return i18n.NewLocalizer(i18nBundle, lang)
+	return i18n.NewLocalizer(i18nBundle, browserLanguage(lang))
 }
 
 // LocalizerMiddleware returns a Gin middleware that sets up localization for web requests.
-// It determines the user's language from cookies or Accept-Language header,
+// It determines the user's language from the browser Accept-Language header,
 // creates a localizer instance, and stores it in the Gin context for use in handlers.
 // Also provides the I18n function in the context for template rendering.
 func LocalizerMiddleware() gin.HandlerFunc {
@@ -103,15 +113,7 @@ func LocalizerMiddleware() gin.HandlerFunc {
 			i18nBundle = bundle
 		}
 		bundleMu.Unlock()
-		var lang string
-
-		if cookie, err := c.Request.Cookie("lang"); err == nil {
-			lang = cookie.Value
-		} else {
-			lang = c.GetHeader("Accept-Language")
-		}
-
-		localizer := LocalizerFor(lang)
+		localizer := LocalizerFor(c.GetHeader("Accept-Language"))
 		c.Set("localizer", localizer)
 		c.Set("I18n", func(_ I18nType, key string, params ...string) string {
 			return localize(localizer, key, params...)

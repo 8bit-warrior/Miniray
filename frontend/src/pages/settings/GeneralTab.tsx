@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons';
 import type { AllSetting } from '@/models/setting';
 import { isOutboundProtocol } from '@/schemas/primitives';
-import { HttpUtil, LanguageManager } from '@/utils';
+import { HttpUtil } from '@/utils';
 import { onNumber } from '@/utils/onNumber';
 import { DefaultSettingTag, SettingListItem } from '@/components/ui';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -39,7 +39,6 @@ export default function GeneralTab({
   const { t } = useTranslation();
   const { isMobile } = useMediaQuery();
 
-  const [lang, setLang] = useState<string>(() => LanguageManager.getLanguage());
   const [inboundOptions, setInboundOptions] = useState<{ label: string; value: string }[]>([]);
   const [outboundTagList, setOutboundTagList] = useState<string[]>([]);
   const [balancerTagList, setBalancerTagList] = useState<string[]>([]);
@@ -156,29 +155,6 @@ export default function GeneralTab({
   function setLdapInboundTagList(list: string[]) {
     updateSetting({ ldapInboundTags: Array.isArray(list) ? list.join(',') : '' });
   }
-
-  function onLangChange(value: string) {
-    setLang(value);
-    LanguageManager.setLanguage(value);
-  }
-
-  const langOptions = useMemo(
-    () =>
-      LanguageManager.supportedLanguages.map(
-        (l: { value: string; name: string; icon: string }) => ({
-          value: l.value,
-          label: (
-            <>
-              <span role="img" aria-label={l.name}>
-                {l.icon}
-              </span>
-              &nbsp;&nbsp;<span>{l.name}</span>
-            </>
-          ),
-        }),
-      ),
-    [],
-  );
 
   return (
     <Tabs
@@ -353,14 +329,6 @@ export default function GeneralTab({
                 />
               </SettingListItem>
 
-              <SettingListItem paddings="small" title={t('pages.settings.language')}>
-                <Select
-                  value={lang}
-                  onChange={onLangChange}
-                  style={{ width: '100%' }}
-                  options={langOptions}
-                />
-              </SettingListItem>
             </>
           ),
         },

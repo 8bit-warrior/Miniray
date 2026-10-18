@@ -1111,7 +1111,6 @@
       "intervals": "Intervals",
       "information": "Information",
       "profile": "Profile",
-      "language": "Language",
       "security": {
         "admin": "Admin credentials",
         "twoFactor": "Two-factor authentication",
