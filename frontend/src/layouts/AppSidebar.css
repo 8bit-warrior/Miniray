@@ -326,3 +326,28 @@ body.dark .ant-drawer-body .drawer-menu .ant-menu-item-group-list {
   background-color: color-mix(in srgb, var(--ant-color-primary) 10%, transparent) !important;
   color: var(--ant-color-primary) !important;
 }
+
+.sider-nav .ant-menu-item-group-title,
+.drawer-nav .ant-menu-item-group-title {
+  height: 28px;
+  line-height: 28px;
+  margin: 8px 8px 4px;
+  padding: 0 12px !important;
+  border-top: 1px solid var(--ant-color-border-secondary);
+  border-radius: 4px;
+  background: var(--ant-color-fill-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ant-color-text-secondary);
+}
+
+.sidebar-section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sider-nav .ant-menu-item-group-list .ant-menu-item,
+.drawer-nav .ant-menu-item-group-list .ant-menu-item {
+  padding-inline-start: 24px !important;
+}

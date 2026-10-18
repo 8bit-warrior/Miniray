@@ -14,7 +14,7 @@ import (
 )
 
 // ClientSlim is the row-shape used by the clients page. It drops fields the
-// table never reads (UUID, password, auth, flow, security, reverse, tgId)
+// table never reads (UUID, password, auth, flow, security, reverse)
 // so the list payload stays compact even when the panel manages thousands
 // of clients. Modals that need the full record still call /get/:email.
 type ClientSlim struct {
@@ -59,7 +59,6 @@ type ClientPageParams struct {
 	UsageFrom  int64  `form:"usageFrom"`
 	UsageTo    int64  `form:"usageTo"`
 	AutoRenew  string `form:"autoRenew"`
-	HasTgID    string `form:"hasTgId"`
 	HasComment string `form:"hasComment"`
 }
 
@@ -148,8 +147,6 @@ func clientSearchCond(variants []string) (string, []any) {
 			args = append(args, like(v))
 		}
 	}
-	parts = append(parts, "(COALESCE(c.tg_id, 0) <> 0 AND CAST(c.tg_id AS TEXT) LIKE ? ESCAPE '\\')")
-	args = append(args, like(variants[0]))
 	return "(" + strings.Join(parts, " OR ") + ")", args
 }
 
@@ -265,12 +262,6 @@ func (q clientQuery) applyParams(tx *gorm.DB, params ClientPageParams, onlines [
 		where("(COALESCE(c.reset, 0) > 0 OR COALESCE(c.reset_day, 0) > 0 OR COALESCE(c.reset_weekday, 0) > 0)")
 	case "off":
 		where("(COALESCE(c.reset, 0) <= 0 AND COALESCE(c.reset_day, 0) <= 0 AND COALESCE(c.reset_weekday, 0) <= 0)")
-	}
-	switch strings.ToLower(strings.TrimSpace(params.HasTgID)) {
-	case "yes":
-		where("COALESCE(c.tg_id, 0) <> 0")
-	case "no":
-		where("COALESCE(c.tg_id, 0) = 0")
 	}
 	switch strings.ToLower(strings.TrimSpace(params.HasComment)) {
 	case "yes":

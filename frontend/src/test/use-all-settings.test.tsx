@@ -117,7 +117,7 @@ describe('useAllSettings', () => {
         return new Msg(
           true,
           '',
-          fetchCount === 1 ? { hasTgBotToken: false } : { hasTgBotToken: true, tgBotToken: '' },
+          fetchCount === 1 ? { hasLdapPassword: false } : { hasLdapPassword: true, ldapPassword: '' },
         );
       }
       return new Msg(true, '');
@@ -129,14 +129,14 @@ describe('useAllSettings', () => {
     const { result } = renderHook(() => useAllSettings(), { wrapper });
 
     await waitFor(() => expect(result.current.fetched).toBe(true));
-    act(() => result.current.updateSetting({ tgBotToken: 'secret' }));
+    act(() => result.current.updateSetting({ ldapPassword: 'secret' }));
     await act(async () => {
       await result.current.saveAll();
     });
 
     await waitFor(() => expect(HttpUtil.post).toHaveBeenCalledTimes(3));
-    expect(result.current.allSetting.tgBotToken).toBe('');
-    expect(result.current.allSetting.hasTgBotToken).toBe(true);
+    expect(result.current.allSetting.ldapPassword).toBe('');
+    expect(result.current.allSetting.hasLdapPassword).toBe(true);
     expect(result.current.saveDisabled).toBe(true);
   });
 
@@ -148,7 +148,7 @@ describe('useAllSettings', () => {
         return new Msg(
           true,
           '',
-          fetchCount === 1 ? { hasTgBotToken: false } : { hasTgBotToken: true, tgBotToken: '' },
+          fetchCount === 1 ? { hasLdapPassword: false } : { hasLdapPassword: true, ldapPassword: '' },
         );
       }
       return new Msg(true, '');
@@ -160,7 +160,7 @@ describe('useAllSettings', () => {
     const { result } = renderHook(() => useAllSettings(), { wrapper });
 
     await waitFor(() => expect(result.current.fetched).toBe(true));
-    act(() => result.current.updateSetting({ tgBotToken: 'secret' }));
+    act(() => result.current.updateSetting({ ldapPassword: 'secret' }));
     await act(async () => {
       await result.current.savePayload({
         ...result.current.allSetting,
@@ -170,8 +170,8 @@ describe('useAllSettings', () => {
     });
 
     await waitFor(() => expect(HttpUtil.post).toHaveBeenCalledTimes(3));
-    expect(result.current.allSetting.tgBotToken).toBe('');
-    expect(result.current.allSetting.hasTgBotToken).toBe(true);
+    expect(result.current.allSetting.ldapPassword).toBe('');
+    expect(result.current.allSetting.hasLdapPassword).toBe(true);
     expect(result.current.saveDisabled).toBe(true);
   });
 });

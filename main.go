@@ -40,7 +40,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/web/job"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 	"github.com/8bit-warrior/Miniray/internal/web/service/panel"
-	"github.com/8bit-warrior/Miniray/internal/web/service/tgbot"
 )
 
 // cliFallbackTokenName is the single token the CLI regenerates, so `-getApiToken`
@@ -178,7 +177,6 @@ func runWebServer() {
 			if stopTunnelHealthMonitor != nil {
 				stopTunnelHealthMonitor()
 			}
-			tgbot.StopBot()
 			if err := server.StopPanelOnly(); err != nil {
 				logger.Warning("stop panel failed:", err)
 			}
@@ -226,10 +224,6 @@ func runWebServer() {
 			if stopTunnelHealthMonitor != nil {
 				stopTunnelHealthMonitor()
 			}
-
-			// --- FIX FOR TELEGRAM BOT CONFLICT (409) on full shutdown ---
-			tgbot.StopBot()
-			// ------------------------------------------------------------
 
 			if os.Getenv("MINIRAY_SEPARATE_CORE") == "1" || runtime.GOOS == "windows" {
 				if err := server.StopPanelOnly(); err != nil {
@@ -371,64 +365,6 @@ func showSetting(show bool) {
 		fmt.Println("hasDefaultCredential:", hasDefaultCredential)
 		fmt.Println("port:", port)
 		fmt.Println("webBasePath:", webBasePath)
-	}
-}
-
-// updateTgbotEnableSts enables or disables the Telegram bot notifications based on the status parameter.
-func updateTgbotEnableSts(status bool) {
-	settingService := service.SettingService{}
-	currentTgSts, err := settingService.GetTgbotEnabled()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	logger.Infof("current enabletgbot status[%v],need update to status[%v]", currentTgSts, status)
-	if currentTgSts != status {
-		err := settingService.SetTgbotEnabled(status)
-		if err != nil {
-			fmt.Println(err)
-			return
-		} else {
-			logger.Infof("SetTgbotEnabled[%v] success", status)
-		}
-	}
-}
-
-// updateTgbotSetting updates Telegram bot settings including token, chat ID, and runtime schedule.
-func updateTgbotSetting(tgBotToken string, tgBotChatid string, tgBotRuntime string) {
-	err := database.InitDB(config.GetDBPath())
-	if err != nil {
-		fmt.Println("Error initializing database:", err)
-		return
-	}
-
-	settingService := service.SettingService{}
-
-	if tgBotToken != "" {
-		err := settingService.SetTgBotToken(tgBotToken)
-		if err != nil {
-			fmt.Printf("Error setting Telegram bot token: %v\n", err)
-			return
-		}
-		logger.Info("Successfully updated Telegram bot token.")
-	}
-
-	if tgBotRuntime != "" {
-		err := settingService.SetTgbotRuntime(tgBotRuntime)
-		if err != nil {
-			fmt.Printf("Error setting Telegram bot runtime: %v\n", err)
-			return
-		}
-		logger.Infof("Successfully updated Telegram bot runtime to [%s].", tgBotRuntime)
-	}
-
-	if tgBotChatid != "" {
-		err := settingService.SetTgBotChatId(tgBotChatid)
-		if err != nil {
-			fmt.Printf("Error setting Telegram bot chat ID: %v\n", err)
-			return
-		}
-		logger.Info("Successfully updated Telegram bot chat ID.")
 	}
 }
 
@@ -719,10 +655,6 @@ func main() {
 	var getListen bool
 	var webCertFile string
 	var webKeyFile string
-	var tgbottoken string
-	var tgbotchatid string
-	var enabletgbot bool
-	var tgbotRuntime string
 	var reset bool
 	var show bool
 	var getCert bool
@@ -745,10 +677,6 @@ func main() {
 	settingCmd.StringVar(&tokenScope, "tokenScope", "", "Scope of the token -getApiToken issues: admin or monitor (default: the scope of the token it replaces, or admin for a new one)")
 	settingCmd.StringVar(&webCertFile, "webCert", "", "Set path to public key file for panel")
 	settingCmd.StringVar(&webKeyFile, "webCertKey", "", "Set path to private key file for panel")
-	settingCmd.StringVar(&tgbottoken, "tgbottoken", "", "Set token for Telegram bot")
-	settingCmd.StringVar(&tgbotRuntime, "tgbotRuntime", "", "Set cron time for Telegram bot notifications")
-	settingCmd.StringVar(&tgbotchatid, "tgbotchatid", "", "Set chat ID for Telegram bot notifications")
-	settingCmd.BoolVar(&enabletgbot, "enabletgbot", false, "Enable notifications via Telegram bot")
 
 	oldUsage := flag.Usage
 	flag.Usage = func() {
@@ -883,12 +811,6 @@ func main() {
 		}
 		if getApiToken {
 			GetApiToken(getApiToken, tokenName, tokenScope)
-		}
-		if (tgbottoken != "") || (tgbotchatid != "") || (tgbotRuntime != "") {
-			updateTgbotSetting(tgbottoken, tgbotchatid, tgbotRuntime)
-		}
-		if enabletgbot {
-			updateTgbotEnableSts(enabletgbot)
 		}
 	case "cert":
 		err := settingCmd.Parse(os.Args[2:])

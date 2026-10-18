@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Input, Select, Switch, message } from 'antd';
+import { Button, Input, Modal, Select, Switch, message } from 'antd';
+import { PoweroffOutlined } from '@ant-design/icons';
 import type { AllSetting } from '@/models/setting';
 import { HttpUtil } from '@/utils';
 import { SettingListItem } from '@/components/ui';
@@ -22,6 +23,7 @@ export default function PanelAutoOfflineTab({
   const [bootEnabled, setBootEnabled] = useState<boolean | null>(null);
   const [bootSaving, setBootSaving] = useState(false);
   const [notice, contextHolder] = message.useMessage();
+  const [offlineModal, offlineModalHolder] = Modal.useModal();
 
   useEffect(() => {
     let active = true;
@@ -62,9 +64,32 @@ export default function PanelAutoOfflineTab({
     }
   }
 
+  const panelOffline = () => {
+    offlineModal.confirm({
+      title: '确认让面板离线？',
+      content: '面板网页与订阅服务将停止监听端口，代理内核继续运行。使用 miniray start-panel 重新开启。',
+      okText: '确认离线',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        const result = await HttpUtil.post('/panel/api/setting/offlinePanel');
+        if (!result?.success) throw new Error('面板离线操作失败');
+      },
+    });
+  };
+
   return (
     <>
       {contextHolder}
+      {offlineModalHolder}
+      <SettingListItem
+        title="面板离线"
+        description="停止网页和订阅服务，保持独立代理内核运行。"
+      >
+        <Button danger icon={<PoweroffOutlined />} onClick={panelOffline}>
+          面板离线
+        </Button>
+      </SettingListItem>
       {bootEnabled !== null && (
         <SettingListItem
           title="面板开机自启"

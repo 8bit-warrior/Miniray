@@ -78,16 +78,6 @@ var defaultValueMap = map[string]string{
 	"subExpiredTemplate":          DefaultSubExpiredTemplate,
 	"subTrafficDepletedTemplate":  DefaultSubTrafficDepletedTemplate,
 	"timeLocation":                "Local",
-	"tgBotEnable":                 "false",
-	"tgBotToken":                  "",
-	"tgBotProxy":                  "",
-	"tgBotAPIServer":              "",
-	"tgBotChatId":                 "",
-	"tgRunTime":                   "@daily",
-	"tgBotBackup":                 "false",
-	"tgCpu":                       "80",
-	"tgMemory":                    "80",
-	"tgLang":                      "en-US",
 	"twoFactorEnable":             "false",
 	"twoFactorToken":              "",
 	"happLinkEnable":              "false",
@@ -219,37 +209,10 @@ var defaultValueMap = map[string]string{
 	"ldapDefaultExpiryDays":  "0",
 	"ldapDefaultLimitIP":     "0",
 
-	// Event bus — per-subscriber event filtering (empty = all disabled)
-	"tgEnabledEvents":   "login.attempt,cpu.high",
-	"smtpEnabledEvents": "login.attempt,cpu.high",
-	"smtpCpu":           "80",
-	"smtpMemory":        "80",
 
 	// Consecutive failed observatory probes before an outbound.down event fires
-	"outboundDownThreshold": "3",
 
-	// Email (SMTP) notifications
-	"smtpEnable":         "false",
-	"smtpHost":           "",
-	"smtpPort":           "587",
-	"smtpUsername":       "",
-	"smtpPassword":       "",
-	"smtpFrom":           "",
-	"smtpFromName":       "",
-	"smtpTo":             "",
-	"smtpEncryptionType": "starttls", // no, starttls, tls
 
-	// Discord bot notifications
-	"discordBotEnable":     "false",
-	"discordBotToken":      "",
-	"discordChannelId":     "",
-	"discordAdminIds":      "",
-	"discordRunTime":       "@daily",
-	"discordBotBackup":     "false",
-	"discordCpu":           "80",
-	"discordMemory":        "80",
-	"discordLang":          "en-US",
-	"discordEnabledEvents": "login.attempt,cpu.high",
 }
 
 // SettingService provides business logic for application settings management.
@@ -342,22 +305,16 @@ func (s *SettingService) GetAllSettingView() (*entity.AllSettingView, error) {
 		return nil, err
 	}
 	view := &entity.AllSettingView{AllSetting: *allSetting}
-	view.HasTgBotToken = secretConfigured(allSetting.TgBotToken)
 	view.HasTwoFactorToken = secretConfigured(allSetting.TwoFactorToken)
 	view.HasLdapPassword = secretConfigured(allSetting.LdapPassword)
 	view.HasWarpSecret = secretConfigured(mustString(s.GetWarp()))
 	view.HasNordSecret = secretConfigured(mustString(s.GetNord()))
-	view.HasSmtpPassword = secretConfigured(allSetting.SmtpPassword)
-	view.HasDiscordBotToken = secretConfigured(allSetting.DiscordBotToken)
 	var apiTokenCount int64
 	if err := database.GetDB().Model(model.ApiToken{}).Where("enabled = ?", true).Count(&apiTokenCount).Error; err == nil {
 		view.HasApiToken = apiTokenCount > 0
 	}
-	view.TgBotToken = ""
 	view.TwoFactorToken = ""
 	view.LdapPassword = ""
-	view.SmtpPassword = ""
-	view.DiscordBotToken = ""
 	return view, nil
 }
 
@@ -523,24 +480,9 @@ func (s *SettingService) GetWebDomain() (string, error) {
 	return s.getString("webDomain")
 }
 
-func (s *SettingService) GetTgBotToken() (string, error) {
-	return s.getString("tgBotToken")
-}
-
-func (s *SettingService) SetTgBotToken(token string) error {
-	return s.setString("tgBotToken", token)
-}
-
-func (s *SettingService) GetTgBotProxy() (string, error) {
-	return s.getString("tgBotProxy")
-}
-
-func (s *SettingService) SetTgBotProxy(token string) error {
-	return s.setString("tgBotProxy", token)
-}
 
 // GetPanelOutbound returns the Xray outbound tag the panel's own outbound
-// requests (version checks, Telegram, subscription fetches) are routed through.
+// requests (version checks and subscription fetches) are routed through.
 func (s *SettingService) GetPanelOutbound() (string, error) {
 	return s.getString("panelOutbound")
 }
@@ -588,58 +530,6 @@ func (s *SettingService) NewProxiedHTTPClient(timeout time.Duration) *http.Clien
 		return &http.Client{Timeout: timeout}
 	}
 	return client
-}
-
-func (s *SettingService) GetTgBotAPIServer() (string, error) {
-	return s.getString("tgBotAPIServer")
-}
-
-func (s *SettingService) SetTgBotAPIServer(token string) error {
-	return s.setString("tgBotAPIServer", token)
-}
-
-func (s *SettingService) GetTgBotChatId() (string, error) {
-	return s.getString("tgBotChatId")
-}
-
-func (s *SettingService) SetTgBotChatId(chatIds string) error {
-	return s.setString("tgBotChatId", chatIds)
-}
-
-func (s *SettingService) GetTgbotEnabled() (bool, error) {
-	return s.getBool("tgBotEnable")
-}
-
-func (s *SettingService) SetTgbotEnabled(value bool) error {
-	return s.setBool("tgBotEnable", value)
-}
-
-func (s *SettingService) GetTgbotRuntime() (string, error) {
-	return s.getString("tgRunTime")
-}
-
-func (s *SettingService) SetTgbotRuntime(time string) error {
-	return s.setString("tgRunTime", time)
-}
-
-func (s *SettingService) GetTgBotBackup() (bool, error) {
-	return s.getBool("tgBotBackup")
-}
-
-func (s *SettingService) GetTgCpu() (int, error) {
-	return s.getInt("tgCpu")
-}
-
-func (s *SettingService) GetTgMemory() (int, error) {
-	return s.getInt("tgMemory")
-}
-
-func (s *SettingService) SetTgMemory(value int) error {
-	return s.setInt("tgMemory", value)
-}
-
-func (s *SettingService) GetTgLang() (string, error) {
-	return s.getString("tgLang")
 }
 
 func (s *SettingService) GetTwoFactorEnable() (bool, error) {
@@ -1388,215 +1278,11 @@ func (s *SettingService) GetLdapDefaultLimitIP() (int, error) {
 	return s.getInt("ldapDefaultLimitIP")
 }
 
-// Event bus — per-subscriber event filtering
-
-func (s *SettingService) GetTgEnabledEvents() (string, error) {
-	return s.getString("tgEnabledEvents")
-}
-
-func (s *SettingService) SetTgEnabledEvents(events string) error {
-	return s.setString("tgEnabledEvents", events)
-}
-
-func (s *SettingService) GetSmtpEnabledEvents() (string, error) {
-	return s.getString("smtpEnabledEvents")
-}
-
-func (s *SettingService) SetSmtpEnabledEvents(events string) error {
-	return s.setString("smtpEnabledEvents", events)
-}
-
-// Email (SMTP) settings
-
-func (s *SettingService) GetSmtpEnable() (bool, error) {
-	return s.getBool("smtpEnable")
-}
-
-func (s *SettingService) SetSmtpEnable(value bool) error {
-	return s.setBool("smtpEnable", value)
-}
-
-func (s *SettingService) GetSmtpHost() (string, error) {
-	return s.getString("smtpHost")
-}
-
-func (s *SettingService) SetSmtpHost(value string) error {
-	return s.setString("smtpHost", value)
-}
-
-func (s *SettingService) GetSmtpPort() (int, error) {
-	return s.getInt("smtpPort")
-}
-
-func (s *SettingService) SetSmtpPort(value int) error {
-	return s.setInt("smtpPort", value)
-}
-
-func (s *SettingService) GetSmtpUsername() (string, error) {
-	return s.getString("smtpUsername")
-}
-
-func (s *SettingService) SetSmtpUsername(value string) error {
-	return s.setString("smtpUsername", value)
-}
-
-func (s *SettingService) GetSmtpFrom() (string, error) {
-	return s.getString("smtpFrom")
-}
-
-func (s *SettingService) SetSmtpFrom(value string) error {
-	return s.setString("smtpFrom", value)
-}
-
-func (s *SettingService) GetSmtpFromName() (string, error) {
-	return s.getString("smtpFromName")
-}
-
-func (s *SettingService) SetSmtpFromName(value string) error {
-	return s.setString("smtpFromName", value)
-}
-
-func (s *SettingService) GetSmtpPassword() (string, error) {
-	return s.getString("smtpPassword")
-}
-
-func (s *SettingService) SetSmtpPassword(value string) error {
-	return s.setString("smtpPassword", value)
-}
-
-func (s *SettingService) GetSmtpTo() (string, error) {
-	return s.getString("smtpTo")
-}
-
-func (s *SettingService) SetSmtpTo(value string) error {
-	return s.setString("smtpTo", value)
-}
-
-func (s *SettingService) GetSmtpEncryptionType() (string, error) {
-	return s.getString("smtpEncryptionType")
-}
-
-func (s *SettingService) SetSmtpEncryptionType(value string) error {
-	return s.setString("smtpEncryptionType", value)
-}
-
-func (s *SettingService) GetSmtpCpu() (int, error) {
-	return s.getInt("smtpCpu")
-}
-
-func (s *SettingService) SetSmtpCpu(value int) error {
-	return s.setInt("smtpCpu", value)
-}
-
-func (s *SettingService) GetSmtpMemory() (int, error) {
-	return s.getInt("smtpMemory")
-}
-
-func (s *SettingService) SetSmtpMemory(value int) error {
-	return s.setInt("smtpMemory", value)
-}
-
-// Discord bot settings
-
-func (s *SettingService) GetDiscordBotEnable() (bool, error) {
-	return s.getBool("discordBotEnable")
-}
-
-func (s *SettingService) SetDiscordBotEnable(value bool) error {
-	return s.setBool("discordBotEnable", value)
-}
-
-func (s *SettingService) GetDiscordBotToken() (string, error) {
-	return s.getString("discordBotToken")
-}
-
-func (s *SettingService) SetDiscordBotToken(value string) error {
-	return s.setString("discordBotToken", value)
-}
-
-func (s *SettingService) GetDiscordChannelId() (string, error) {
-	return s.getString("discordChannelId")
-}
-
-func (s *SettingService) SetDiscordChannelId(value string) error {
-	return s.setString("discordChannelId", value)
-}
-
-func (s *SettingService) GetDiscordAdminIds() (string, error) {
-	return s.getString("discordAdminIds")
-}
-
-func (s *SettingService) SetDiscordAdminIds(value string) error {
-	return s.setString("discordAdminIds", value)
-}
-
-func (s *SettingService) GetDiscordEnabledEvents() (string, error) {
-	return s.getString("discordEnabledEvents")
-}
-
-func (s *SettingService) SetDiscordEnabledEvents(events string) error {
-	return s.setString("discordEnabledEvents", events)
-}
-
-func (s *SettingService) GetDiscordCpu() (int, error) {
-	return s.getInt("discordCpu")
-}
-
-func (s *SettingService) SetDiscordCpu(value int) error {
-	return s.setInt("discordCpu", value)
-}
-
-func (s *SettingService) GetDiscordMemory() (int, error) {
-	return s.getInt("discordMemory")
-}
-
-func (s *SettingService) SetDiscordMemory(value int) error {
-	return s.setInt("discordMemory", value)
-}
-
-func (s *SettingService) GetDiscordRunTime() (string, error) {
-	return s.getString("discordRunTime")
-}
-
-func (s *SettingService) SetDiscordRunTime(value string) error {
-	return s.setString("discordRunTime", value)
-}
-
-func (s *SettingService) GetDiscordBotBackup() (bool, error) {
-	return s.getBool("discordBotBackup")
-}
-
-func (s *SettingService) SetDiscordBotBackup(value bool) error {
-	return s.setBool("discordBotBackup", value)
-}
-
-func (s *SettingService) GetDiscordLang() (string, error) {
-	return s.getString("discordLang")
-}
-
-func (s *SettingService) SetDiscordLang(value string) error {
-	return s.setString("discordLang", value)
-}
-
-// GetOutboundDownThreshold returns how many consecutive failed observatory
-// probes an outbound must accumulate before an outbound.down notification is
-// emitted. 1 preserves the legacy "notify on the first failed probe" behaviour.
-func (s *SettingService) GetOutboundDownThreshold() (int, error) {
-	return s.getInt("outboundDownThreshold")
-}
-
-func (s *SettingService) SetOutboundDownThreshold(value int) error {
-	return s.setInt("outboundDownThreshold", value)
-}
-
 // SecretClears marks redacted secrets the user explicitly emptied. Without a
 // flag, a blank submitted secret means "unchanged" (the field is always served
 // blank to the browser) and the stored value is preserved.
 type SecretClears struct {
-	TgBotToken      bool
-	LdapPassword    bool
-	SmtpPassword    bool
-	DiscordBotToken bool
+	LdapPassword bool
 }
 
 func (s *SettingService) UpdateAllSetting(allSetting *entity.AllSetting, clears SecretClears) error {
@@ -1701,13 +1387,6 @@ func ValidateRegex(pattern string) error {
 }
 
 func (s *SettingService) preserveRedactedSecrets(allSetting *entity.AllSetting, clears SecretClears) error {
-	if !clears.TgBotToken && strings.TrimSpace(allSetting.TgBotToken) == "" {
-		value, err := s.GetTgBotToken()
-		if err != nil {
-			return err
-		}
-		allSetting.TgBotToken = value
-	}
 	if !clears.LdapPassword && strings.TrimSpace(allSetting.LdapPassword) == "" {
 		value, err := s.GetLdapPassword()
 		if err != nil {
@@ -1722,20 +1401,6 @@ func (s *SettingService) preserveRedactedSecrets(allSetting *entity.AllSetting, 
 		}
 		allSetting.TwoFactorToken = value
 	}
-	if !clears.SmtpPassword && strings.TrimSpace(allSetting.SmtpPassword) == "" {
-		value, err := s.GetSmtpPassword()
-		if err != nil {
-			return err
-		}
-		allSetting.SmtpPassword = value
-	}
-	if !clears.DiscordBotToken && strings.TrimSpace(allSetting.DiscordBotToken) == "" {
-		value, err := s.GetDiscordBotToken()
-		if err != nil {
-			return err
-		}
-		allSetting.DiscordBotToken = value
-	}
 	return nil
 }
 
@@ -1746,13 +1411,6 @@ func validateSettingsURLs(allSetting *entity.AllSetting) error {
 			return common.NewError("external traffic inform URI is invalid:", err)
 		}
 		allSetting.ExternalTrafficInformURI = u
-	}
-	if allSetting.TgBotAPIServer != "" {
-		u, err := SanitizeHTTPURL(allSetting.TgBotAPIServer)
-		if err != nil {
-			return common.NewError("telegram API server URL is invalid:", err)
-		}
-		allSetting.TgBotAPIServer = u
 	}
 	// Support/profile links land in subscription headers and page data, where
 	// client apps resolve a scheme-less value against the panel's own domain.
@@ -1813,7 +1471,7 @@ func validateSubJsonDnsSetting(allSetting *entity.AllSetting) error {
 
 func (s *SettingService) UpdateSecret(key string, value string) error {
 	switch key {
-	case "tgBotToken", "ldapPassword", "twoFactorToken":
+	case "ldapPassword", "twoFactorToken":
 		return s.saveSetting(key, strings.TrimSpace(value))
 	default:
 		return common.NewError("secret key is not replaceable:", key)
@@ -1881,7 +1539,6 @@ func (s *SettingService) GetDefaultSettings(host string) (any, error) {
 		"pageSize":         func() (any, error) { return s.GetPageSize() },
 		"defaultCert":      func() (any, error) { return s.GetCertFile() },
 		"defaultKey":       func() (any, error) { return s.GetKeyFile() },
-		"tgBotEnable":      func() (any, error) { return s.GetTgbotEnabled() },
 		"subThemeDir":      func() (any, error) { return s.GetSubThemeDir() },
 		"happLinkEnable":   func() (any, error) { return s.GetHappLinkEnable() },
 		"subEnable":        func() (any, error) { return s.GetSubEnable() },
@@ -1947,11 +1604,8 @@ func (s *SettingService) GetDefaultSettings(host string) (any, error) {
 }
 
 var factoryDefaultSecretKeys = map[string]bool{
-	"tgBotToken":      true,
 	"twoFactorToken":  true,
 	"ldapPassword":    true,
-	"smtpPassword":    true,
-	"discordBotToken": true,
 }
 
 func (s *SettingService) GetFactoryDefaults() map[string]string {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, Collapse, Modal, Radio, Spin, Tag } from 'antd';
 import { CloudDownloadOutlined } from '@ant-design/icons';
@@ -43,6 +43,7 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
   const { t } = useTranslation();
   const [modal, contextHolder] = Modal.useModal();
   const [builds, setBuilds] = useState<ActionBuild[]>([]);
+  const [activeKey, setActiveKey] = useState('stable');
   const [buildsLoading, setBuildsLoading] = useState(false);
   const [buildsError, setBuildsError] = useState(false);
 
@@ -66,6 +67,14 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
       setBuildsLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (open) setActiveKey(info.channel === 'development' ? 'actions' : 'stable');
+  }, [open, info.channel]);
+
+  useEffect(() => {
+    if (open && activeKey === 'actions') void fetchBuilds();
+  }, [open, activeKey]);
 
   async function pollUpdateStatus(expectedRunId: string): Promise<UpdateOutcome> {
     await PromiseUtil.sleep(5000);
@@ -144,17 +153,15 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
       <Modal open={open} title={t('pages.index.updatePanel')} footer={null} onCancel={onClose}>
         <Collapse
           accordion
-          defaultActiveKey="stable"
-          onChange={(value) => {
-            if (value.includes('actions')) void fetchBuilds();
-          }}
+          activeKey={activeKey}
+          onChange={(value) => setActiveKey(String(Array.isArray(value) ? value[0] || '' : value))}
           items={[
             {
               key: 'stable',
               label: t('pages.index.stableRelease'),
               children: (
                 <>
-                  {info.updateAvailable && (
+                  {info.channel !== 'development' && info.updateAvailable && (
                     <Alert
                       type="warning"
                       className="mb-12"
@@ -171,13 +178,13 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
                     </div>
                     <div className="version-list-item">
                       <span>{t('pages.index.latestPanelVersion')}</span>
-                      <Tag color="purple">{formatPanelVersion(info.latestVersion) || '-'}</Tag>
+                      <Tag color="purple">{info.channel === 'development' ? '-' : formatPanelVersion(info.latestVersion) || '-'}</Tag>
                     </div>
                   </div>
                   <div className="actions-row">
                     <Button
                       type="primary"
-                      disabled={!info.updateAvailable}
+                      disabled={info.channel === 'development' || !info.updateAvailable}
                       onClick={() => updatePanel()}
                       icon={<CloudDownloadOutlined />}
                     >
@@ -198,6 +205,17 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
                     title={t('pages.index.actionsBuildDesc')}
                     showIcon
                   />
+                  {info.channel === 'development' && info.updateAvailable && (
+                    <div className="actions-row">
+                      <Button
+                        type="primary"
+                        onClick={() => updatePanel()}
+                        icon={<CloudDownloadOutlined />}
+                      >
+                        {t('pages.index.updatePanel')}
+                      </Button>
+                    </div>
+                  )}
                   <Spin spinning={buildsLoading}>
                     {buildsError ? (
                       <Alert type="error" title={t('pages.index.actionsBuildFailed')} showIcon />

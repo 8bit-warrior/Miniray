@@ -9,7 +9,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	"github.com/8bit-warrior/Miniray/internal/web/middleware"
 	"github.com/8bit-warrior/Miniray/internal/web/service/panel"
-	"github.com/8bit-warrior/Miniray/internal/web/service/tgbot"
 	"github.com/8bit-warrior/Miniray/internal/web/session"
 )
 
@@ -22,7 +21,6 @@ type APIController struct {
 	xraySettingController *XraySettingController
 	userService           panel.UserService
 	apiTokenService       panel.ApiTokenService
-	Tgbot                 tgbot.Tgbot
 }
 
 // NewAPIController creates a new APIController instance and initializes its routes.
@@ -145,11 +143,5 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	// Subscription balancers — client-side balancers for the JSON sub output
 	NewSubBalancerController(api)
 
-	// Extra routes
-	api.POST("/backuptotgbot", a.BackuptoTgbot)
 }
 
-// BackuptoTgbot sends a backup of the panel data to Telegram bot admins.
-func (a *APIController) BackuptoTgbot(c *gin.Context) {
-	a.Tgbot.SendBackupToAdmins()
-}

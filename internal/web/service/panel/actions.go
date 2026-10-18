@@ -135,3 +135,25 @@ func (s *PanelService) StartUpdateBuild(runID string) (int64, error) {
 	}
 	return 0, fmt.Errorf("Actions build is unavailable or has not passed all checks")
 }
+
+func isDevelopmentBuildNewer(builds []ActionBuild, currentCommit string) (bool, error) {
+	if len(builds) == 0 || !isCommitSHA(currentCommit) {
+		return false, nil
+	}
+	latestCommit := builds[0].Commit
+	if commitsEqual(latestCommit, currentCommit) {
+		return false, nil
+	}
+	for _, build := range builds[1:] {
+		if commitsEqual(build.Commit, currentCommit) {
+			return true, nil
+		}
+	}
+	var comparison struct {
+		Status string `json:"status"`
+	}
+	if err := actionsJSON("/compare/"+currentCommit+"..."+latestCommit, &comparison); err != nil {
+		return false, err
+	}
+	return comparison.Status == "ahead", nil
+}

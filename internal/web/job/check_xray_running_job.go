@@ -3,13 +3,9 @@
 package job
 
 import (
-	"github.com/8bit-warrior/Miniray/internal/eventbus"
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 )
-
-// EventBus is set from web layer to publish events.
-var EventBus *eventbus.Bus
 
 // CheckXrayRunningJob monitors Xray process health and restarts it if it crashes.
 type CheckXrayRunningJob struct {

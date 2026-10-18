@@ -28,15 +28,6 @@ export class AllSetting {
   subTrafficDepletedTemplate =
     '🚫 {{EMAIL}} | Traffic Depleted | {{TRAFFIC_USED}}/{{TRAFFIC_TOTAL}}';
   datepicker: 'gregorian' | 'jalalian' = 'gregorian';
-  tgBotEnable = false;
-  tgBotToken = '';
-  tgBotAPIServer = '';
-  tgBotChatId = '';
-  tgRunTime = '@daily';
-  tgBotBackup = false;
-  tgCpu = 80;
-  tgMemory = 80;
-  tgLang = 'en-US';
   twoFactorEnable = false;
   twoFactorToken = '';
   xrayTemplateConfig = '';
@@ -162,42 +153,12 @@ export class AllSetting {
   ldapDefaultTotalGB = 0;
   ldapDefaultExpiryDays = 0;
   ldapDefaultLimitIP = 0;
-  tgEnabledEvents = 'login.attempt,cpu.high';
-  smtpEnable = false;
-  smtpHost = '';
-  smtpPort = 587;
-  smtpUsername = '';
-  smtpPassword = '';
-  smtpFrom = '';
-  smtpFromName = '';
-  smtpTo = '';
-  smtpEncryptionType = 'starttls';
-  smtpEnabledEvents = 'login.attempt,cpu.high';
-  smtpCpu = 80;
-  smtpMemory = 80;
-  outboundDownThreshold = 3;
-  hasTgBotToken = false;
   hasTwoFactorToken = false;
   hasLdapPassword = false;
   hasApiToken = false;
   hasWarpSecret = false;
   hasNordSecret = false;
-  hasSmtpPassword = false;
-  clearTgBotToken = false;
   clearLdapPassword = false;
-  clearSmtpPassword = false;
-  discordBotEnable = false;
-  discordBotToken = '';
-  discordChannelId = '';
-  discordAdminIds = '';
-  discordRunTime = '@daily';
-  discordBotBackup = false;
-  discordCpu = 80;
-  discordMemory = 80;
-  discordLang = 'en-US';
-  discordEnabledEvents = 'login.attempt,cpu.high';
-  hasDiscordBotToken = false;
-  clearDiscordBotToken = false;
 
   constructor(data?: unknown) {
     if (data != null) {
@@ -212,12 +173,7 @@ export class AllSetting {
     ) {
       this.subProfileMode = 'custom';
     }
-    const cpu = Math.round(Number(this.tgCpu));
-    this.tgCpu = Number.isFinite(cpu) ? Math.min(100, Math.max(0, cpu)) : 80;
-    const threshold = Math.round(Number(this.outboundDownThreshold));
-    this.outboundDownThreshold = Number.isFinite(threshold)
-      ? Math.min(100, Math.max(1, threshold))
-      : 3;
+
   }
 
   equals(other: AllSetting): boolean {

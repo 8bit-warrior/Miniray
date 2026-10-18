@@ -35,7 +35,6 @@ export default function InboundInfoModal({
   expireDiff = 0,
   trafficDiff = 0,
   ipLimitEnable = false,
-  tgBotEnable = false,
   subSettings,
   lastOnlineMap = {},
 }: InboundInfoModalProps) {
@@ -87,7 +86,7 @@ export default function InboundInfoModal({
         setClientIpsText(arr.join(' | '));
       } else {
         setClientIpsArray([]);
-        setClientIpsText(String(ips || t('tgbot.noIpRecord')));
+        setClientIpsText(String(ips || t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' })));
       }
     } finally {
       setRefreshing(false);
@@ -98,7 +97,7 @@ export default function InboundInfoModal({
     const msg = await HttpUtil.post(`/panel/api/clients/clearIps/${clientStats.email}`);
     if (msg?.success) {
       setClientIpsArray([]);
-      setClientIpsText(t('tgbot.noIpRecord'));
+      setClientIpsText(t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' }));
     }
   }, [clientStats, t]);
   // The panel's contents are a pure function of the props, so they are adopted
@@ -222,7 +221,7 @@ export default function InboundInfoModal({
           setClientIpsArray(arr);
           setClientIpsText(arr.join(' | '));
         } else {
-          setClientIpsText(String(ips || t('tgbot.noIpRecord')));
+          setClientIpsText(String(ips || t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' })));
         }
       });
     }
@@ -417,7 +416,7 @@ export default function InboundInfoModal({
                       ))}
                     </div>
                   ) : (
-                    <Tag>{clientIpsText || t('tgbot.noIpRecord')}</Tag>
+                    <Tag>{clientIpsText || t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' })}</Tag>
                   )}
                 </div>
                 <div className="ip-log-actions">
@@ -493,23 +492,6 @@ export default function InboundInfoModal({
           </tr>
         </tbody>
       </table>
-
-      {tgBotEnable && clientSettings?.tgId && (
-        <>
-          <Divider>Telegram</Divider>
-          <div className="tg-row">
-            <Tag color="blue">{clientSettings.tgId}</Tag>
-            <Tooltip title={t('copy')}>
-              <Button
-                size="small"
-                icon={<CopyOutlined />}
-                aria-label={t('copy')}
-                onClick={() => copyText(clientSettings.tgId, t)}
-              />
-            </Tooltip>
-          </div>
-        </>
-      )}
 
       {hasShareLink(dbInbound.protocol) && links.length > 0 && (
         <>

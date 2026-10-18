@@ -7,7 +7,6 @@ export interface ClientFilters {
   usageFromGB?: number;
   usageToGB?: number;
   autoRenew: '' | 'on' | 'off';
-  hasTgId: '' | 'yes' | 'no';
   hasComment: '' | 'yes' | 'no';
 }
 export function emptyFilters(): ClientFilters {
@@ -16,7 +15,6 @@ export function emptyFilters(): ClientFilters {
     protocols: [],
     inboundIds: [],
     autoRenew: '',
-    hasTgId: '',
     hasComment: '',
   };
 }
@@ -28,7 +26,6 @@ export function activeFilterCount(f: ClientFilters): number {
   if (f.expiryFrom || f.expiryTo) n++;
   if (f.usageFromGB || f.usageToGB) n++;
   if (f.autoRenew) n++;
-  if (f.hasTgId) n++;
   if (f.hasComment) n++;
   return n;
 }

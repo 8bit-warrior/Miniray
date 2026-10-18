@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"math"
 	"net"
-	"net/mail"
 	"net/netip"
 	"strings"
 	"time"
@@ -46,43 +45,6 @@ type AllSetting struct {
 	SubTrafficDepletedTemplate string `json:"subTrafficDepletedTemplate" form:"subTrafficDepletedTemplate"`
 	Datepicker                 string `json:"datepicker" form:"datepicker"`
 
-	TgBotEnable     bool   `json:"tgBotEnable" form:"tgBotEnable"`
-	TgBotToken      string `json:"tgBotToken" form:"tgBotToken"`
-	TgBotProxy      string `json:"tgBotProxy" form:"tgBotProxy"`
-	TgBotAPIServer  string `json:"tgBotAPIServer" form:"tgBotAPIServer"`
-	TgBotChatId     string `json:"tgBotChatId" form:"tgBotChatId"`
-	TgRunTime       string `json:"tgRunTime" form:"tgRunTime"`
-	TgBotBackup     bool   `json:"tgBotBackup" form:"tgBotBackup"`
-	TgCpu           int    `json:"tgCpu" form:"tgCpu" validate:"gte=0,lte=100"`
-	TgMemory        int    `json:"tgMemory" form:"tgMemory" validate:"gte=0,lte=100"`
-	TgLang          string `json:"tgLang" form:"tgLang"`
-	TgEnabledEvents string `json:"tgEnabledEvents" form:"tgEnabledEvents"`
-
-	SmtpEnable         bool   `json:"smtpEnable" form:"smtpEnable"`
-	SmtpHost           string `json:"smtpHost" form:"smtpHost"`
-	SmtpPort           int    `json:"smtpPort" form:"smtpPort" validate:"gte=1,lte=65535"`
-	SmtpUsername       string `json:"smtpUsername" form:"smtpUsername"`
-	SmtpPassword       string `json:"smtpPassword" form:"smtpPassword"`
-	SmtpFrom           string `json:"smtpFrom" form:"smtpFrom"`
-	SmtpFromName       string `json:"smtpFromName" form:"smtpFromName"`
-	SmtpTo             string `json:"smtpTo" form:"smtpTo"`
-	SmtpEncryptionType string `json:"smtpEncryptionType" form:"smtpEncryptionType"`
-	SmtpEnabledEvents  string `json:"smtpEnabledEvents" form:"smtpEnabledEvents"`
-	SmtpCpu            int    `json:"smtpCpu" form:"smtpCpu" validate:"gte=0,lte=100"`
-	SmtpMemory         int    `json:"smtpMemory" form:"smtpMemory" validate:"gte=0,lte=100"`
-
-	DiscordBotEnable     bool   `json:"discordBotEnable" form:"discordBotEnable"`
-	DiscordBotToken      string `json:"discordBotToken" form:"discordBotToken"`
-	DiscordChannelId     string `json:"discordChannelId" form:"discordChannelId"`
-	DiscordAdminIds      string `json:"discordAdminIds" form:"discordAdminIds"`
-	DiscordRunTime       string `json:"discordRunTime" form:"discordRunTime"`
-	DiscordBotBackup     bool   `json:"discordBotBackup" form:"discordBotBackup"`
-	DiscordCpu           int    `json:"discordCpu" form:"discordCpu" validate:"gte=0,lte=100"`
-	DiscordMemory        int    `json:"discordMemory" form:"discordMemory" validate:"gte=0,lte=100"`
-	DiscordLang          string `json:"discordLang" form:"discordLang"`
-	DiscordEnabledEvents string `json:"discordEnabledEvents" form:"discordEnabledEvents"`
-
-	OutboundDownThreshold int `json:"outboundDownThreshold" form:"outboundDownThreshold" validate:"gte=1,lte=100"`
 
 	TimeLocation    string `json:"timeLocation" form:"timeLocation"`
 	TwoFactorEnable bool   `json:"twoFactorEnable" form:"twoFactorEnable"`
@@ -219,14 +181,11 @@ type AllSetting struct {
 type AllSettingView struct {
 	AllSetting
 
-	HasTgBotToken      bool `json:"hasTgBotToken"`
 	HasTwoFactorToken  bool `json:"hasTwoFactorToken"`
 	HasLdapPassword    bool `json:"hasLdapPassword"`
 	HasApiToken        bool `json:"hasApiToken"`
 	HasWarpSecret      bool `json:"hasWarpSecret"`
 	HasNordSecret      bool `json:"hasNordSecret"`
-	HasSmtpPassword    bool `json:"hasSmtpPassword"`
-	HasDiscordBotToken bool `json:"hasDiscordBotToken"`
 }
 
 func pathHasForbiddenChar(s string) bool {
@@ -372,12 +331,6 @@ func (s *AllSetting) CheckValid() error {
 	_, err := time.LoadLocation(s.TimeLocation)
 	if err != nil {
 		return common.NewError("time location not exist:", s.TimeLocation)
-	}
-
-	if s.SmtpFrom != "" {
-		if _, err := mail.ParseAddress(s.SmtpFrom); err != nil {
-			return common.NewError("SMTP from address is not valid:", s.SmtpFrom)
-		}
 	}
 
 	return nil

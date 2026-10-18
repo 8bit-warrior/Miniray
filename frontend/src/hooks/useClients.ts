@@ -68,7 +68,6 @@ export interface ClientQueryParams {
   usageFrom?: number;
   usageTo?: number;
   autoRenew?: 'on' | 'off' | '';
-  hasTgId?: 'yes' | 'no' | '';
   hasComment?: 'yes' | 'no' | '';
 }
 const DEFAULT_QUERY: ClientQueryParams = { page: 1, pageSize: 25 };
@@ -119,7 +118,6 @@ function buildQS(p: ClientQueryParams): string {
   if (p.usageFrom && p.usageFrom > 0) sp.set('usageFrom', String(p.usageFrom));
   if (p.usageTo && p.usageTo > 0) sp.set('usageTo', String(p.usageTo));
   if (p.autoRenew) sp.set('autoRenew', p.autoRenew);
-  if (p.hasTgId) sp.set('hasTgId', p.hasTgId);
   if (p.hasComment) sp.set('hasComment', p.hasComment);
   return sp.toString();
 }
@@ -182,7 +180,6 @@ export function useClients(options: UseClientsOptions = {}) {
         (prev.usageFrom ?? 0) === (next.usageFrom ?? 0) &&
         (prev.usageTo ?? 0) === (next.usageTo ?? 0) &&
         (prev.autoRenew ?? '') === (next.autoRenew ?? '') &&
-        (prev.hasTgId ?? '') === (next.hasTgId ?? '') &&
         (prev.hasComment ?? '') === (next.hasComment ?? '')
       )
         return prev;
@@ -262,7 +259,6 @@ export function useClients(options: UseClientsOptions = {}) {
     ],
   );
   const ipLimitEnable = !!defaults.ipLimitEnable;
-  const tgBotEnable = !!defaults.tgBotEnable;
   const expireDiff = ((defaults.expireDiff as number) ?? 0) * 86400000;
   const trafficDiff = ((defaults.trafficDiff as number) ?? 0) * 1073741824;
   const pageSize = (defaults.pageSize as number) ?? 0;
@@ -613,7 +609,6 @@ export function useClients(options: UseClientsOptions = {}) {
         expiryTime: base.expiryTime || 0,
         limitIp: base.limitIp || 0,
         limitHwid: base.limitHwid || 0,
-        tgId: Number(base.tgId) || 0,
         reset: Number(base.reset) || 0,
         resetDay: Number(base.resetDay) || 0,
         resetWeekday: Number(base.resetWeekday) || 0,
@@ -727,7 +722,6 @@ export function useClients(options: UseClientsOptions = {}) {
     fetchError,
     subSettings,
     ipLimitEnable,
-    tgBotEnable,
     expireDiff,
     trafficDiff,
     pageSize,

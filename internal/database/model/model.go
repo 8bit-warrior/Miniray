@@ -774,7 +774,6 @@ type Client struct {
 	TotalGB             int64            `json:"totalGB" form:"totalGB"`       // Total traffic limit in GB
 	ExpiryTime          int64            `json:"expiryTime" form:"expiryTime"` // Expiration timestamp
 	Enable              bool             `json:"enable" form:"enable"`         // Whether the client is enabled
-	TgID                int64            `json:"tgId" form:"tgId"`             // Telegram user ID for notifications
 	SubID               string           `json:"subId" form:"subId"`           // Subscription identifier
 
 	Comment      string `json:"comment" form:"comment"`           // Client comment
@@ -812,7 +811,6 @@ type ClientRecord struct {
 	TotalGB        int64  `json:"totalGB" gorm:"column:total_gb"`
 	ExpiryTime     int64  `json:"expiryTime" gorm:"column:expiry_time"`
 	Enable         bool   `json:"enable" gorm:"default:true"`
-	TgID           int64  `json:"tgId" gorm:"column:tg_id;index:idx_clients_tg_id"`
 
 	Comment         string `json:"comment"`
 	Reset           int    `json:"reset" gorm:"default:0"`
@@ -959,7 +957,6 @@ func (c *Client) ToRecord() *ClientRecord {
 		TotalGB:         c.TotalGB,
 		ExpiryTime:      c.ExpiryTime,
 		Enable:          c.Enable,
-		TgID:            c.TgID,
 		Comment:         c.Comment,
 		Reset:           c.Reset,
 		ResetDay:        c.ResetDay,
@@ -1017,7 +1014,6 @@ func (r *ClientRecord) ToClient() *Client {
 		TotalGB:         r.TotalGB,
 		ExpiryTime:      r.ExpiryTime,
 		Enable:          r.Enable,
-		TgID:            r.TgID,
 		Comment:         r.Comment,
 		Reset:           r.Reset,
 		ResetDay:        r.ResetDay,
@@ -1179,12 +1175,6 @@ func MergeClientRecord(existing *ClientRecord, incoming *ClientRecord) []ClientM
 		if picked != existing.LimitHwid {
 			keep("limitHwid", existing.LimitHwid, incoming.LimitHwid, picked)
 			existing.LimitHwid = picked
-		}
-	}
-	if existing.TgID != incoming.TgID && incoming.TgID != 0 {
-		if incomingNewer || existing.TgID == 0 {
-			keep("tgId", existing.TgID, incoming.TgID, incoming.TgID)
-			existing.TgID = incoming.TgID
 		}
 	}
 	if existing.ResetWeekday != 0 || incoming.ResetWeekday != 0 {

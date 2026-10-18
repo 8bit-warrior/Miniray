@@ -27,7 +27,6 @@ interface OverviewActionBarProps {
   updateAvailable: boolean;
   onStopXray: () => void;
   onRestartXray: () => void;
-  onPanelOffline: () => void;
   onOpenLogs: () => void;
   onOpenXrayLogs: () => void;
   onOpenAmneziaWGLogs: () => void;
@@ -62,7 +61,6 @@ export default function OverviewActionBar({
   updateAvailable,
   onStopXray,
   onRestartXray,
-  onPanelOffline,
   onOpenLogs,
   onOpenXrayLogs,
   onOpenAmneziaWGLogs,
@@ -80,12 +78,6 @@ export default function OverviewActionBar({
 
   const actionGroups: BarAction[][] = [
     [
-      {
-        key: 'panel-offline',
-        icon: <PoweroffOutlined />,
-        text: '面板离线',
-        onClick: onPanelOffline,
-      },
       {
         key: 'restart',
         icon: <ReloadOutlined />,
@@ -205,7 +197,6 @@ export default function OverviewActionBar({
             {group.map((action) => (
               <Button
                 key={action.key}
-                className={action.key === 'panel-offline' ? 'miniray-offline-button' : undefined}
                 type={action.primary ? undefined : 'text'}
                 color={action.primary ? 'primary' : undefined}
                 variant={action.primary ? 'outlined' : undefined}

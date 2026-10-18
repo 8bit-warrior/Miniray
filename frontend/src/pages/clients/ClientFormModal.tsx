@@ -104,7 +104,6 @@ interface ClientFormModalProps {
   attachedExternalLinks?: ExternalLink[];
   attachedIds?: number[];
   tunnelAllowedIPs?: Record<number, string>;
-  tgBotEnable?: boolean;
   save: (
     payload: Record<string, unknown> | SaveCreatePayload,
     meta: SaveMetaEdit | SaveMetaCreate,
@@ -147,7 +146,6 @@ const EMPTY: Values = {
   trafficResetDay: 1,
   limitIp: 0,
   limitHwid: 0,
-  tgId: 0,
   comment: '',
   enable: true,
   inboundIds: [],
@@ -225,7 +223,6 @@ export default function ClientFormModal({
   attachedExternalLinks = [],
   attachedIds = [],
   tunnelAllowedIPs = {},
-  tgBotEnable = false,
   save,
   resetTraffic,
   onOpenChange,
@@ -344,7 +341,6 @@ export default function ClientFormModal({
         trafficResetDay: Number(client.trafficResetDay) || 1,
         limitIp: client.limitIp || 0,
         limitHwid: client.limitHwid || 0,
-        tgId: Number(client.tgId) || 0,
         comment: client.comment || '',
         enable: !!client.enable,
         inboundIds: Array.isArray(attachedIds) ? [...attachedIds] : [],
@@ -597,7 +593,6 @@ export default function ClientFormModal({
       trafficResetDay: values.trafficResetDay,
       limitIp: values.limitIp,
       limitHwid: values.limitHwid,
-      tgId: values.tgId,
       comment: values.comment,
       enable: values.enable,
       inboundIds: values.inboundIds,
@@ -630,7 +625,6 @@ export default function ClientFormModal({
       trafficResetDay: Number(values.trafficResetDay) || 1,
       limitIp: Number(values.limitIp) || 0,
       limitHwid: Number(values.limitHwid) || 0,
-      tgId: Number(values.tgId) || 0,
       comment: values.comment,
       enable: !!values.enable,
     };
@@ -951,31 +945,13 @@ export default function ClientFormModal({
                         <Col xs={24} md={12}></Col>
                       </Row>
 
-                      {(tgBotEnable || showReverseTag) && (
+                      {showReverseTag && (
                         <Row gutter={16}>
-                          {tgBotEnable && (
-                            <Col xs={24} md={12}>
-                              <FormField
-                                name="tgId"
-                                label={t('pages.clients.telegramId')}
-                                transform={{ output: (v) => Number(v) || 0 }}
-                              >
-                                <InputNumber
-                                  min={0}
-                                  controls={false}
-                                  placeholder={t('pages.clients.telegramIdPlaceholder')}
-                                  style={{ width: '100%' }}
-                                />
-                              </FormField>
-                            </Col>
-                          )}
-                          {showReverseTag && (
-                            <Col xs={24} md={12}>
-                              <FormField name="reverseTag" label={t('pages.clients.reverseTag')}>
-                                <Input placeholder={t('pages.clients.reverseTagPlaceholder')} />
-                              </FormField>
-                            </Col>
-                          )}
+                          <Col xs={24} md={12}>
+                            <FormField name="reverseTag" label={t('pages.clients.reverseTag')}>
+                              <Input placeholder={t('pages.clients.reverseTagPlaceholder')} />
+                            </FormField>
+                          </Col>
                         </Row>
                       )}
 
@@ -1470,7 +1446,7 @@ export default function ClientFormModal({
             ))}
           </div>
         ) : (
-          <Tag>{t('tgbot.noIpRecord')}</Tag>
+          <Tag>{t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' })}</Tag>
         )}
       </Modal>
 

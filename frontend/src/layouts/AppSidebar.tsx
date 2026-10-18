@@ -12,14 +12,11 @@ import {
   CodeOutlined,
   DashboardOutlined,
   DatabaseOutlined,
-  DiscordOutlined,
   ExportOutlined,
   GithubOutlined,
   ImportOutlined,
   LogoutOutlined,
-  MailOutlined,
   MenuOutlined,
-  MessageOutlined,
   MoonFilled,
   MoonOutlined,
   ReadOutlined,
@@ -178,17 +175,6 @@ export default function AppSidebar() {
         label: t('pages.settings.securitySettings'),
       },
       {
-        key: '/settings#telegram',
-        icon: <MessageOutlined />,
-        label: t('pages.settings.TGBotSettings'),
-      },
-      { key: '/settings#email', icon: <MailOutlined />, label: t('pages.settings.emailSettings') },
-      {
-        key: '/settings#discord',
-        icon: <DiscordOutlined />,
-        label: t('pages.settings.discordSettings'),
-      },
-      {
         key: '/settings#subscription',
         icon: <CloudServerOutlined />,
         label: t('pages.settings.subSettings'),
@@ -231,21 +217,25 @@ export default function AppSidebar() {
         ? '/'
         : pathname;
 
-  const openSubmenu = settingsActive ? '/settings' : xrayActive ? '/xray' : null;
-  const [openKeys, setOpenKeys] = useState<string[]>(() => (openSubmenu ? [openSubmenu] : []));
-  if (openSubmenu && !openKeys.includes(openSubmenu)) {
-    setOpenKeys([...openKeys, openSubmenu]);
-  }
-
   const toMenuItems = useCallback(
     (items: typeof tabs): MenuProps['items'] =>
       items.map((tab) => {
         const Icon = iconByName[tab.icon];
         if (tab.key === '/settings') {
-          return { key: tab.key, icon: <Icon />, label: tab.title, children: settingsChildren };
+          return {
+            type: 'group' as const,
+            key: tab.key,
+            label: <span className="sidebar-section-label"><Icon />{tab.title}</span>,
+            children: settingsChildren,
+          };
         }
         if (tab.key === '/xray') {
-          return { key: tab.key, icon: <Icon />, label: tab.title, children: xrayChildren };
+          return {
+            type: 'group' as const,
+            key: tab.key,
+            label: <span className="sidebar-section-label"><Icon />{tab.title}</span>,
+            children: xrayChildren,
+          };
         }
         return { key: tab.key, icon: <Icon />, label: tab.title, title: '' };
       }),
@@ -297,7 +287,7 @@ export default function AppSidebar() {
       >
         <div className="sider-brand">
           <div className="brand-block brand-identity">
-            <span className="brand-text">miniray</span>
+            <span className="brand-text">Miniray</span>
             <VersionBadge version={panelVersion} />
           </div>
           {!railCollapsed && (
@@ -341,8 +331,6 @@ export default function AppSidebar() {
           theme={currentTheme}
           mode="inline"
           selectedKeys={[selectedKey]}
-          openKeys={railCollapsed ? undefined : openKeys}
-          onOpenChange={(keys) => setOpenKeys(keys as string[])}
           className="sider-nav"
           items={toMenuItems(navItems)}
           onClick={onMenuClick}
@@ -372,7 +360,7 @@ export default function AppSidebar() {
       >
         <div className="drawer-header">
           <div className="brand-block brand-identity">
-            <span className="drawer-brand">miniray</span>
+            <span className="drawer-brand">Miniray</span>
             <VersionBadge version={panelVersion} />
           </div>
           <div className="drawer-header-actions">
@@ -417,8 +405,6 @@ export default function AppSidebar() {
           theme={currentTheme}
           mode="inline"
           selectedKeys={[selectedKey]}
-          openKeys={openKeys}
-          onOpenChange={(keys) => setOpenKeys(keys as string[])}
           className="drawer-menu drawer-nav"
           items={toMenuItems(navItems)}
           onClick={(info) => {

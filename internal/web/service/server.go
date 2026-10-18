@@ -1543,24 +1543,14 @@ func (s *ServerService) backupSQLite() (string, func(), error) {
 	return backupPath, cleanup, nil
 }
 
-// BackupFilename returns the filename for a database backup, named after the
-// panel's address so a downloaded or Telegram-sent backup identifies the server
-// it came from, followed by the current date and time (_YYYY-MM-DD_HHMMSS) so
-// files accumulated in Telegram chat history group by server then sort
-// chronologically and same-day backups stay distinct. requestHost is the
-// browser's address: the getDb handler passes c.Request.Host so a panel download
-// is named after whatever address the user reached the panel with, no Listen
-// Domain needed. The Telegram bot has no request and passes "", falling back to
-// the configured Listen Domain (webDomain) and then the public IP. The extension
-// is .dump on PostgreSQL and .db on SQLite; the base falls back to "miniray" when
-// no address is known.
+// BackupFilename returns a database backup name based on the panel's address
+// and a local timestamp (_YYYY-MM-DD_HHMMSS). When a request host is unavailable,
+// it uses the configured domain or public IP; the fallback is "miniray".
 func (s *ServerService) BackupFilename(requestHost string) string {
 	return s.backupHost(requestHost) + backupDateSuffix(time.Now()) + ".db"
 }
 
-// backupDateSuffix returns the _YYYY-MM-DD_HHMMSS chronological suffix appended
-// after the host in backup filenames. Uses server-local time for consistency
-// with the timestamp printed in the Telegram backup message body.
+// backupDateSuffix appends the local timestamp after the host.
 func backupDateSuffix(now time.Time) string {
 	return "_" + now.Format("2006-01-02_150405")
 }
@@ -1569,9 +1559,7 @@ func backupDateSuffix(now time.Time) string {
 // host (port stripped) when available, otherwise the configured Listen Domain
 // (webDomain) and then the resolved public IP (IPv4 before IPv6), reduced to safe
 // filename characters. The public IP is resolved directly rather than read from
-// LastStatus so callers whose ServerService never runs the status ticker —
-// notably the Telegram bot — still get a real address instead of the "miniray"
-// fallback.
+// LastStatus so callers without a status ticker still get a real address.
 func (s *ServerService) backupHost(requestHost string) string {
 	host := extractHostname(strings.TrimSpace(requestHost))
 	if host == "" {

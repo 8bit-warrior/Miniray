@@ -115,15 +115,6 @@ func (s *ClientService) GetRecordsBySubID(subId string) ([]*model.ClientRecord, 
 	return rows, err
 }
 
-func (s *ClientService) GetRecordsByTgID(tgId int64) ([]*model.ClientRecord, error) {
-	if tgId <= 0 {
-		return nil, errors.New("tg_id must be a positive integer")
-	}
-	var rows []*model.ClientRecord
-	err := database.GetDB().Where("tg_id = ?", tgId).Find(&rows).Error
-	return rows, err
-}
-
 func (s *ClientService) GetByID(id int) (*model.ClientRecord, error) {
 	row := &model.ClientRecord{}
 	if err := database.GetDB().Where("id = ?", id).First(row).Error; err != nil {

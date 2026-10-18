@@ -2,14 +2,12 @@ package controller
 
 import (
 	"net/http"
-	"text/template"
 	"time"
 
 	"github.com/8bit-warrior/Miniray/internal/logger"
 	"github.com/8bit-warrior/Miniray/internal/web/middleware"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 	"github.com/8bit-warrior/Miniray/internal/web/service/panel"
-	"github.com/8bit-warrior/Miniray/internal/web/service/tgbot"
 	"github.com/8bit-warrior/Miniray/internal/web/session"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +26,6 @@ type IndexController struct {
 
 	settingService service.SettingService
 	userService    panel.UserService
-	tgbot          tgbot.Tgbot
 }
 
 // NewIndexController creates a new IndexController and initializes its routes.
@@ -76,18 +73,9 @@ func (a *IndexController) login(c *gin.Context) {
 	}
 
 	remoteIP := getRemoteIp(c)
-	safeUser := template.HTMLEscapeString(form.Username)
-	timeStr := time.Now().Format("2006-01-02 15:04:05")
 	if blockedUntil, ok := defaultLoginLimiter.allow(remoteIP, form.Username); !ok {
 		reason := "too many failed attempts"
 		logger.Warningf("failed login: username=%q, IP=%q, reason=%q, blocked_until=%s", form.Username, remoteIP, reason, blockedUntil.Format(time.RFC3339))
-		a.tgbot.UserLoginNotify(tgbot.LoginAttempt{
-			Username: safeUser,
-			IP:       remoteIP,
-			Time:     timeStr,
-			Status:   tgbot.LoginFail,
-			Reason:   reason,
-		})
 		pureJsonMsg(c, http.StatusOK, false, I18nWeb(c, "pages.login.toasts.wrongUsernameOrPassword"))
 		return
 	}
@@ -101,25 +89,12 @@ func (a *IndexController) login(c *gin.Context) {
 		} else {
 			logger.Warningf("failed login: username=%q, IP=%q, reason=%q", form.Username, remoteIP, reason)
 		}
-		a.tgbot.UserLoginNotify(tgbot.LoginAttempt{
-			Username: safeUser,
-			IP:       remoteIP,
-			Time:     timeStr,
-			Status:   tgbot.LoginFail,
-			Reason:   reason,
-		})
 		pureJsonMsg(c, http.StatusOK, false, I18nWeb(c, "pages.login.toasts.wrongUsernameOrPassword"))
 		return
 	}
 
 	defaultLoginLimiter.registerSuccess(remoteIP, form.Username)
 	logger.Infof("logged in successfully: username=%q, IP=%q", form.Username, remoteIP)
-	a.tgbot.UserLoginNotify(tgbot.LoginAttempt{
-		Username: safeUser,
-		IP:       remoteIP,
-		Time:     timeStr,
-		Status:   tgbot.LoginSuccess,
-	})
 
 	if err := session.SetLoginUser(c, user); err != nil {
 		logger.Warning("Unable to save session:", err)

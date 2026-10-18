@@ -28,9 +28,7 @@ import (
 // It handles panel restart, updates, and system-level panel controls.
 type PanelService struct{}
 
-// PanelUpdateInfo contains the current and latest available panel versions.
-// On the dev channel the version fields carry a "dev+<sha>" label and the commit
-// fields hold the short SHAs that drive the update-available decision.
+// PanelUpdateInfo describes the installed channel and its own latest available update.
 type PanelUpdateInfo struct {
 	Channel         string `json:"channel"`
 	CurrentVersion  string `json:"currentVersion"`
@@ -126,31 +124,57 @@ func (s *PanelService) RestartPanel(delay time.Duration) error {
 	return nil
 }
 
-// GetUpdateInfo reports the latest stable release. Actions builds are selected
-// explicitly, so the installed update-channel setting never changes the target.
+// GetUpdateInfo checks only the channel to which the installed build belongs.
 func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
+	currentVersion := config.GetPanelVersion()
+	currentCommit := config.GetBuildCommit()
+	if config.IsDevBuild() {
+		builds, err := s.ListActionBuilds()
+		if err != nil {
+			return nil, err
+		}
+		info := &PanelUpdateInfo{
+			Channel:        "development",
+			CurrentVersion: currentVersion,
+			CurrentCommit:  shortCommit(currentCommit),
+		}
+		if len(builds) == 0 {
+			return info, nil
+		}
+		info.LatestVersion = builds[0].Version
+		info.LatestCommit = builds[0].Commit
+		info.UpdateAvailable, err = isDevelopmentBuildNewer(builds, currentCommit)
+		return info, err
+	}
+
 	latest, err := fetchLatestPanelVersion()
 	if err != nil {
 		return nil, err
 	}
-	current := config.GetBaseVersion()
 	return &PanelUpdateInfo{
 		Channel:         "stable",
-		CurrentVersion:  config.GetPanelVersion(),
+		CurrentVersion:  currentVersion,
 		LatestVersion:   latest,
-		CurrentCommit:   shortCommit(config.GetBuildCommit()),
-		UpdateAvailable: config.IsDevBuild() || isNewerVersion(latest, current),
+		UpdateAvailable: isNewerVersion(latest, config.GetBaseVersion()),
 	}, nil
 }
 
-// StartUpdate starts an update to the latest stable release.
+// StartUpdate automatically follows the installed channel.
 func (s *PanelService) StartUpdate() (int64, error) {
+	if config.IsDevBuild() {
+		builds, err := s.ListActionBuilds()
+		if err != nil {
+			return 0, err
+		}
+		if len(builds) == 0 {
+			return 0, fmt.Errorf("no installable development test build is available")
+		}
+		return s.startUpdate(false, builds[0].RunID)
+	}
 	return s.startUpdate(false, "")
 }
 
-// StartUpdateChannel runs the updater against an explicitly chosen channel,
-// overriding the local dev-channel setting. Used by the master node updater so
-// a node can be moved to the dev channel from the central panel.
+// StartUpdateChannel runs the updater against an explicitly chosen channel.
 func (s *PanelService) StartUpdateChannel(dev bool) (int64, error) {
 	return s.startUpdate(dev, "")
 }

@@ -1161,7 +1161,10 @@ func runSeeders(isUsersEmpty bool) error {
 
 	// Idempotent, not seeder-gated: bad values can re-enter via a restored
 	// backup, so re-check on every start.
-	return normalizeSettingPaths()
+	if err := normalizeSettingPaths(); err != nil {
+		return err
+	}
+	return db.Where("key LIKE ? OR key LIKE ? OR key LIKE ? OR key LIKE ? OR key LIKE ? OR key LIKE ?", "tgBot%", "tgRunTime", "tgEnabledEvents", "tgCpu", "tgMemory", "tgLang").Or("key LIKE ? OR key LIKE ?", "smtp%", "discord%").Delete(&model.Setting{}).Error
 }
 
 func clearLegacyProxySettings() error {

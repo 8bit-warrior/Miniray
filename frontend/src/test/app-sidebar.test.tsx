@@ -41,3 +41,12 @@ test('shows the command palette shortcut for the active platform', async () => {
   const chip = view.container.querySelector('.sidebar-command-kbd');
   expect(chip?.textContent).toBe('CtrlK');
 });
+
+test('shows settings and Xray section headers with always-visible links', async () => {
+  const view = await renderSidebar();
+  const groups = view.container.querySelectorAll('.sider-nav .ant-menu-item-group');
+  expect(groups).toHaveLength(2);
+  expect(view.container.querySelectorAll('.sider-nav .ant-menu-submenu')).toHaveLength(0);
+  expect(view.container.querySelectorAll('.sider-nav .ant-menu-item-group-list .ant-menu-item').length).toBeGreaterThan(4);
+  expect(view.container.querySelector('.brand-text')?.textContent).toBe('Miniray');
+});

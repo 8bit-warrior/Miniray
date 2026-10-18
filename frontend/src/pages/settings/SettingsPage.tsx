@@ -25,9 +25,6 @@ import { AllSettingSchema } from '@/schemas/setting';
 import AppSidebar from '@/layouts/AppSidebar';
 import GeneralTab from './GeneralTab';
 import SecurityTab from './SecurityTab';
-import TelegramTab from './TelegramTab';
-import EmailTab from './EmailTab';
-import DiscordTab from './DiscordTab';
 import SubscriptionGeneralTab from './SubscriptionGeneralTab';
 import SubscriptionFormatsTab from './SubscriptionFormatsTab';
 import SubscriptionBalancersTab from './SubscriptionBalancersTab';
@@ -40,9 +37,6 @@ interface ApiMsg {
 const tabSlugs = [
   'general',
   'security',
-  'telegram',
-  'email',
-  'discord',
   'subscription',
   'subscription-formats',
   'subscription-balancers',
@@ -220,12 +214,6 @@ export default function SettingsPage() {
             saveSetting={savePayload}
           />
         );
-      case 'telegram':
-        return <TelegramTab allSetting={allSetting} updateSetting={updateSetting} />;
-      case 'email':
-        return <EmailTab allSetting={allSetting} updateSetting={updateSetting} />;
-      case 'discord':
-        return <DiscordTab allSetting={allSetting} updateSetting={updateSetting} />;
       case 'subscription':
         return <SubscriptionGeneralTab allSetting={allSetting} updateSetting={updateSetting} />;
       case 'subscription-formats':

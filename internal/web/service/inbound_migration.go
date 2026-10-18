@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -91,17 +89,6 @@ func (s *InboundService) MigrationRequirements() (err error) {
 					c["email"] = ""
 				}
 
-				// Convert string tgId to int64
-				if _, ok := c["tgId"]; ok {
-					tgId := c["tgId"]
-					if tgIdStr, ok2 := tgId.(string); ok2 {
-						tgIdInt64, err := strconv.ParseInt(strings.ReplaceAll(tgIdStr, " ", ""), 10, 64)
-						if err == nil {
-							c["tgId"] = tgIdInt64
-						}
-					}
-				}
-
 				// Remove "flow": "xtls-rprx-direct"
 				if _, ok := c["flow"]; ok {
 					if c["flow"] == "xtls-rprx-direct" {
@@ -157,8 +144,7 @@ func (s *InboundService) MigrationRequirements() (err error) {
 			}
 		}
 
-		// Heal clients table for installs where the one-shot seeder
-		// skipped clients due to a tgId-string unmarshal error.
+		// Synchronize client records after repairing inbound settings.
 		if err = s.clientService.SyncInbound(tx, inbounds[inbound_index].Id, modelClients); err != nil {
 			return
 		}

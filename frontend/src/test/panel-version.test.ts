@@ -26,13 +26,13 @@ describe('isPanelUpdateAvailable', () => {
     expect(isPanelUpdateAvailable('2.6.5', '')).toBe(false);
   });
 
-  it('falls back to string inequality for non-semver tags', () => {
-    expect(isPanelUpdateAvailable('nightly-2', 'nightly-1')).toBe(true);
+  it('does not infer order from non-semver tags', () => {
+    expect(isPanelUpdateAvailable('nightly-2', 'nightly-1')).toBe(false);
     expect(isPanelUpdateAvailable('nightly-1', 'nightly-1')).toBe(false);
   });
 
-  it('compares dev builds by commit and never across channels', () => {
-    expect(isPanelUpdateAvailable('dev+1a2b3c4d', 'dev+0f0f0f0f')).toBe(true);
+  it('never orders development commits by their hashes', () => {
+    expect(isPanelUpdateAvailable('dev+1a2b3c4d', 'dev+0f0f0f0f')).toBe(false);
     expect(isPanelUpdateAvailable('dev+1a2b3c4d', 'dev+1a2b3c4d')).toBe(false);
     expect(isPanelUpdateAvailable('v3.5.0', 'dev+1a2b3c4d')).toBe(false);
     expect(isPanelUpdateAvailable('dev+1a2b3c4d', '3.5.0')).toBe(false);

@@ -48,13 +48,11 @@ The README and deployment guide describe supported installation and service comm
   listeners, per-peer IPv6 egress aliases.
 - `internal/pia/` — PIA WireGuard protocol client (auth, signed server list, `/addKey`).
 - `internal/sub/` — subscription server (raw / JSON / Clash).
-- `internal/eventbus/` — in-process pub/sub (outbound health, xray.crash,
-  cpu.high, memory.high, login.attempt).
 - `internal/logger/`, `internal/util/` (link, crypto, sys, ldap, …),
   `internal/tunnelmonitor/` — shared infrastructure.
 - `internal/web/` — Gin server (embeds `dist/` + `translation/`).
   - `controller/` — panel + REST API handlers; OpenAPI at /panel/api/openapi.json.
-  - `service/` — business logic (InboundService, SettingService, XrayService); subpackages tgbot/, discord/, email/, outbound/, panel/, integration/.
+  - `service/` — business logic (InboundService, SettingService, XrayService); subpackages outbound/, panel/, integration/.
   - `job/` — local cron jobs (traffic, fail2ban IP-limit, LDAP and resource watchdogs).
   - `middleware/`, `entity/`, `global/`, `session/` (CSRF), `network/`,
     `runtime/` (local proxy mutations), `websocket/`.

@@ -279,7 +279,6 @@ export default function ClientsPage() {
     fetched,
     fetchError,
     subSettings,
-    tgBotEnable,
     expireDiff,
     trafficDiff,
     pageSize,
@@ -422,7 +421,6 @@ export default function ClientsPage() {
       usageFrom: gbToBytes(filters.usageFromGB),
       usageTo: gbToBytes(filters.usageToGB),
       autoRenew: filters.autoRenew || undefined,
-      hasTgId: filters.hasTgId || undefined,
       hasComment: filters.hasComment || undefined,
       sort: sortColumn || undefined,
       order: sortOrder || undefined,
@@ -1456,14 +1454,6 @@ export default function ClientsPage() {
                               {filters.autoRenew === 'on' ? t('enabled') : t('disabled')}
                             </Tag>
                           )}
-                          {filters.hasTgId && (
-                            <Tag closable onClose={() => clearOneFilter('hasTgId')}>
-                              {t('pages.clients.telegramId')}:{' '}
-                              {filters.hasTgId === 'yes'
-                                ? t('pages.clients.has')
-                                : t('pages.clients.hasNot')}
-                            </Tag>
-                          )}
                           {filters.hasComment && (
                             <Tag closable onClose={() => clearOneFilter('hasComment')}>
                               {t('pages.clients.comment')}:{' '}
@@ -1678,7 +1668,6 @@ export default function ClientsPage() {
             attachedExternalLinks={editingExternalLinks}
             tunnelAllowedIPs={editingTunnelAllowedIPs}
             inbounds={inbounds}
-            tgBotEnable={tgBotEnable}
             save={onSave}
             resetTraffic={resetTraffic}
             onOpenChange={setFormOpen}

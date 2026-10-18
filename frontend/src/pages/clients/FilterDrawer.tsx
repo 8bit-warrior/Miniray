@@ -165,20 +165,6 @@ export default function FilterDrawer({
           />
         </Form.Item>
 
-        <Form.Item label={t('pages.clients.telegramId')}>
-          <Radio.Group
-            value={filters.hasTgId}
-            onChange={(e) => patch('hasTgId', e.target.value)}
-            optionType="button"
-            buttonStyle="solid"
-            options={[
-              { value: '', label: t('all') },
-              { value: 'yes', label: t('pages.clients.has') },
-              { value: 'no', label: t('pages.clients.hasNot') },
-            ]}
-          />
-        </Form.Item>
-
         <Form.Item label={t('pages.clients.comment')}>
           <Radio.Group
             value={filters.hasComment}

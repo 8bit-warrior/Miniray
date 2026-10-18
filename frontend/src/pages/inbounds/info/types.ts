@@ -17,7 +17,6 @@ export interface ClientSetting {
   totalGB?: number;
   expiryTime?: number;
   comment?: string;
-  tgId?: string;
   enable?: boolean;
   limitIp?: number;
   created_at?: number;
@@ -78,7 +77,6 @@ export interface InboundInfoModalProps {
   expireDiff?: number;
   trafficDiff?: number;
   ipLimitEnable?: boolean;
-  tgBotEnable?: boolean;
   subSettings?: SubSettings;
   lastOnlineMap?: Record<string, number>;
 }

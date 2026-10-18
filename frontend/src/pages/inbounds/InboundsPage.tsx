@@ -85,7 +85,6 @@ export default function InboundsPage() {
     trafficDiff,
     pageSize,
     subSettings,
-    tgBotEnable,
     ipLimitEnable,
     refresh,
     hydrateInbound,
@@ -717,7 +716,6 @@ export default function InboundsPage() {
             expireDiff={expireDiff}
             trafficDiff={trafficDiff}
             ipLimitEnable={ipLimitEnable}
-            tgBotEnable={tgBotEnable}
             subSettings={subSettings}
             lastOnlineMap={lastOnlineMap}
           />

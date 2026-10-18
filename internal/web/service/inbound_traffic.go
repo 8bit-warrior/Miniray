@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -906,75 +905,6 @@ func (s *InboundService) DelDepletedClients(id int) (err error) {
 		}
 	}
 	return nil
-}
-
-func (s *InboundService) GetClientTrafficTgBot(tgId int64) ([]*xray.ClientTraffic, error) {
-	db := database.GetDB()
-
-	idQuery := fmt.Sprintf(
-		"SELECT DISTINCT inbounds.id %s WHERE %s = ?",
-		database.JSONClientsFromInbound(),
-		database.JSONFieldText("client.value", "tgId"),
-	)
-	var inboundIds []int
-	if err := db.Raw(idQuery, strconv.FormatInt(tgId, 10)).Scan(&inboundIds).Error; err != nil {
-		logger.Errorf("Error retrieving inbounds with tgId %d: %v", tgId, err)
-		return nil, err
-	}
-
-	var inbounds []*model.Inbound
-	if len(inboundIds) > 0 {
-		err := db.Model(model.Inbound{}).Where("id IN ?", inboundIds).Find(&inbounds).Error
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Errorf("Error retrieving inbounds with tgId %d: %v", tgId, err)
-			return nil, err
-		}
-	}
-
-	var emails []string
-	for _, inbound := range inbounds {
-		clients, err := s.GetClients(inbound)
-		if err != nil {
-			logger.Errorf("Error retrieving clients for inbound %d: %v", inbound.Id, err)
-			continue
-		}
-		for _, client := range clients {
-			if client.TgID == tgId {
-				emails = append(emails, client.Email)
-			}
-		}
-	}
-
-	// Chunked to stay under SQLite's bind-variable limit when a single Telegram
-	// account owns thousands of clients across inbounds.
-	uniqEmails := uniqueNonEmptyStrings(emails)
-	traffics := make([]*xray.ClientTraffic, 0, len(uniqEmails))
-	for _, batch := range chunkStrings(uniqEmails, sqliteMaxVars) {
-		var page []*xray.ClientTraffic
-		if err := db.Model(xray.ClientTraffic{}).Where("email IN ?", batch).Find(&page).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				continue
-			}
-			logger.Errorf("Error retrieving ClientTraffic for emails %v: %v", batch, err)
-			return nil, err
-		}
-		traffics = append(traffics, page...)
-	}
-	if len(traffics) == 0 {
-		logger.Warning("No ClientTraffic records found for emails:", emails)
-		return nil, nil
-	}
-
-	// Populate UUID and other client data for each traffic record
-	for i := range traffics {
-		if ct, client, e := s.GetClientByEmail(traffics[i].Email); e == nil && ct != nil && client != nil {
-			traffics[i].Enable = client.Enable
-			traffics[i].UUID = client.ID
-			traffics[i].SubId = client.SubID
-		}
-	}
-
-	return traffics, nil
 }
 
 // BumpClientsLastOnline sets client_traffics.last_online to now for the given

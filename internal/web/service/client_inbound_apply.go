@@ -700,7 +700,7 @@ func (s *ClientService) UpdateInboundClient(inboundSvc *InboundService, data *mo
 		}
 		// ForwardedPorts is AmneziaWG-only (WireGuard's own inbound never
 		// reads it), same carry-forward reasoning as the fields above: a
-		// partial edit (e.g. a Telegram-bot enable/expiry toggle, or an API
+		// partial edit (e.g. an enable/expiry toggle from an API
 		// call that omits the field) must not silently drop a client's
 		// existing port-forwarding spec.
 		if oldInbound.Protocol == model.AmneziaWG && clients[0].ForwardedPorts == "" {
@@ -1136,59 +1136,6 @@ func (s *ClientService) DelInboundClientByEmail(inboundSvc *InboundService, inbo
 	}
 
 	return needRestart, nil
-}
-
-func (s *ClientService) SetClientTelegramUserID(inboundSvc *InboundService, trafficId int, tgId int64) (bool, error) {
-	traffic, inbound, err := inboundSvc.GetClientInboundByTrafficID(trafficId)
-	if err != nil {
-		return false, err
-	}
-	if inbound == nil {
-		return false, common.NewError("Inbound Not Found For Traffic ID:", trafficId)
-	}
-
-	clientEmail := traffic.Email
-
-	oldClients, err := inboundSvc.GetClients(inbound)
-	if err != nil {
-		return false, err
-	}
-
-	found := false
-	for _, oldClient := range oldClients {
-		if oldClient.Email == clientEmail {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		return false, common.NewError("Client Not Found For Email:", clientEmail)
-	}
-
-	var settings map[string]any
-	err = json.Unmarshal([]byte(inbound.Settings), &settings)
-	if err != nil {
-		return false, err
-	}
-	clients := settings["clients"].([]any)
-	var newClients []any
-	for client_index := range clients {
-		c := clients[client_index].(map[string]any)
-		if c["email"] == clientEmail {
-			c["tgId"] = tgId
-			c["updated_at"] = time.Now().Unix() * 1000
-			newClients = append(newClients, any(c))
-		}
-	}
-	settings["clients"] = newClients
-	modifiedSettings, err := json.MarshalIndent(settings, "", "  ")
-	if err != nil {
-		return false, err
-	}
-	inbound.Settings = string(modifiedSettings)
-	needRestart, err := s.UpdateInboundClient(inboundSvc, inbound, clientEmail)
-	return needRestart, err
 }
 
 func (s *ClientService) CheckIsEnabledByEmail(inboundSvc *InboundService, clientEmail string) (bool, error) {

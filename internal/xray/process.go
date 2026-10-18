@@ -204,8 +204,6 @@ var (
 	xrayGracefulStopTimeout = 5 * time.Second
 	xrayForceStopTimeout    = 2 * time.Second
 	xrayVersionTimeout      = 5 * time.Second
-	// OnCrash is called when xray crashes unexpectedly. Set from web layer.
-	OnCrash func(err error)
 )
 
 // newProcess creates a new internal process struct for Xray.
@@ -587,9 +585,6 @@ func (p *process) waitForCommand(cmd *exec.Cmd, done chan struct{}) {
 
 	logger.Error("Failure in running xray-core:", err)
 	p.setExitErr(err)
-	if OnCrash != nil {
-		OnCrash(err)
-	}
 }
 
 // Stop terminates the running Xray process.
