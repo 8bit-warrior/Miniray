@@ -34,9 +34,9 @@ type PanelUpdateInfo struct {
 	CurrentVersion      string `json:"currentVersion"`
 	LatestVersion       string `json:"latestVersion"`
 	StableLatestVersion string `json:"stableLatestVersion"`
-	CurrentCommit      string `json:"currentCommit,omitempty"`
-	LatestCommit       string `json:"latestCommit,omitempty"`
-	UpdateAvailable    bool   `json:"updateAvailable"`
+	CurrentCommit       string `json:"currentCommit,omitempty"`
+	LatestCommit        string `json:"latestCommit,omitempty"`
+	UpdateAvailable     bool   `json:"updateAvailable"`
 }
 
 const (
