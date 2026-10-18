@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var legacyClientIntFields = []string{"tgId", "limitIp", "totalGB", "expiryTime", "reset", "created_at", "updated_at"}
+var legacyClientIntFields = []string{"limitIp", "totalGB", "expiryTime", "reset", "created_at", "updated_at"}
 
 // NormalizeLegacyClientFields turns the string numbers older panels stored on a
 // client object into integers; an empty or unparseable value is dropped.

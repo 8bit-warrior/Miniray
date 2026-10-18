@@ -186,7 +186,7 @@ func isSupportedLegacyInbound(p model.Protocol) bool {
 	switch p {
 	case model.VMESS, model.VLESS, model.Trojan, model.Shadowsocks,
 		model.HTTP, model.Mixed, model.WireGuard, model.Hysteria,
-		model.Tunnel, model.MTProto, model.AmneziaWG, model.TUIC:
+		model.Tunnel, model.AmneziaWG, model.TUIC:
 		return true
 	}
 	return false

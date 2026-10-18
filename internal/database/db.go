@@ -161,9 +161,6 @@ func initModels() error {
 	if err := migrateVmessRemovedSecurities(); err != nil {
 		return err
 	}
-	if err := migrateTgIDIndex(); err != nil {
-		return err
-	}
 	if err := migrateClientTrafficResetColumns(); err != nil {
 		return err
 	}
@@ -598,16 +595,7 @@ func migrateVmessRemovedSecurities() error {
 	return nil
 }
 
-// migrateTgIDIndex creates an index on the clients.tg_id column so that
-// lookups by Telegram ID do not require a full table scan. The index tag
-// on the struct field already causes AutoMigrate to create it on new
-// installations; the explicit migration ensures existing databases get it.
-func migrateTgIDIndex() error {
-	if db.Migrator().HasIndex(&model.ClientRecord{}, "idx_clients_tg_id") {
-		return nil
-	}
-	return db.Migrator().CreateIndex(&model.ClientRecord{}, "TgID")
-}
+
 
 // normalizeInboundSubSortIndex lifts legacy zero defaults to 1.
 // Explicit negatives are left alone so primary inbounds can sort first.
@@ -834,7 +822,7 @@ func runSeeders(isUsersEmpty bool) error {
 	}
 
 	if empty && isUsersEmpty {
-		seeders := []string{"UserPasswordHash", "ClientsTable", "InboundClientsArrayFix", "InboundClientTgIdFix2", "InboundClientSubIdFix", "FreedomFinalRulesReverseFix", "FreedomFinalRulesPrivateEgressBlock", "UppercaseFreedomFinalRulesFix", "InboundRealityFinalmaskTcpStrip", "ApiTokensHash", "LegacyProxySettingsCleanup", "OutboundRemovedKeysFix", "FreedomDomainStrategyFix", "DNSOutboundLegacyKeysFix", "DNSOutboundQTypeZeroFix", "WireguardDomainStrategyFix", "XdnsFinalmaskObjectsFix", "WireguardPeersToClients"}
+		seeders := []string{"UserPasswordHash", "ClientsTable", "InboundClientsArrayFix", "InboundClientSubIdFix", "FreedomFinalRulesReverseFix", "FreedomFinalRulesPrivateEgressBlock", "UppercaseFreedomFinalRulesFix", "InboundRealityFinalmaskTcpStrip", "ApiTokensHash", "LegacyProxySettingsCleanup", "OutboundRemovedKeysFix", "FreedomDomainStrategyFix", "DNSOutboundLegacyKeysFix", "DNSOutboundQTypeZeroFix", "WireguardDomainStrategyFix", "XdnsFinalmaskObjectsFix", "WireguardPeersToClients"}
 		for _, name := range seeders {
 			if err := db.Create(&model.HistoryOfSeeders{SeederName: name}).Error; err != nil {
 				return err
@@ -899,12 +887,6 @@ func runSeeders(isUsersEmpty bool) error {
 
 	if !slices.Contains(seedersHistory, "InboundClientsArrayFix") {
 		if err := normalizeInboundClientsArray(); err != nil {
-			return err
-		}
-	}
-
-	if !slices.Contains(seedersHistory, "InboundClientTgIdFix2") {
-		if err := normalizeInboundClientTgId(); err != nil {
 			return err
 		}
 	}
@@ -1663,66 +1645,7 @@ func normalizeSettingPaths() error {
 	return nil
 }
 
-func normalizeInboundClientTgId() error {
-	var inbounds []model.Inbound
-	if err := db.Find(&inbounds).Error; err != nil {
-		return err
-	}
 
-	return db.Transaction(func(tx *gorm.DB) error {
-		for _, inbound := range inbounds {
-			if strings.TrimSpace(inbound.Settings) == "" {
-				continue
-			}
-			var settings map[string]any
-			if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
-				log.Printf("InboundClientTgIdFix: skip inbound %d (invalid settings json): %v", inbound.Id, err)
-				continue
-			}
-			clients, ok := settings["clients"].([]any)
-			if !ok {
-				continue
-			}
-			mutated := false
-			for i, raw := range clients {
-				obj, ok := raw.(map[string]any)
-				if !ok {
-					continue
-				}
-				tgRaw, present := obj["tgId"]
-				if !present {
-					continue
-				}
-				v, isFloat := tgRaw.(float64)
-				if isFloat && !math.IsNaN(v) && !math.IsInf(v, 0) && v == math.Trunc(v) {
-					continue
-				}
-				obj["tgId"] = int64(0)
-				if s, isStr := tgRaw.(string); isStr {
-					if id, err := strconv.ParseInt(strings.ReplaceAll(strings.TrimSpace(s), " ", ""), 10, 64); err == nil {
-						obj["tgId"] = id
-					}
-				}
-				clients[i] = obj
-				mutated = true
-			}
-			if !mutated {
-				continue
-			}
-			settings["clients"] = clients
-			newSettings, err := json.MarshalIndent(settings, "", "  ")
-			if err != nil {
-				log.Printf("InboundClientTgIdFix: skip inbound %d (marshal failed): %v", inbound.Id, err)
-				continue
-			}
-			if err := tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).
-				Update("settings", string(newSettings)).Error; err != nil {
-				return err
-			}
-		}
-		return tx.Create(&model.HistoryOfSeeders{SeederName: "InboundClientTgIdFix2"}).Error
-	})
-}
 
 func normalizeInboundClientSubId() error {
 	var inbounds []model.Inbound
