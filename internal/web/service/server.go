@@ -1708,42 +1708,34 @@ func (s *ServerService) ImportDB(file multipart.File, keepHostSettings bool) err
 		return common.NewError("Invalid file: expected a SQLite database (.db) from Back Up or a SQLite migration dump (.dump)")
 	}
 
-	tempPath := fmt.Sprintf("%s.temp", config.GetDBPath())
-
-	if _, err := os.Stat(tempPath); err == nil {
-		if errRemove := os.Remove(tempPath); errRemove != nil {
-			return common.NewErrorf("Error removing existing temporary db file: %v", errRemove)
-		}
+	dbPath := config.GetDBPath()
+	stageDir, err := os.MkdirTemp(filepath.Dir(dbPath), ".miniray-import-")
+	if err != nil {
+		return common.NewErrorf("Error creating database import directory: %v", err)
 	}
-	defer func() {
-		if _, err := os.Stat(tempPath); err == nil {
-			if rerr := os.Remove(tempPath); rerr != nil {
-				logger.Warningf("Warning: failed to remove temp file: %v", rerr)
-			}
-		}
-	}()
+	defer os.RemoveAll(stageDir)
+	tempPath := filepath.Join(stageDir, "uploaded.db")
 
 	if err := stageSQLiteUpload(file, kind, tempPath); err != nil {
 		return err
 	}
-
-	if err = database.ValidateSQLiteDB(tempPath); err != nil {
+	if err := database.ValidateSQLiteDB(tempPath); err != nil {
 		return common.NewErrorf("Invalid or corrupt db file: %v", err)
 	}
-	if err = database.PrepareSQLiteForMigration(tempPath); err != nil {
+	if err := database.PrepareSQLiteForMigration(tempPath); err != nil {
 		return common.NewErrorf("This file cannot be imported: %v", err)
 	}
 
 	xrayStopped := true
 	defer func() {
 		if xrayStopped {
-			if errR := s.RestartXrayService(); errR != nil {
-				logger.Warningf("Failed to restart Xray after DB import error: %v", errR)
+			if restartErr := s.RestartXrayService(); restartErr != nil {
+				logger.Warningf("Failed to restart Xray after DB import error: %v", restartErr)
 			}
 		}
 	}()
-	if errStop := s.StopXrayService(); errStop != nil {
-		logger.Warningf("Failed to stop Xray before DB import: %v", errStop)
+	if err := s.StopXrayService(); err != nil {
+		logger.Warningf("Failed to stop Xray before DB import: %v", err)
 	}
 
 	var keptSettings hostBoundSnapshot
@@ -1751,74 +1743,56 @@ func (s *ServerService) ImportDB(file multipart.File, keepHostSettings bool) err
 		keptSettings = captureHostBoundSettings()
 	}
 
-	if errClose := database.CloseDB(); errClose != nil {
-		logger.Warningf("Failed to close existing DB before replacement: %v", errClose)
-	}
-
-	// Registered after the xray-restart defer so it runs first (LIFO): every
-	// error return below leaves a database file at the configured path, and the
-	// restart needs an open pool to build the xray config from it.
 	dbReopened := false
 	defer func() {
-		if dbReopened {
-			return
-		}
-		if errReopen := database.InitDB(config.GetDBPath()); errReopen != nil {
-			logger.Warningf("Failed to reopen the database after import error: %v", errReopen)
+		if !dbReopened {
+			if _, err := os.Stat(dbPath); errors.Is(err, os.ErrNotExist) {
+				logger.Warningf("Database import failed without an active database file; recovery backup requires manual restoration")
+				return
+			}
+			if err := database.InitDB(dbPath); err != nil {
+				logger.Warningf("Failed to reopen the database after import error: %v", err)
+			}
 		}
 	}()
-
-	// Backup the current database for fallback
-	fallbackPath := fmt.Sprintf("%s.backup", config.GetDBPath())
-
-	// Remove the existing fallback file (if any)
-	if _, err := os.Stat(fallbackPath); err == nil {
-		if errRemove := os.Remove(fallbackPath); errRemove != nil {
-			return common.NewErrorf("Error removing existing fallback db file: %v", errRemove)
-		}
+	if err := database.CloseDB(); err != nil {
+		return common.NewErrorf("Error closing database before import: %v", err)
 	}
 
-	// Move the current database to the fallback location
-	if err = os.Rename(config.GetDBPath(), fallbackPath); err != nil {
-		return common.NewErrorf("Error backing up current db file: %v", err)
+	fallbackPath := fmt.Sprintf("%s.backup.%d", dbPath, time.Now().UnixNano())
+	if err := moveSQLiteFiles(dbPath, fallbackPath); err != nil {
+		return common.NewErrorf("Error backing up current db files: %v", err)
+	}
+	if err := moveSQLiteFiles(tempPath, dbPath); err != nil {
+		if restoreErr := moveSQLiteFiles(fallbackPath, dbPath); restoreErr != nil {
+			return common.NewErrorf("Error moving imported db: %v; fallback recovery failed: %v (backup: %s)", err, restoreErr, fallbackPath)
+		}
+		return common.NewErrorf("Error moving imported db: %v", err)
 	}
 
-	// Move temp to DB path
-	if err = os.Rename(tempPath, config.GetDBPath()); err != nil {
-		// Restore from fallback
-		if errRename := os.Rename(fallbackPath, config.GetDBPath()); errRename != nil {
-			return common.NewErrorf("Error moving db file and restoring fallback: %v", errRename)
+	if err := database.InitDB(dbPath); err != nil {
+		if closeErr := database.CloseDB(); closeErr != nil {
+			return common.NewErrorf("Error migrating db: %v; failed to close imported db: %v (backup: %s)", err, closeErr, fallbackPath)
 		}
-		return common.NewErrorf("Error moving db file: %v", err)
-	}
-
-	// Open & migrate new DB
-	if err = database.InitDB(config.GetDBPath()); err != nil {
-		// A failed InitDB still holds the imported file open; close before the
-		// rename or Windows refuses to replace it.
-		if errClose := database.CloseDB(); errClose != nil {
-			logger.Warningf("Failed to close the imported DB before restoring fallback: %v", errClose)
+		if removeErr := removeSQLiteFiles(dbPath); removeErr != nil {
+			return common.NewErrorf("Error migrating db: %v; failed to remove imported db: %v (backup: %s)", err, removeErr, fallbackPath)
 		}
-		if errRename := os.Rename(fallbackPath, config.GetDBPath()); errRename != nil {
-			return common.NewErrorf("Error migrating db and restoring fallback: %v", errRename)
+		if restoreErr := moveSQLiteFiles(fallbackPath, dbPath); restoreErr != nil {
+			return common.NewErrorf("Error migrating db: %v; fallback recovery failed: %v (backup: %s)", err, restoreErr, fallbackPath)
 		}
 		return common.NewErrorf("Error migrating db: %v", err)
 	}
 	dbReopened = true
 
 	restoreHostBoundSettings(keptSettings)
-
 	s.inboundService.MigrateDB()
 
 	xrayStopped = false
-	if err = s.RestartXrayService(); err != nil {
+	if err := s.RestartXrayService(); err != nil {
 		return common.NewErrorf("Imported DB but failed to start Xray: %v; the previous database was kept at %s", err, fallbackPath)
 	}
-
-	if _, err := os.Stat(fallbackPath); err == nil {
-		if rerr := os.Remove(fallbackPath); rerr != nil {
-			logger.Warningf("Warning: failed to remove fallback file: %v", rerr)
-		}
+	if err := removeSQLiteFiles(fallbackPath); err != nil {
+		logger.Warningf("Failed to remove fallback database after import: %v", err)
 	}
 	return nil
 }
