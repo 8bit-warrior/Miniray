@@ -203,9 +203,6 @@ func (s *ClientService) Create(inboundSvc *InboundService, payload *ClientCreate
 		if client.Auth == "" {
 			client.Auth = existing.Auth
 		}
-		if client.Secret == "" {
-			client.Secret = existing.Secret
-		}
 	}
 
 	if client.SubID != "" {
@@ -579,9 +576,6 @@ func (s *ClientService) Update(inboundSvc *InboundService, id int, updated model
 	if updated.Auth == "" {
 		updated.Auth = existing.Auth
 	}
-	if updated.Secret == "" {
-		updated.Secret = existing.Secret
-	}
 
 	if updated.Email != existing.Email {
 		var collisionCount int64
@@ -691,7 +685,6 @@ func (s *ClientService) Update(inboundSvc *InboundService, id int, updated model
 				"uuid":              merged.UUID,
 				"password":          merged.Password,
 				"auth":              merged.Auth,
-				"secret":            merged.Secret,
 				"flow":              merged.Flow,
 				"security":          merged.Security,
 				"wg_private_key":    merged.PrivateKey,

@@ -56,7 +56,7 @@ func (s *SubService) inboundDefaultEndpoint(inbound *model.Inbound) ShareEndpoin
 	}
 }
 
-// advertisedEndpoints is every endpoint a stream-less link (mtproto, wireguard,
+// advertisedEndpoints is every endpoint a stream-less link (wireguard,
 // amneziawg) must fan out over: the externalProxy/Host entries, else the default.
 func (s *SubService) advertisedEndpoints(inbound *model.Inbound) []ShareEndpoint {
 	stream := unmarshalStreamSettings(inbound.StreamSettings)

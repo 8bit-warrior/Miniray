@@ -502,7 +502,7 @@ func (s *SubService) statsForClient(inbound *model.Inbound, client model.Client)
 	}
 }
 
-// lookupClient resolves the full client (TgID, SubID, comment, …) for an email,
+// lookupClient resolves the full client (SubID, comment, …) for an email,
 // needed when a global remark template references client-only tokens. Falls back
 // to an email-only client if not found.
 func (s *SubService) lookupClient(inbound *model.Inbound, email string) model.Client {

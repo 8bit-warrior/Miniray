@@ -36,7 +36,6 @@ export interface AllSetting {
   ldapUserAttr: string;
   ldapUserFilter: string;
   ldapVlessField: string;
-  outboundDownThreshold: number;
   pageSize: number;
   panelOfflineEnabled: boolean;
   panelOfflineUnit: string;
@@ -191,7 +190,6 @@ export interface AllSettingView {
   ldapUserAttr: string;
   ldapUserFilter: string;
   ldapVlessField: string;
-  outboundDownThreshold: number;
   pageSize: number;
   panelOfflineEnabled: boolean;
   panelOfflineUnit: string;

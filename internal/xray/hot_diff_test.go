@@ -484,7 +484,7 @@ func TestComputeHotDiff_NewSocksAccountsInboundNeedsRestart(t *testing.T) {
 
 // TestComputeHotDiff_NoauthSocksBridgeStaysHot confirms the check above is
 // scoped to password-auth accounts specifically: this fork's other SOCKS5
-// bridges (panel egress, per-node egress, mtproto egress) use "noauth" with
+// bridges (panel egress, per-node egress) use "noauth" with
 // no per-account identity, have no history of this failure mode, and must
 // keep using the ordinary remove+add hot path rather than pay for an
 // unnecessary restart on every port/tag change.

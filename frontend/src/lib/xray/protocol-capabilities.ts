@@ -77,9 +77,7 @@ export function canEnableStream(values: { protocol: string }): boolean {
 
 // AmneziaWG and TUIC have their own runtimes and do not use Xray sniffing.
 export function canEnableSniffing(values: { protocol: string }): boolean {
-  return (
-    values.protocol !== 'amneziawg' && values.protocol !== 'tuic'
-  );
+  return values.protocol !== 'amneziawg' && values.protocol !== 'tuic';
 }
 
 // Vision seed applies only when XTLS Vision (TCP/TLS) flow is selected

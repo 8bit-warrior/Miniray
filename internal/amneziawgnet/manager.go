@@ -78,15 +78,7 @@ func (m *managed) close() {
 	m.udpRelay.Close()
 }
 
-// Manager owns the set of running embedded AmneziaWG interfaces, keyed by
-// inbound id -- the same shape as internal/mtproto.Manager (GetManager()
-// + sync.Once, mu-guarded map, Ensure/Reconcile/StopAll/HasRunning), so a
-// caller already familiar with that Manager needs to learn nothing new here.
-// Every Device this Manager builds gets its TCP forwarder and UDP handler
-// attached automatically (see ensureLocked), relaying into that instance's
-// own loopback SOCKS5 inbound (SOCKSPortForInbound/SocksPassword) -- a
-// caller only needs to keep calling Ensure/Reconcile with fresh Instance
-// data; it doesn't need to know relay.go exists at all.
+// Manager reconciles embedded devices by inbound ID.
 type Manager struct {
 	mu     sync.Mutex
 	ifaces map[int]*managed
@@ -266,8 +258,7 @@ func addressFingerprint(inst amneziawg.Instance) string {
 }
 
 // Reconcile brings every desired instance's embedded interface up to date
-// and stops any managed interface whose inbound is no longer desired --
-// mirroring internal/mtproto.Manager.Reconcile's per-tick contract.
+// and stops interfaces whose inbound is no longer desired.
 func (m *Manager) Reconcile(desired []Desired) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -293,7 +284,7 @@ func (m *Manager) Reconcile(desired []Desired) {
 }
 
 // Remove tears down inbound id's embedded interface, if any -- mirrors
-// internal/mtproto.Manager.Remove, for a caller that needs to drop a
+// an immediate reconciliation, for a caller that needs to drop a
 // single inbound outside a full Reconcile pass (e.g. the immediate-apply
 // CRUD path in internal/web/runtime/local.go).
 func (m *Manager) Remove(id int) {

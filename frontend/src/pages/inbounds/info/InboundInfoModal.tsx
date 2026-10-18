@@ -86,7 +86,9 @@ export default function InboundInfoModal({
         setClientIpsText(arr.join(' | '));
       } else {
         setClientIpsArray([]);
-        setClientIpsText(String(ips || t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' })));
+        setClientIpsText(
+          String(ips || t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' })),
+        );
       }
     } finally {
       setRefreshing(false);
@@ -221,7 +223,9 @@ export default function InboundInfoModal({
           setClientIpsArray(arr);
           setClientIpsText(arr.join(' | '));
         } else {
-          setClientIpsText(String(ips || t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' })));
+          setClientIpsText(
+            String(ips || t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' })),
+          );
         }
       });
     }
@@ -416,7 +420,10 @@ export default function InboundInfoModal({
                       ))}
                     </div>
                   ) : (
-                    <Tag>{clientIpsText || t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' })}</Tag>
+                    <Tag>
+                      {clientIpsText ||
+                        t('pages.clients.noIpRecord', { defaultValue: '暂无 IP 记录' })}
+                    </Tag>
                   )}
                 </div>
                 <div className="ip-log-actions">

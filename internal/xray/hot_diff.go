@@ -349,7 +349,7 @@ func inboundUsesTproxy(ib *InboundConfig) bool {
 // internal/amneziawgnet's per-inbound relay (internal/web/service/xray.go's
 // injectAmneziawgnetSocks) is the only generator of in this fork; every
 // other SOCKS5 bridge this fork builds (panel egress, per-node egress,
-// mtproto egress) uses "noauth" with no per-account identity at all, so this
+// other egress) uses "noauth" with no per-account identity at all, so this
 // check can't accidentally rope in one of those lower-churn bridges.
 //
 // Real production incident, not a theoretical concern: a single client

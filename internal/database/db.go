@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -452,6 +451,7 @@ func wireguardPeerEmail(remark string, peer map[string]any, index int, used map[
 		candidate = email + "-" + strconv.Itoa(n)
 	}
 }
+
 func pruneOrphanedClientInbounds() error {
 	res := db.Exec("DELETE FROM client_inbounds WHERE inbound_id NOT IN (SELECT id FROM inbounds)")
 	if res.Error != nil {
@@ -594,8 +594,6 @@ func migrateVmessRemovedSecurities() error {
 	}
 	return nil
 }
-
-
 
 // normalizeInboundSubSortIndex lifts legacy zero defaults to 1.
 // Explicit negatives are left alone so primary inbounds can sort first.
@@ -966,7 +964,6 @@ func runSeeders(isUsersEmpty bool) error {
 	if err := seedWireguardPeersToClients(); err != nil {
 		return err
 	}
-
 
 	// Idempotent, not seeder-gated: bad values can re-enter via a restored
 	// backup, so re-check on every start.
@@ -1644,8 +1641,6 @@ func normalizeSettingPaths() error {
 	}
 	return nil
 }
-
-
 
 func normalizeInboundClientSubId() error {
 	var inbounds []model.Inbound

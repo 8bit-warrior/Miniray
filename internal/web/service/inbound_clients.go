@@ -217,7 +217,6 @@ func (s *InboundService) buildTargetClientFromSource(source model.Client, target
 	target.Password = ""
 	target.Auth = ""
 	target.Flow = ""
-	target.Secret = ""
 
 	targetProtocol := targetInbound.Protocol
 	switch targetProtocol {

@@ -56,7 +56,7 @@ func normalizeInboundShareAddress(inbound *model.Inbound) {
 	if inbound == nil {
 		return
 	}
-	
+
 	inbound.ShareAddrStrategy = normalizeInboundShareAddrStrategy(inbound.ShareAddrStrategy)
 	if addr, err := normalizeInboundShareHost(inbound.ShareAddr); err == nil {
 		inbound.ShareAddr = addr
@@ -69,7 +69,7 @@ func normalizeInboundShareAddressStrict(inbound *model.Inbound) error {
 	if inbound == nil {
 		return nil
 	}
-	
+
 	inbound.ShareAddrStrategy = normalizeInboundShareAddrStrategy(inbound.ShareAddrStrategy)
 	addr, err := normalizeInboundShareHost(inbound.ShareAddr)
 	if err != nil {
@@ -182,7 +182,7 @@ func (s *InboundService) GetInbounds(userId int) ([]*model.Inbound, error) {
 // settings.clients and skips UUID/SubId enrichment on ClientStats. The
 // inbounds page only needs those three to roll up client counts and
 // render badges, so this trims tens of bytes per client (UUID, password,
-// flow, security, totalGB, expiryTime, limitIp, tgId, ...) which adds
+// flow, security, totalGB, expiryTime, limitIp, ...) which adds
 // up fast on installs with thousands of clients.
 //
 // Full client data is still available through GET /panel/api/inbounds/get/:id
@@ -463,8 +463,6 @@ func inboundTuicServer(protocol string, settings string) *tuic.TuicServerSetting
 		SNI:                   inst.SNI,
 	}
 }
-
-
 
 // GetAllInbounds retrieves all inbounds with client stats.
 func (s *InboundService) GetAllInbounds() ([]*model.Inbound, error) {
@@ -901,16 +899,6 @@ func validateFinalMaskXmcProfiles(streamSettings string) error {
 	return common.NewError("XMC finalmask requires at least one complete Minecraft profile — each needs a username (3-16 of A-Z a-z 0-9 _), a UUID, and both texture fields from Mojang's session server (XTLS/Xray-core#6487). Complete the profiles or remove the XMC mask.")
 }
 
-
-
-
-
-
-
-
-
-
-
 // AddInbound creates a new inbound configuration.
 // It validates port uniqueness, client email uniqueness, and required fields,
 // then saves the inbound to the database and optionally adds it to the running Xray instance.
@@ -1028,7 +1016,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 			if client.PublicKey == "" {
 				return inbound, false, common.NewError("wireguard client requires a key")
 			}
-			case "tuic":
+		case "tuic":
 			if client.ID == "" {
 				return inbound, false, common.NewError("empty client ID")
 			}
@@ -1177,8 +1165,6 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 		postCommitApply()
 	}
 
-	
-
 	return inbound, needRestart, err
 }
 
@@ -1268,7 +1254,7 @@ func (s *InboundService) delInbound(id int) (bool, error) {
 			}
 		}
 	}
-	
+
 	return needRestart, nil
 }
 
@@ -1393,8 +1379,6 @@ func (s *InboundService) SetInboundEnable(id int, enable bool) (bool, error) {
 	if perr != nil {
 		return false, perr
 	}
-
-	
 
 	if !push {
 		return true, nil
@@ -1717,7 +1701,7 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 		// (Re)generate the Xray config whenever routing was or is now enabled, so
 		// the egress SOCKS bridge is added, moved, or dropped to match the new
 		// settings.
-		
+
 		return nil
 	})
 	if txErr != nil {

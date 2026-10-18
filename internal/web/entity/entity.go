@@ -45,7 +45,6 @@ type AllSetting struct {
 	SubTrafficDepletedTemplate string `json:"subTrafficDepletedTemplate" form:"subTrafficDepletedTemplate"`
 	Datepicker                 string `json:"datepicker" form:"datepicker"`
 
-
 	TimeLocation    string `json:"timeLocation" form:"timeLocation"`
 	TwoFactorEnable bool   `json:"twoFactorEnable" form:"twoFactorEnable"`
 	TwoFactorToken  string `json:"twoFactorToken" form:"twoFactorToken"`
@@ -181,11 +180,11 @@ type AllSetting struct {
 type AllSettingView struct {
 	AllSetting
 
-	HasTwoFactorToken  bool `json:"hasTwoFactorToken"`
-	HasLdapPassword    bool `json:"hasLdapPassword"`
-	HasApiToken        bool `json:"hasApiToken"`
-	HasWarpSecret      bool `json:"hasWarpSecret"`
-	HasNordSecret      bool `json:"hasNordSecret"`
+	HasTwoFactorToken bool `json:"hasTwoFactorToken"`
+	HasLdapPassword   bool `json:"hasLdapPassword"`
+	HasApiToken       bool `json:"hasApiToken"`
+	HasWarpSecret     bool `json:"hasWarpSecret"`
+	HasNordSecret     bool `json:"hasNordSecret"`
 }
 
 func pathHasForbiddenChar(s string) bool {

@@ -47,10 +47,10 @@ func renderSubPlaceholders(value string, data subPlaceholderData) string {
 }
 
 var subMetadataTokens = map[string]bool{
-	"EMAIL":       true,
-	"ID":          true,
-	"SHORT_ID":    true,
-	"SUB_ID":      true,
+	"EMAIL":    true,
+	"ID":       true,
+	"SHORT_ID": true,
+	"SUB_ID":   true,
 }
 
 func expandSubMetadataVars(template string, ctx remarkContext, escape bool) string {

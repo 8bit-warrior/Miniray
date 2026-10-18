@@ -67,7 +67,8 @@ export default function PanelAutoOfflineTab({
   const panelOffline = () => {
     offlineModal.confirm({
       title: '确认让面板离线？',
-      content: '面板网页与订阅服务将停止监听端口，代理内核继续运行。使用 miniray start-panel 重新开启。',
+      content:
+        '面板网页与订阅服务将停止监听端口，代理内核继续运行。使用 miniray start-panel 重新开启。',
       okText: '确认离线',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -82,10 +83,7 @@ export default function PanelAutoOfflineTab({
     <>
       {contextHolder}
       {offlineModalHolder}
-      <SettingListItem
-        title="面板离线"
-        description="停止网页和订阅服务，保持独立代理内核运行。"
-      >
+      <SettingListItem title="面板离线" description="停止网页和订阅服务，保持独立代理内核运行。">
         <Button danger icon={<PoweroffOutlined />} onClick={panelOffline}>
           面板离线
         </Button>

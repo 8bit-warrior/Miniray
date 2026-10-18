@@ -307,15 +307,7 @@ try:
             assert_proxy()
             assert command("systemctl", "is-enabled", "--quiet", "miniray-core").returncode == 0
             assert command("systemctl", "is-active", "--quiet", "miniray", check=False).returncode != 0
-            mtg_path = Path("/usr/local/miniray/bin/mtg-linux-amd64")
-            shutil.copyfile("/bin/sleep", mtg_path)
-            sidecar = subprocess.Popen([str(mtg_path), "120"])
-            try:
-                install()
-                assert sidecar.poll() is None, "upgrade terminated an existing sidecar"
-            finally:
-                sidecar.terminate()
-                sidecar.wait()
+            install()
             assert command("systemctl", "is-enabled", "--quiet", "miniray", check=False).returncode != 0
             assert_proxy()
             command("/usr/local/bin/miniray", "start-panel")

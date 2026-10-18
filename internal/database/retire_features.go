@@ -16,6 +16,16 @@ import (
 func retireRemovedFeatures(dbPath string) error {
 	removedTables := []string{"nodes", "hosts", "client_groups", "node_client_ips", "node_client_traffics", "node_pending_resets", "client_global_traffics"}
 	legacy := db.Migrator().HasColumn("inbounds", "node_id")
+	for _, column := range []string{"tg_id", "secret", "ad_tag"} {
+		legacy = legacy || db.Migrator().HasColumn("clients", column)
+	}
+	if db.Migrator().HasTable("inbounds") {
+		var retired int64
+		if err := db.Table("inbounds").Where(`protocol = ? OR settings LIKE ? OR settings LIKE ? OR settings LIKE ?`, "mtproto", `%"tgId"%`, `%"secret"%`, `%"adTag"%`).Count(&retired).Error; err != nil {
+			return err
+		}
+		legacy = legacy || retired > 0
+	}
 	for _, table := range removedTables {
 		legacy = legacy || db.Migrator().HasTable(table)
 	}
@@ -27,6 +37,51 @@ func retireRemovedFeatures(dbPath string) error {
 		return fmt.Errorf("back up previous schema: %w", err)
 	}
 	return db.Transaction(func(tx *gorm.DB) error {
+		if tx.Migrator().HasTable("inbounds") {
+			retired := tx.Table("inbounds").Select("id").Where("protocol = ?", "mtproto")
+			for table, column := range map[string]string{"client_inbounds": "inbound_id", "inbound_fallbacks": "master_id", "hosts": "inbound_id"} {
+				if tx.Migrator().HasTable(table) {
+					if err := tx.Table(table).Where(column+" IN (?)", retired).Delete(nil).Error; err != nil {
+						return err
+					}
+				}
+			}
+			if tx.Migrator().HasTable("inbound_fallbacks") {
+				if err := tx.Table("inbound_fallbacks").Where("child_id IN (?)", retired).Delete(nil).Error; err != nil {
+					return err
+				}
+			}
+			if tx.Migrator().HasTable("client_traffics") {
+				replacement := "0"
+				if tx.Migrator().HasTable("clients") && tx.Migrator().HasTable("client_inbounds") {
+					replacement = `(SELECT MIN(ci.inbound_id) FROM client_inbounds ci
+      JOIN clients c ON c.id = ci.client_id JOIN inbounds i ON i.id = ci.inbound_id
+      WHERE c.email = client_traffics.email AND i.protocol <> 'mtproto')`
+				}
+				if err := tx.Exec("UPDATE client_traffics SET inbound_id = COALESCE("+replacement+", 0) WHERE inbound_id IN (?)", retired).Error; err != nil {
+					return err
+				}
+			}
+			if err := tx.Exec("DELETE FROM inbounds WHERE protocol = ?", "mtproto").Error; err != nil {
+				return err
+			}
+			var inbounds []model.Inbound
+			if err := tx.Find(&inbounds).Error; err != nil {
+				return err
+			}
+			for _, inbound := range inbounds {
+				if !strings.Contains(inbound.Settings, `"tgId"`) && !strings.Contains(inbound.Settings, `"adTag"`) && !strings.Contains(inbound.Settings, `"secret"`) {
+					continue
+				}
+				clean, err := dropLegacyGroupFields(inbound.Settings)
+				if err != nil {
+					return err
+				}
+				if err := tx.Model(&model.Inbound{}).Where("id = ?", inbound.Id).Update("settings", clean).Error; err != nil {
+					return err
+				}
+			}
+		}
 		if tx.Migrator().HasColumn("inbounds", "node_id") {
 			remote := tx.Table("inbounds").Select("id").Where("node_id IS NOT NULL AND node_id <> 0")
 			for table, column := range map[string]string{"client_inbounds": "inbound_id", "inbound_fallbacks": "master_id", "hosts": "inbound_id"} {
@@ -53,7 +108,7 @@ func retireRemovedFeatures(dbPath string) error {
 				return err
 			}
 		}
-		for table, columns := range map[string][]string{"inbounds": {"node_id", "origin_node_guid"}, "clients": {"group_name", "sync_orphaned_at"}} {
+		for table, columns := range map[string][]string{"inbounds": {"node_id", "origin_node_guid"}, "clients": {"group_name", "sync_orphaned_at", "tg_id", "secret", "ad_tag"}} {
 			for _, column := range columns {
 				if tx.Migrator().HasColumn(table, column) {
 					if err := dropRetiredColumn(tx, table, column); err != nil {

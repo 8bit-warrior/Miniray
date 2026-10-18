@@ -225,7 +225,12 @@ export default function AppSidebar() {
           return {
             type: 'group' as const,
             key: tab.key,
-            label: <span className="sidebar-section-label"><Icon />{tab.title}</span>,
+            label: (
+              <span className="sidebar-section-label">
+                <Icon />
+                {tab.title}
+              </span>
+            ),
             children: settingsChildren,
           };
         }
@@ -233,7 +238,12 @@ export default function AppSidebar() {
           return {
             type: 'group' as const,
             key: tab.key,
-            label: <span className="sidebar-section-label"><Icon />{tab.title}</span>,
+            label: (
+              <span className="sidebar-section-label">
+                <Icon />
+                {tab.title}
+              </span>
+            ),
             children: xrayChildren,
           };
         }

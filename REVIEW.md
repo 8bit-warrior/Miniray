@@ -1,7 +1,7 @@
 # Review instructions
 
 miniray is a Go (Gin + GORM) web panel that generates configuration, share links
-and subscriptions for other programs — Xray-core, mihomo, sing-box, mtg-multi —
+and subscriptions for other programs — Xray-core, mihomo, sing-box —
 and is deployed by operators who upgrade in place. Judge findings by what
 breaks for those consumers and operators, not by style.
 
@@ -48,7 +48,7 @@ surface — still pre-existing, but open the summary with it.
   `internal/database/db.go`, one that loses or overwrites operator data on upgrade or
   rollback. There are no migration files and no down-migrations.
 - A change to what the panel emits on the wire — Xray config JSON, share
-  links, subscription/Clash YAML, mtg-multi TOML, AmneziaWG obfuscation
+  links, subscription/Clash YAML TOML, AmneziaWG obfuscation
   parameters — that a downstream client would reject or read differently, or
   that makes two independent implementations of the same output diverge: the
   link implementations (Go `internal/util/link/` + `internal/sub/`, TS
@@ -103,7 +103,7 @@ than the happy path the author had in mind:
   other end, the operator with thousands of clients whose loop or query this
   change sits inside.
 - **A dependency that is down.** The Xray gRPC API refusing a call, the
-  mtg-multi management API unreachable, PIA or LDAP
+  PIA or LDAP
   timing out. What the caller sees, and what state is left behind.
 
 Running a case is not reporting it. Each one still has to clear the

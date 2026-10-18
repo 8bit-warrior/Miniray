@@ -398,7 +398,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		mergeSubscriptionOutbounds(xrayConfig, prepend, appendList)
 	}
 
-		// Every AmneziaWG inbound is embedded (internal/amneziawgnet: amneziawg-go
+	// Every AmneziaWG inbound is embedded (internal/amneziawgnet: amneziawg-go
 	// over a gVisor netstack, no kernel module) and relays every peer's
 	// decapsulated traffic into its own loopback SOCKS5 inbound, always on —
 	// there is no opt-in gate: once

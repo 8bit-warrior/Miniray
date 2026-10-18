@@ -606,8 +606,8 @@ type bulkInboundAdjustResult struct {
 	// that an inbound cannot carry must not suppress the expiry/total write for
 	// the same client (which would diverge the inbound JSON / ClientRecord from
 	// ClientTraffic). It only feeds the final Skipped report.
-	flowIneligible  map[string]bool
-	needRestart     bool
+	flowIneligible map[string]bool
+	needRestart    bool
 }
 
 func (s *ClientService) bulkAdjustInboundClients(
@@ -1289,9 +1289,6 @@ func (s *ClientService) bulkCreate(inboundSvc *InboundService, payloads []Client
 			}
 			if prep[idx].client.Auth == "" {
 				prep[idx].client.Auth = rec.Auth
-			}
-			if prep[idx].client.Secret == "" {
-				prep[idx].client.Secret = rec.Secret
 			}
 		}
 		if owner, ok := existingSubOwner[prep[idx].client.SubID]; ok && owner != le {

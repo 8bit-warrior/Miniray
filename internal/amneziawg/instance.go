@@ -18,12 +18,7 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 )
 
-// InstanceFromInbound derives a desired Instance from an AmneziaWG inbound,
-// building one peer per active client. Returns false when the inbound is not
-// a usable AmneziaWG inbound (wrong protocol, unparseable settings, or no
-// server block) or has no enabled peer to serve — mirroring
-// mtproto.InstanceFromInbound, which skips the sidecar entirely rather than
-// run it with nothing to serve.
+// InstanceFromInbound derives peers for a usable inbound with enabled clients.
 func InstanceFromInbound(ib *model.Inbound) (Instance, bool) {
 	if ib == nil || ib.Protocol != model.AmneziaWG {
 		return Instance{}, false

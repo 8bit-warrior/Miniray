@@ -173,7 +173,6 @@ export class AllSetting {
     ) {
       this.subProfileMode = 'custom';
     }
-
   }
 
   equals(other: AllSetting): boolean {

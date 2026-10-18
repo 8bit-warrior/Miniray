@@ -46,7 +46,6 @@ func (l *Local) withAPI(fn func(api *xray.XrayAPI) error) error {
 }
 
 func (l *Local) AddInbound(_ context.Context, ib *model.Inbound) error {
-	
 	if ib.Protocol == model.AmneziaWG {
 		inst, ok := amneziawg.InstanceFromInbound(ib)
 		if !ok {
@@ -97,7 +96,6 @@ func (l *Local) AddInbound(_ context.Context, ib *model.Inbound) error {
 }
 
 func (l *Local) DelInbound(_ context.Context, ib *model.Inbound) error {
-	
 	if ib.Protocol == model.AmneziaWG {
 		amneziawgnet.GetManager().Remove(ib.Id)
 		// The removed inbound may have been the only one backing Xray's
@@ -121,7 +119,6 @@ func (l *Local) DelInbound(_ context.Context, ib *model.Inbound) error {
 }
 
 func (l *Local) UpdateInbound(ctx context.Context, oldIb, newIb *model.Inbound) error {
-	
 	if oldIb.Protocol == model.AmneziaWG || newIb.Protocol == model.AmneziaWG {
 		return l.updateAmneziaWGInbound(ctx, oldIb, newIb)
 	}
@@ -134,7 +131,6 @@ func (l *Local) UpdateInbound(ctx context.Context, oldIb, newIb *model.Inbound) 
 	}
 	return l.AddInbound(ctx, newIb)
 }
-
 
 // updateAmneziaWGInbound skips the
 // Remove+Ensure sequence a plain Del+Add would force so that, on an

@@ -571,34 +571,33 @@ export default function InboundFormModal({
 
       <FormField
         name="shareAddrStrategy"
-            label={labelWithHint(
-              t('pages.inbounds.form.shareAddrStrategy'),
-              t('pages.inbounds.form.shareAddrStrategyHelp'),
-            )}
-          >
-            <Select
-              options={SHARE_ADDR_STRATEGIES.map((strategy) => ({
-                value: strategy,
-                label: t(`pages.inbounds.form.shareAddrStrategyOptions.${strategy}`),
-              }))}
-            />
-          </FormField>
+        label={labelWithHint(
+          t('pages.inbounds.form.shareAddrStrategy'),
+          t('pages.inbounds.form.shareAddrStrategyHelp'),
+        )}
+      >
+        <Select
+          options={SHARE_ADDR_STRATEGIES.map((strategy) => ({
+            value: strategy,
+            label: t(`pages.inbounds.form.shareAddrStrategyOptions.${strategy}`),
+          }))}
+        />
+      </FormField>
 
       {shareAddrStrategy === 'custom' && (
-            <FormField
-              name="shareAddr"
-              label={labelWithHint(
-                t('pages.inbounds.form.shareAddr'),
-                t('pages.inbounds.form.shareAddrHelp'),
-              )}
-              rules={{
-                validate: (value) =>
-                  isValidShareAddrInput(String(value ?? '')) ||
-                  t('pages.inbounds.form.shareAddrHelp'),
-              }}
-            >
-              <Input placeholder="edge.example.com" />
-            </FormField>
+        <FormField
+          name="shareAddr"
+          label={labelWithHint(
+            t('pages.inbounds.form.shareAddr'),
+            t('pages.inbounds.form.shareAddrHelp'),
+          )}
+          rules={{
+            validate: (value) =>
+              isValidShareAddrInput(String(value ?? '')) || t('pages.inbounds.form.shareAddrHelp'),
+          }}
+        >
+          <Input placeholder="edge.example.com" />
+        </FormField>
       )}
 
       <FormField

@@ -573,7 +573,6 @@ func HealShadowsocksClientMethods(settings string) (string, bool) {
 	return string(out), true
 }
 
-
 // Setting stores key-value configuration settings for the miniray panel.
 type Setting struct {
 	Id    int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
@@ -605,8 +604,8 @@ type Client struct {
 	// before -- fully backward compatible for callers that never set this.
 	AllowedIPsByInbound map[int][]string `json:"allowedIPsByInbound,omitempty"`
 	PreSharedKey        string           `json:"preSharedKey,omitempty"`
-	KeepAlive           *int             `json:"keepAlive,omitempty"`      // Seconds between PersistentKeepalive packets; 0 sends none, omit to keep the stored value
-	ForwardedPorts      string           `json:"forwardedPorts,omitempty"` // AmneziaWG per-client port-forwarding spec, e.g. "80,443,8000-8100"
+	KeepAlive           *int             `json:"keepAlive,omitempty"`          // Seconds between PersistentKeepalive packets; 0 sends none, omit to keep the stored value
+	ForwardedPorts      string           `json:"forwardedPorts,omitempty"`     // AmneziaWG per-client port-forwarding spec, e.g. "80,443,8000-8100"
 	Email               string           `json:"email"`                        // Client email identifier
 	LimitIP             int              `json:"limitIp"`                      // IP limit for this client
 	TotalGB             int64            `json:"totalGB" form:"totalGB"`       // Total traffic limit in GB
@@ -1084,12 +1083,6 @@ func MergeClientRecord(existing *ClientRecord, incoming *ClientRecord) []ClientM
 		if incomingNewer || existing.PreSharedKey == "" {
 			existing.PreSharedKey = incoming.PreSharedKey
 			keepSecret("preSharedKey")
-		}
-	}
-	if existing.Secret != incoming.Secret && incoming.Secret != "" {
-		if incomingNewer || existing.Secret == "" {
-			existing.Secret = incoming.Secret
-			keepSecret("secret")
 		}
 	}
 	if existing.AllowedIPs != incoming.AllowedIPs && incoming.AllowedIPs != "" {

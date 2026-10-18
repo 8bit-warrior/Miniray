@@ -1046,7 +1046,6 @@ func (s *SubService) genAmneziaWGLink(inbound *model.Inbound, email string) stri
 	return strings.Join(links, "\n")
 }
 
-
 // Protocol link generators are intentionally ordered as:
 // vmess -> vless -> trojan -> shadowsocks -> hysteria.
 func (s *SubService) genVmessLink(inbound *model.Inbound, email string) string {

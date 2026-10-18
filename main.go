@@ -891,7 +891,7 @@ func runProxyAgent() {
 	for {
 		select {
 		case <-reconcileTicker.C:
-					amneziawgJob.Run()
+			amneziawgJob.Run()
 			tuicJob.Run()
 			xrayService.ApplyPendingRestart()
 		case <-trafficTicker.C:

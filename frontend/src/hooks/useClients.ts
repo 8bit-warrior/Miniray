@@ -496,13 +496,7 @@ export function useClients(options: UseClientsOptions = {}) {
     [bulkCreateMut],
   );
   const bulkAdjust = useCallback(
-    (
-      emails: string[],
-      addDays: number,
-      addBytes: number,
-      flow = '',
-      limitHwid?: number | null,
-    ) => {
+    (emails: string[], addDays: number, addBytes: number, flow = '', limitHwid?: number | null) => {
       if (!Array.isArray(emails) || emails.length === 0) return Promise.resolve(null);
       return bulkAdjustMut.mutateAsync({ emails, addDays, addBytes, flow, limitHwid });
     },

@@ -1152,8 +1152,6 @@ export default function ClientFormModal({
                         </>
                       )}
                     </>
-                      )}
-                    </>
                   ),
                 },
                 {

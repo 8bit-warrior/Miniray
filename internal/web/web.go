@@ -37,7 +37,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 	"github.com/8bit-warrior/Miniray/internal/web/service/panel"
 	"github.com/8bit-warrior/Miniray/internal/web/websocket"
-	"github.com/8bit-warrior/Miniray/internal/xray"
 )
 
 //go:embed translation/*
@@ -287,7 +286,6 @@ const (
 	cadenceReapOrphans   = "@every 5m"
 	cadenceRemoteRouting = "@every 5m"
 	cadenceXrayLogPrune  = "@every 10m"
-
 )
 
 // startTask schedules background jobs (Xray checks, traffic jobs, cron

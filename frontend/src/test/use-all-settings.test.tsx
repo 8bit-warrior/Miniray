@@ -117,7 +117,9 @@ describe('useAllSettings', () => {
         return new Msg(
           true,
           '',
-          fetchCount === 1 ? { hasLdapPassword: false } : { hasLdapPassword: true, ldapPassword: '' },
+          fetchCount === 1
+            ? { hasLdapPassword: false }
+            : { hasLdapPassword: true, ldapPassword: '' },
         );
       }
       return new Msg(true, '');
@@ -148,7 +150,9 @@ describe('useAllSettings', () => {
         return new Msg(
           true,
           '',
-          fetchCount === 1 ? { hasLdapPassword: false } : { hasLdapPassword: true, ldapPassword: '' },
+          fetchCount === 1
+            ? { hasLdapPassword: false }
+            : { hasLdapPassword: true, ldapPassword: '' },
         );
       }
       return new Msg(true, '');

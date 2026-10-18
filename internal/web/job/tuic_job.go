@@ -46,7 +46,7 @@ func (j *TuicJob) Run() {
 	clientTraffics := aggregateTuicClientTraffic(clientDeltas, onlineEmails)
 
 	// Inbound total traffic is already metered through the loopback SOCKS relay
-	// by xray_traffic_job (matching mtproto); only per-client deltas are submitted here.
+	// by xray_traffic_job; only per-client deltas are submitted here.
 	if len(clientTraffics) > 0 {
 		needRestart, _, err := j.inboundService.AddTraffic(nil, clientTraffics)
 		if err != nil {

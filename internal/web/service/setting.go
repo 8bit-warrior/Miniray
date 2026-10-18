@@ -209,9 +209,7 @@ var defaultValueMap = map[string]string{
 	"ldapDefaultExpiryDays":  "0",
 	"ldapDefaultLimitIP":     "0",
 
-
 	// Consecutive failed observatory probes before an outbound.down event fires
-
 
 }
 
@@ -479,7 +477,6 @@ func (s *SettingService) SetListen(ip string) error {
 func (s *SettingService) GetWebDomain() (string, error) {
 	return s.getString("webDomain")
 }
-
 
 // GetPanelOutbound returns the Xray outbound tag the panel's own outbound
 // requests (version checks and subscription fetches) are routed through.
@@ -1604,8 +1601,8 @@ func (s *SettingService) GetDefaultSettings(host string) (any, error) {
 }
 
 var factoryDefaultSecretKeys = map[string]bool{
-	"twoFactorToken":  true,
-	"ldapPassword":    true,
+	"twoFactorToken": true,
+	"ldapPassword":   true,
 }
 
 func (s *SettingService) GetFactoryDefaults() map[string]string {

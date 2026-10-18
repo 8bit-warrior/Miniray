@@ -32,12 +32,6 @@ func applyClientRecordMerge(row *model.ClientRecord, incoming *model.ClientRecor
 	if incoming.Auth != "" {
 		row.Auth = incoming.Auth
 	}
-	if incoming.Secret != "" {
-		row.Secret = incoming.Secret
-	}
-	if incoming.AdTag != "" {
-		row.AdTag = incoming.AdTag
-	}
 	row.Flow = incoming.Flow
 	if incoming.Security != "" {
 		row.Security = incoming.Security
@@ -61,7 +55,6 @@ func applyClientRecordMerge(row *model.ClientRecord, incoming *model.ClientRecor
 	row.TotalGB = incoming.TotalGB
 	row.ExpiryTime = incoming.ExpiryTime
 	row.Enable = incoming.Enable
-	row.TgID = incoming.TgID
 	row.Comment = incoming.Comment
 	row.Reset = incoming.Reset
 	row.ResetDay = incoming.ResetDay

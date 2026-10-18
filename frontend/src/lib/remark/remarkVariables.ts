@@ -22,7 +22,6 @@ export const REMARK_VARIABLES: RemarkVar[] = [
   { token: 'HOST', group: 'client', sample: 'CDN' },
   { token: 'ID', group: 'client', sample: '3f2a9c1b-aaaa-bbbb-cccc-1234567890ab' },
   { token: 'SHORT_ID', group: 'client', sample: '3f2a9c1b' },
-  { token: 'TELEGRAM_ID', group: 'client', sample: '123456789' },
   { token: 'SUB_ID', group: 'client', sample: 'subABC' },
   { token: 'COMMENT', group: 'client', sample: 'vip' },
   // Traffic
@@ -53,12 +52,7 @@ export const REMARK_VARIABLES: RemarkVar[] = [
 ];
 
 export const SUBSCRIPTION_METADATA_VARIABLES: RemarkVar[] = REMARK_VARIABLES.filter(
-  (v) =>
-    v.token === 'EMAIL' ||
-    v.token === 'ID' ||
-    v.token === 'SHORT_ID' ||
-    v.token === 'TELEGRAM_ID' ||
-    v.token === 'SUB_ID',
+  (v) => v.token === 'EMAIL' || v.token === 'ID' || v.token === 'SHORT_ID' || v.token === 'SUB_ID',
 );
 
 const SAMPLE_BY_TOKEN: Record<string, string> = Object.fromEntries(

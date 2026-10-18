@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/8bit-warrior/Miniray/internal/database/dbtest"
-	"github.com/8bit-warrior/Miniray/internal/web/locale"
 	"github.com/8bit-warrior/Miniray/internal/web/service"
 )
 
@@ -129,4 +128,3 @@ func TestUpdateSettingRequiresCodeToReplaceTwoFactorToken(t *testing.T) {
 		}
 	})
 }
-

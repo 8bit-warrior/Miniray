@@ -126,7 +126,7 @@ func TestTuicJob_TrafficAccounting(t *testing.T) {
 	}
 
 	// Verify inbound total traffic in database: TuicJob leaves inbound total
-	// accounting to xray_traffic_job (metered on the SOCKS relay tag, matching mtproto),
+	// accounting to xray_traffic_job (metered on the SOCKS relay tag),
 	// preventing double-counting.
 	var dbInbound model.Inbound
 	if err := database.GetDB().First(&dbInbound, inbound.Id).Error; err != nil {

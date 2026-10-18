@@ -117,7 +117,7 @@ func TestInstanceFromInboundEmptyWhenNoEnabledPeers(t *testing.T) {
 	})
 	ib := &model.Inbound{Id: 1, Protocol: model.AmneziaWG, Settings: settings}
 	if _, ok := InstanceFromInbound(ib); ok {
-		t.Fatal("an inbound with zero enabled peers must be skipped, like mtproto.InstanceFromInbound")
+		t.Fatal("an inbound with zero enabled peers must be skipped")
 	}
 }
 

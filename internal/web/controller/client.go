@@ -53,7 +53,6 @@ func (a *ClientController) initRouter(g *gin.RouterGroup) {
 	g.GET("/list", a.list)
 	g.GET("/list/paged", a.listPaged)
 	g.GET("/get/:email", a.get)
-	g.GET("/get/tgId/:tgId", a.getByTgId)
 	g.GET("/traffic/:email", a.getTrafficByEmail)
 	g.GET("/subLinks/:subId", a.getSubLinks)
 	g.GET("/links/:email", a.getClientLinks)
@@ -168,30 +167,6 @@ func (a *ClientController) get(c *gin.Context) {
 		return
 	}
 	jsonObj(c, payload, nil)
-}
-
-func (a *ClientController) getByTgId(c *gin.Context) {
-	tgIdStr := c.Param("tgId")
-	tgId, err := strconv.ParseInt(tgIdStr, 10, 64)
-	if err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
-		return
-	}
-	records, err := a.clientService.GetRecordsByTgID(tgId)
-	if err != nil {
-		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
-		return
-	}
-	results := make([]gin.H, 0, len(records))
-	for _, rec := range records {
-		payload, err := a.buildClientPayload(rec)
-		if err != nil {
-			jsonMsg(c, I18nWeb(c, "get"), err)
-			return
-		}
-		results = append(results, payload)
-	}
-	jsonObj(c, results, nil)
 }
 
 func (a *ClientController) create(c *gin.Context) {

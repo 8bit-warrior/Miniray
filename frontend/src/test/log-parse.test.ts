@@ -64,9 +64,7 @@ describe('parseLogLine — SysLog (journalctl) formats', () => {
 
 describe('parseLogLine — app-log format (SysLog off)', () => {
   it('parses "YYYY/MM/DD HH:MM:SS LEVEL - body"', () => {
-    const r = parseLogLine(
-      '2026/06/09 00:35:09 INFO - inbound config applied for tag example',
-    );
+    const r = parseLogLine('2026/06/09 00:35:09 INFO - inbound config applied for tag example');
     expect(r.date).toBe('2026/06/09');
     expect(r.time).toBe('00:35:09');
     expect(r.levelText).toBe('INFO');

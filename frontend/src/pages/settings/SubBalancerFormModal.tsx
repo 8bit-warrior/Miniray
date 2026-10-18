@@ -16,7 +16,6 @@ import {
 } from '@/schemas/subBalancer';
 
 // The JSON subscription only builds proxy outbounds for these protocols;
-// mtproto has no proxy-outbound case, so it is excluded from balancer members.
 const MULTI_CLIENT_PROTOCOLS = new Set([
   'shadowsocks',
   'vless',

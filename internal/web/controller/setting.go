@@ -39,8 +39,8 @@ type updateUserForm struct {
 // "unchanged", so clearing needs its own signal — see #5724).
 type updateSettingForm struct {
 	entity.AllSetting
-	TwoFactorCode        string `json:"twoFactorCode" form:"twoFactorCode"`
-	ClearLdapPassword bool `json:"clearLdapPassword" form:"clearLdapPassword"`
+	TwoFactorCode     string `json:"twoFactorCode" form:"twoFactorCode"`
+	ClearLdapPassword bool   `json:"clearLdapPassword" form:"clearLdapPassword"`
 }
 
 type validateRegexForm struct {

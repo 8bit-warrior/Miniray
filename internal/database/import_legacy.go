@@ -206,6 +206,9 @@ func dropLegacyGroupFields(settings string) (string, error) {
 				delete(client, "group")
 				delete(client, "groupName")
 				delete(client, "group_name")
+				delete(client, "tgId")
+				delete(client, "secret")
+				delete(client, "adTag")
 			}
 		}
 	}

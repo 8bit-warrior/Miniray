@@ -18,11 +18,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// A test binary re-executed with MTG_FAKE_CHILD=1 poses as an mtg child
-	// process (see mtproto_fake_test.go) and never reaches the test runner.
-	if os.Getenv("MTG_FAKE_CHILD") == "1" {
-		fakeMtgChildMain()
-	}
 	// injectPanelEgress logs when it skips injection; the package logger must
 	// exist before any test exercises a skipped path.
 	miniraylogger.InitLogger(logging.ERROR)
@@ -348,8 +343,7 @@ func TestInjectAmneziawgnetSocks_CreatesRelayTaggedWithInboundsOwnTag(t *testing
 	}
 }
 
-// Without routeOnly the sniffed SNI replaces the dial target, so Telegram's
-// FakeTLS to 194.221.250.50 (SNI www.google.com) lands on real Google.
+// routeOnly keeps a sniffed SNI from replacing the client's dial target.
 func TestInjectAmneziawgnetSocks_SniffingRouteOnly(t *testing.T) {
 	cfg := egressTestConfig()
 	injectAmneziawgnetSocks(cfg, []*model.Inbound{amneziawgInbound(7, "awg-7", []model.Client{

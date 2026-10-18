@@ -11,7 +11,7 @@ import (
 // TestGetClientByEmail_AfterMoveBetweenInbounds is the #6059 regression: a
 // client moved to another inbound keeps a client_traffics row pointing at the
 // old inbound (which still exists), so email lookups used to fail with
-// "Client Not Found In Inbound For Email" and the Telegram bot could not build
+// "Client Not Found In Inbound For Email" and subscription generation could not build
 // links or QR codes for the client anymore.
 func TestGetClientByEmail_AfterMoveBetweenInbounds(t *testing.T) {
 	setupBulkDB(t)

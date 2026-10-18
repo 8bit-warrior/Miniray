@@ -217,6 +217,7 @@ func (s *XrayMetricsService) applyObservatory(t time.Time, entries map[string]ra
 		xrayMetrics.append(obsHistoryKey(tag), t, float64(e.Delay))
 	}
 
+	s.mu.Lock()
 	for tag := range s.obsByTag {
 		if _, kept := next[tag]; !kept {
 			xrayMetrics.drop(obsHistoryKey(tag))

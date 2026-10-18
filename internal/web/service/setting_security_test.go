@@ -61,45 +61,77 @@ func TestGetAllSettingViewRedactsSecrets(t *testing.T) {
 	s := &SettingService{}
 	for key, value := range map[string]string{
 		"twoFactorToken": "totp-secret",
-		"ldapPassword": "ldap-secret",
+		"ldapPassword":   "ldap-secret",
 	} {
-		if err := s.saveSetting(key, value); err != nil { t.Fatal(err) }
+		if err := s.saveSetting(key, value); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if err := database.GetDB().Create(&model.ApiToken{Name: "test", Token: "api-secret", Enabled: true}).Error; err != nil { t.Fatal(err) }
+	if err := database.GetDB().Create(&model.ApiToken{Name: "test", Token: "api-secret", Enabled: true}).Error; err != nil {
+		t.Fatal(err)
+	}
 	view, err := s.GetAllSettingView()
-	if err != nil { t.Fatal(err) }
-	if view.TwoFactorToken != "" || view.LdapPassword != "" { t.Fatal("settings view leaked secrets") }
-	if !view.HasTwoFactorToken || !view.HasLdapPassword || !view.HasApiToken { t.Fatal("settings view omitted secret flags") }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if view.TwoFactorToken != "" || view.LdapPassword != "" {
+		t.Fatal("settings view leaked secrets")
+	}
+	if !view.HasTwoFactorToken || !view.HasLdapPassword || !view.HasApiToken {
+		t.Fatal("settings view omitted secret flags")
+	}
 }
 
 func TestUpdateAllSettingPreservesRedactedSecrets(t *testing.T) {
 	setupSettingTestDB(t)
 	s := &SettingService{}
 	for key, value := range map[string]string{
-		"ldapPassword": "ldap-secret",
+		"ldapPassword":    "ldap-secret",
 		"twoFactorEnable": "true",
-		"twoFactorToken": "totp-secret",
+		"twoFactorToken":  "totp-secret",
 	} {
-		if err := s.saveSetting(key, value); err != nil { t.Fatal(err) }
+		if err := s.saveSetting(key, value); err != nil {
+			t.Fatal(err)
+		}
 	}
 	view, err := s.GetAllSettingView()
-	if err != nil { t.Fatal(err) }
-	if err := s.UpdateAllSetting(&view.AllSetting, SecretClears{}); err != nil { t.Fatal(err) }
-	if got, _ := s.GetLdapPassword(); got != "ldap-secret" { t.Fatalf("ldap password %q", got) }
-	if got, _ := s.GetTwoFactorToken(); got != "totp-secret" { t.Fatalf("two-factor token %q", got) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpdateAllSetting(&view.AllSetting, SecretClears{}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetLdapPassword(); got != "ldap-secret" {
+		t.Fatalf("ldap password %q", got)
+	}
+	if got, _ := s.GetTwoFactorToken(); got != "totp-secret" {
+		t.Fatalf("two-factor token %q", got)
+	}
 }
 
 func TestUpdateAllSettingClearsFlaggedSecrets(t *testing.T) {
 	setupSettingTestDB(t)
 	s := &SettingService{}
-	if err := s.saveSetting("ldapPassword", "ldap-secret"); err != nil { t.Fatal(err) }
+	if err := s.saveSetting("ldapPassword", "ldap-secret"); err != nil {
+		t.Fatal(err)
+	}
 	view, err := s.GetAllSettingView()
-	if err != nil { t.Fatal(err) }
-	if err := s.UpdateAllSetting(&view.AllSetting, SecretClears{LdapPassword: true}); err != nil { t.Fatal(err) }
-	if got, _ := s.GetLdapPassword(); got != "" { t.Fatalf("ldap password %q, want cleared", got) }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpdateAllSetting(&view.AllSetting, SecretClears{LdapPassword: true}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetLdapPassword(); got != "" {
+		t.Fatalf("ldap password %q, want cleared", got)
+	}
 	view, err = s.GetAllSettingView()
-	if err != nil { t.Fatal(err) }
-	if view.HasLdapPassword { t.Fatal("cleared LDAP secret is still marked present") }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if view.HasLdapPassword {
+		t.Fatal("cleared LDAP secret is still marked present")
+	}
 }
 
 func TestSanitizePublicHTTPURLBlocksPrivateAddressUnlessAllowed(t *testing.T) {

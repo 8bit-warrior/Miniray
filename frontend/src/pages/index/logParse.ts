@@ -6,7 +6,7 @@
 //      "Mon DD HH:MM:SS host ident[pid]: " before the real message, and the
 //    message itself is one of several shapes depending on which subsystem
 //    emitted it:
-//      "INFO - mtproto: ..."                  go-logging (miniray + xray)
+//      "INFO - panel: ..."                  go-logging (miniray + xray)
 //      "2026/06/08 19:22:22 http: ..."        Go std log (net/http, runtime)
 //      "[Mon Jun  8 23:56:52 UTC 2026] ERROR ..."  telego bot
 //      "Stopping miniray.service - ..."          systemd

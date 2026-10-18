@@ -1,13 +1,4 @@
-// Package amneziawg holds the AmneziaWG protocol's shared, DB-backed shapes
-// (Instance, Peer, Obfuscation31, ServerSettings/InboundSettings) and the
-// pure functions that derive an Instance from a stored inbound row. It has
-// no OS dependency of its own: internal/amneziawgnet embeds amneziawg-go
-// over a gVisor netstack and owns the actual running interfaces, one
-// Manager-managed Device per desired Instance -- see that package's Manager
-// for the reconcile-on-tick lifecycle (modeled on internal/mtproto's own
-// Manager), and instance.go's own doc comment for how this package's role
-// narrowed to protocol-shape-only after the kernel-module (DKMS) + awg-quick
-// architecture this fork originally shipped was retired.
+// Package amneziawg derives protocol configuration for the embedded runtime.
 package amneziawg
 
 import "github.com/8bit-warrior/Miniray/internal/database/model"
@@ -53,8 +44,7 @@ type Obfuscation31 struct {
 }
 
 // Peer is one desired AmneziaWG peer: a client device the interface accepts.
-// Email attributes traffic and online status back to the owning client, the
-// same role SecretEntry.Name plays for mtproto.
+// Email attributes traffic and online status to the owning client.
 type Peer struct {
 	Email        string
 	PublicKey    string
@@ -67,9 +57,7 @@ type Peer struct {
 	ForwardedPorts string
 }
 
-// Instance is the desired runtime configuration of one AmneziaWG inbound: a
-// single interface (e.g. awg1) with a set of peers, mirroring how one mtproto
-// inbound maps to one mtg process (internal/mtproto.Instance).
+// Instance is the desired interface configuration and peer set of one inbound.
 type Instance struct {
 	Id            int
 	Tag           string

@@ -119,7 +119,7 @@ func TestBuildUserAccountWireGuardBadKey(t *testing.T) {
 }
 
 func TestBuildUserAccountUnknownProtocolReturnsNil(t *testing.T) {
-	tm, err := buildUserAccount("mtproto", map[string]any{"email": "x@example.test"})
+	tm, err := buildUserAccount("unsupported", map[string]any{"email": "x@example.test"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

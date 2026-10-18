@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, Collapse, Modal, Radio, Spin, Tag } from 'antd';
 import { CloudDownloadOutlined } from '@ant-design/icons';
@@ -42,39 +43,32 @@ interface PanelUpdateModalProps {
 export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelUpdateModalProps) {
   const { t } = useTranslation();
   const [modal, contextHolder] = Modal.useModal();
-  const [builds, setBuilds] = useState<ActionBuild[]>([]);
-  const [activeKey, setActiveKey] = useState('stable');
-  const [buildsLoading, setBuildsLoading] = useState(false);
-  const [buildsError, setBuildsError] = useState(false);
-
-  async function fetchBuilds() {
-    setBuildsLoading(true);
-    setBuildsError(false);
-    try {
+  const defaultKey = info.channel === 'development' ? 'actions' : 'stable';
+  const [activeKey, setActiveKey] = useState(defaultKey);
+  const [previousOpen, setPreviousOpen] = useState(open);
+  const [previousChannel, setPreviousChannel] = useState(info.channel);
+  if (previousOpen !== open || previousChannel !== info.channel) {
+    setPreviousOpen(open);
+    setPreviousChannel(info.channel);
+    if (open) setActiveKey(defaultKey);
+  }
+  const {
+    data: builds = [],
+    isFetching: buildsLoading,
+    isError: buildsError,
+  } = useQuery({
+    queryKey: ['panel', 'action-builds'],
+    enabled: open && activeKey === 'actions',
+    queryFn: async () => {
       const result = await HttpUtil.get<ActionBuild[]>(
         '/panel/api/server/getActionBuilds',
         undefined,
         { silent: true },
       );
-      if (!result?.success) {
-        setBuildsError(true);
-        return;
-      }
-      setBuilds(result.obj || []);
-    } catch {
-      setBuildsError(true);
-    } finally {
-      setBuildsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (open) setActiveKey(info.channel === 'development' ? 'actions' : 'stable');
-  }, [open, info.channel]);
-
-  useEffect(() => {
-    if (open && activeKey === 'actions') void fetchBuilds();
-  }, [open, activeKey]);
+      if (!result?.success) throw new Error('Unable to load development builds');
+      return result.obj || [];
+    },
+  });
 
   async function pollUpdateStatus(expectedRunId: string): Promise<UpdateOutcome> {
     await PromiseUtil.sleep(5000);
@@ -178,7 +172,11 @@ export default function PanelUpdateModal({ open, info, onClose, onBusy }: PanelU
                     </div>
                     <div className="version-list-item">
                       <span>{t('pages.index.latestPanelVersion')}</span>
-                      <Tag color="purple">{info.channel === 'development' ? '-' : formatPanelVersion(info.latestVersion) || '-'}</Tag>
+                      <Tag color="purple">
+                        {info.channel === 'development'
+                          ? '-'
+                          : formatPanelVersion(info.latestVersion) || '-'}
+                      </Tag>
                     </div>
                   </div>
                   <div className="actions-row">

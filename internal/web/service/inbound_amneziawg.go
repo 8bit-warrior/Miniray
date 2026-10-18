@@ -17,13 +17,8 @@ import (
 	wgutil "github.com/8bit-warrior/Miniray/internal/util/wireguard"
 )
 
-// DesiredAmneziaWGInstances derives the AmneziaWG interfaces this panel
-// should be running: one instance per enabled local AmneziaWG inbound,
-// serving only the peers of clients that are both enabled in the inbound
-// settings and not depletion-disabled in client_traffics. That is the same
-// effective peer set buildInboundForLocalRuntime pushes on interactive edits,
-// so the reconcile job and the push path agree on one fingerprint — see
-// DesiredMtprotoInstances, which this mirrors exactly.
+// DesiredAmneziaWGInstances derives active peers using the same depletion rules
+// as interactive runtime edits.
 func (s *InboundService) DesiredAmneziaWGInstances() ([]amneziawg.Instance, error) {
 	db := database.GetDB()
 	var inbounds []*model.Inbound

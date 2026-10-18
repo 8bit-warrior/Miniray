@@ -144,7 +144,7 @@ func (j *PeriodicTrafficResetJob) resetClientsOnTheirOwnCycle() {
 	forEachResetBounded(len(due), func(i int) {
 		c := due[i]
 		// ResetTrafficByEmail rather than a bulk UPDATE: it is the path that also
-		// propagates to the client's node and clears the MTProto sidecar quota.
+		// propagates to the client's runtime.
 		nr, resetErr := j.clientService.ResetTrafficByEmail(&j.inboundService, c.Email)
 		if resetErr != nil {
 			logger.Warning("Failed to reset traffic for client", c.Email, ":", resetErr)
