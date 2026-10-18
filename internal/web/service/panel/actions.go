@@ -72,10 +72,10 @@ func (s *PanelService) ListActionBuilds() ([]ActionBuild, error) {
 
 	var artifacts struct {
 		Artifacts []struct {
-			ID         int64  `json:"id"`
-			Name       string `json:"name"`
-			Digest     string `json:"digest"`
-			Expired    bool   `json:"expired"`
+			ID          int64  `json:"id"`
+			Name        string `json:"name"`
+			Digest      string `json:"digest"`
+			Expired     bool   `json:"expired"`
 			WorkflowRun struct {
 				ID      int64  `json:"id"`
 				HeadSHA string `json:"head_sha"`
