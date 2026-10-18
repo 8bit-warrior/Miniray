@@ -205,6 +205,8 @@
       "xraySwitchVersionDialogDesc": "Ini akan mengubah versi Xray ke #version#.",
       "xraySwitchVersionPopover": "Xray berhasil diperbarui",
       "panelUpdateDialog": "Apakah Anda benar-benar ingin memperbarui panel?",
+      "panelUpdateDownloading": "Mengunduh paket pembaruan...",
+      "panelUpdateInstalling": "Unduhan selesai, sedang memasang...",
       "panelUpdateDialogDesc": "Ini akan memperbarui miniray ke #version# dan me-restart layanan panel.",
       "panelUpdateStartedPopover": "Pembaruan panel dimulai",
       "panelUpdateFailedTitle": "Pembaruan panel gagal",

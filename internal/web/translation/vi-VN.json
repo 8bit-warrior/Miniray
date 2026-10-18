@@ -205,6 +205,8 @@
       "xraySwitchVersionDialogDesc": "Hành động này sẽ thay đổi phiên bản Xray thành #version#.",
       "xraySwitchVersionPopover": "Xray đã được cập nhật thành công",
       "panelUpdateDialog": "Bạn có chắc muốn cập nhật panel không?",
+      "panelUpdateDownloading": "Đang tải gói cập nhật...",
+      "panelUpdateInstalling": "Tải xuống hoàn tất, đang cài đặt...",
       "panelUpdateDialogDesc": "Điều này sẽ cập nhật miniray lên #version# và khởi động lại dịch vụ panel.",
       "panelUpdateStartedPopover": "Bắt đầu cập nhật panel",
       "panelUpdateFailedTitle": "Cập nhật panel thất bại",

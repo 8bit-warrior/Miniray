@@ -205,6 +205,8 @@
       "xraySwitchVersionDialogDesc": "Вы точно хотите сменить версию Xray?",
       "xraySwitchVersionPopover": "Xray успешно обновлён",
       "panelUpdateDialog": "Вы действительно хотите обновить панель?",
+      "panelUpdateDownloading": "Загрузка пакета обновления...",
+      "panelUpdateInstalling": "Загрузка завершена, выполняется установка...",
       "panelUpdateDialogDesc": "Это обновит miniray до версии #version# и перезапустит сервис панели.",
       "panelUpdateStartedPopover": "Обновление панели началось",
       "panelUpdateFailedTitle": "Не удалось обновить панель",

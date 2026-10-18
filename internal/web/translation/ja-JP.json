@@ -205,6 +205,8 @@
       "xraySwitchVersionDialogDesc": "Xrayのバージョンが#version#に変更されます。",
       "xraySwitchVersionPopover": "Xrayの更新が成功しました",
       "panelUpdateDialog": "本当にパネルを更新しますか？",
+      "panelUpdateDownloading": "更新ファイルをダウンロードしています...",
+      "panelUpdateInstalling": "ダウンロードが完了しました。インストールしています...",
       "panelUpdateDialogDesc": "これによりminirayが#version#に更新され、パネルサービスが再起動されます。",
       "panelUpdateStartedPopover": "パネルの更新を開始しました",
       "panelUpdateFailedTitle": "パネルの更新に失敗しました",

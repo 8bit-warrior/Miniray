@@ -205,6 +205,8 @@
       "xraySwitchVersionDialogDesc": "Esto cambiará la versión de Xray a #version#.",
       "xraySwitchVersionPopover": "Xray se actualizó correctamente",
       "panelUpdateDialog": "¿Deseas actualizar el panel?",
+      "panelUpdateDownloading": "Descargando el paquete de actualización...",
+      "panelUpdateInstalling": "Descarga completada, instalando...",
       "panelUpdateDialogDesc": "Esto actualizará miniray a la versión #version# y reiniciará el servicio del panel.",
       "panelUpdateStartedPopover": "Actualización del panel iniciada",
       "panelUpdateFailedTitle": "Error al actualizar el panel",
