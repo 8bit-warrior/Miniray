@@ -8,10 +8,8 @@ import {
   ApartmentOutlined,
   CloseOutlined,
   CloudServerOutlined,
-  ClusterOutlined,
   CodeOutlined,
   DashboardOutlined,
-  DatabaseOutlined,
   ExportOutlined,
   GithubOutlined,
   ImportOutlined,
@@ -45,10 +43,13 @@ type IconName =
   | 'team'
   | 'setting'
   | 'tool'
-  | 'cluster'
   | 'logout'
   | 'outbound'
-  | 'routing';
+  | 'routing'
+  | 'security'
+  | 'subscription'
+  | 'code'
+  | 'balancer';
 
 const iconByName: Record<IconName, ComponentType> = {
   dashboard: DashboardOutlined,
@@ -56,10 +57,13 @@ const iconByName: Record<IconName, ComponentType> = {
   team: TeamOutlined,
   setting: SettingOutlined,
   tool: ToolOutlined,
-  cluster: ClusterOutlined,
   logout: LogoutOutlined,
   outbound: ExportOutlined,
   routing: SwapOutlined,
+  security: SafetyOutlined,
+  subscription: CloudServerOutlined,
+  code: CodeOutlined,
+  balancer: ApartmentOutlined,
 };
 
 function DocsButton({ ariaLabel }: { ariaLabel: string }) {
@@ -139,74 +143,53 @@ export default function AppSidebar() {
   const currentTheme: 'light' | 'dark' = isDark ? 'dark' : 'light';
   const panelVersion = window.MINIRAY_CUR_VER || '';
 
-  const tabs = useMemo<{ key: string; icon: IconName; title: string }[]>(
-    () => [
+  const tabs = useMemo<{ key: string; icon: IconName; title: string }[]>(() => {
+    const items: { key: string; icon: IconName; title: string }[] = [
       { key: '/', icon: 'dashboard', title: t('menu.dashboard') },
       { key: '/inbounds', icon: 'inbound', title: t('menu.inbounds') },
       { key: '/clients', icon: 'team', title: t('menu.clients') },
       { key: '/outbound', icon: 'outbound', title: t('menu.outbounds') },
       { key: '/routing', icon: 'routing', title: t('menu.routing') },
-      { key: '/settings', icon: 'setting', title: t('menu.settings') },
-      { key: '/xray', icon: 'tool', title: t('menu.xray') },
+      { key: '/settings#general', icon: 'setting', title: t('pages.settings.panelSettings') },
+      { key: '/settings#security', icon: 'security', title: t('pages.settings.securitySettings') },
+      {
+        key: '/settings#subscription',
+        icon: 'subscription',
+        title: t('pages.settings.subSettings'),
+      },
+    ];
+    if (showSubFormats) {
+      items.push({
+        key: '/settings#subscription-formats',
+        icon: 'code',
+        title: t('menu.subFormats'),
+      });
+    }
+    if (showSubBalancers) {
+      items.push({
+        key: '/settings#subscription-balancers',
+        icon: 'balancer',
+        title: t('pages.settings.subBalancers.menu'),
+      });
+    }
+    items.push(
+      { key: '/xray#basic', icon: 'tool', title: t('pages.xray.basicTemplate') },
+      { key: '/xray#advanced', icon: 'code', title: t('pages.xray.advancedTemplate') },
       { key: LOGOUT_KEY, icon: 'logout', title: t('logout') },
-    ],
-    [t],
-  );
+    );
+    return items;
+  }, [t, showSubFormats, showSubBalancers]);
 
   const navItems = useMemo(() => tabs.filter((tab) => tab.icon !== 'logout'), [tabs]);
   const utilItems = useMemo(() => tabs.filter((tab) => tab.icon === 'logout'), [tabs]);
 
-  const settingsChildren = useMemo<NonNullable<MenuProps['items']>>(() => {
-    const children: NonNullable<MenuProps['items']> = [
-      {
-        key: '/settings#general',
-        icon: <SettingOutlined />,
-        label: t('pages.settings.panelSettings'),
-      },
-      {
-        key: '/settings#security',
-        icon: <SafetyOutlined />,
-        label: t('pages.settings.securitySettings'),
-      },
-      {
-        key: '/settings#subscription',
-        icon: <CloudServerOutlined />,
-        label: t('pages.settings.subSettings'),
-      },
-    ];
-    if (showSubFormats) {
-      children.push({
-        key: '/settings#subscription-formats',
-        icon: <CodeOutlined />,
-        label: t('menu.subFormats'),
-      });
-    }
-    if (showSubBalancers) {
-      children.push({
-        key: '/settings#subscription-balancers',
-        icon: <ApartmentOutlined />,
-        label: t('pages.settings.subBalancers.menu'),
-      });
-    }
-    return children;
-  }, [t, showSubFormats, showSubBalancers]);
-
-  const xrayChildren = useMemo<NonNullable<MenuProps['items']>>(
-    () => [
-      { key: '/xray#basic', icon: <SettingOutlined />, label: t('pages.xray.basicTemplate') },
-      { key: '/xray#balancer', icon: <ClusterOutlined />, label: t('pages.xray.Balancers') },
-      { key: '/xray#dns', icon: <DatabaseOutlined />, label: 'DNS' },
-      { key: '/xray#advanced', icon: <CodeOutlined />, label: t('pages.xray.advancedTemplate') },
-    ],
-    [t],
-  );
-
   const settingsActive = pathname === '/settings';
   const xrayActive = pathname === '/xray';
+  const xrayMenuHash = hash === '#balancer' || hash === '#dns' ? '#advanced' : hash || '#basic';
   const selectedKey = settingsActive
     ? `/settings${hash || '#general'}`
     : xrayActive
-      ? `/xray${hash || '#basic'}`
+      ? `/xray${xrayMenuHash}`
       : pathname === ''
         ? '/'
         : pathname;
@@ -215,35 +198,9 @@ export default function AppSidebar() {
     (items: typeof tabs): MenuProps['items'] =>
       items.map((tab) => {
         const Icon = iconByName[tab.icon];
-        if (tab.key === '/settings') {
-          return {
-            type: 'group' as const,
-            key: tab.key,
-            label: (
-              <span className="sidebar-section-label">
-                <Icon />
-                {tab.title}
-              </span>
-            ),
-            children: settingsChildren,
-          };
-        }
-        if (tab.key === '/xray') {
-          return {
-            type: 'group' as const,
-            key: tab.key,
-            label: (
-              <span className="sidebar-section-label">
-                <Icon />
-                {tab.title}
-              </span>
-            ),
-            children: xrayChildren,
-          };
-        }
         return { key: tab.key, icon: <Icon />, label: tab.title, title: '' };
       }),
-    [settingsChildren, xrayChildren],
+    [],
   );
 
   const openLink = useCallback(

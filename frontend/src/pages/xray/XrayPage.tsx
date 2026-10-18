@@ -15,6 +15,7 @@ import {
   Row,
   Space,
   Spin,
+  Tabs,
 } from 'antd';
 
 import { useTheme } from '@/hooks/useTheme';
@@ -39,7 +40,7 @@ import { DnsTab } from './dns';
 import { WarpModal, NordModal, PiaModal } from './overrides';
 import './XrayPage.css';
 
-const SECTION_SLUGS = ['basic', 'routing', 'outbound', 'balancer', 'dns', 'advanced'];
+const SECTION_SLUGS = ['basic', 'routing', 'outbound', 'advanced'];
 
 type AdvKey = 'xraySetting' | 'inboundSettings' | 'outboundSettings' | 'routingRuleSettings';
 
@@ -93,7 +94,14 @@ export default function XrayPage() {
         ? 'routing'
         : '';
   const sectionSlug = pathSection || location.hash.replace(/^#/, '');
-  const activeSection = SECTION_SLUGS.includes(sectionSlug) ? sectionSlug : 'basic';
+  const activeSection =
+    sectionSlug === 'balancer' || sectionSlug === 'dns'
+      ? 'advanced'
+      : SECTION_SLUGS.includes(sectionSlug)
+        ? sectionSlug
+        : 'basic';
+  const advancedTab =
+    sectionSlug === 'balancer' || sectionSlug === 'dns' ? sectionSlug : 'advanced';
 
   const mutate = useCallback(
     (mutator: (next: XraySettingsValue) => void) => {
@@ -256,46 +264,74 @@ export default function XrayPage() {
             onRefreshXrayData={fetchAll}
           />
         );
-      case 'balancer':
-        return (
-          <BalancersTab
-            templateSettings={templateSettings}
-            setTemplateSettings={setTemplateSettings}
-            clientReverseTags={clientReverseTags}
-            subscriptionOutboundTags={subscriptionOutboundTags}
-            isMobile={isMobile}
-          />
-        );
-      case 'dns':
-        return (
-          <DnsTab templateSettings={templateSettings} setTemplateSettings={setTemplateSettings} />
-        );
       case 'advanced':
         return (
-          <>
-            <div className="advanced-meta">
-              <h4>{t('pages.xray.Template')}</h4>
-              <p>{t('pages.xray.TemplateDesc')}</p>
-            </div>
-            <Radio.Group
-              value={advSettings}
-              buttonStyle="solid"
-              size={isMobile ? 'small' : 'middle'}
-              style={{ margin: '12px 0' }}
-              onChange={(e) => setAdvSettings(e.target.value)}
-            >
-              <Radio.Button value="xraySetting">{t('pages.xray.completeTemplate')}</Radio.Button>
-              <Radio.Button value="inboundSettings">{t('pages.xray.Inbounds')}</Radio.Button>
-              <Radio.Button value="outboundSettings">{t('pages.xray.Outbounds')}</Radio.Button>
-              <Radio.Button value="routingRuleSettings">{t('pages.xray.Routings')}</Radio.Button>
-            </Radio.Group>
-            <JsonEditor
-              value={advancedText}
-              onChange={onAdvancedTextChange}
-              minHeight="420px"
-              maxHeight="720px"
-            />
-          </>
+          <Tabs
+            activeKey={advancedTab}
+            onChange={(key) => navigate(`/xray#${key}`)}
+            items={[
+              {
+                key: 'advanced',
+                label: t('pages.xray.Template'),
+                children: (
+                  <>
+                    <div className="advanced-meta">
+                      <p>{t('pages.xray.TemplateDesc')}</p>
+                    </div>
+                    <Radio.Group
+                      value={advSettings}
+                      buttonStyle="solid"
+                      size={isMobile ? 'small' : 'middle'}
+                      style={{ margin: '12px 0' }}
+                      onChange={(e) => setAdvSettings(e.target.value)}
+                    >
+                      <Radio.Button value="xraySetting">
+                        {t('pages.xray.completeTemplate')}
+                      </Radio.Button>
+                      <Radio.Button value="inboundSettings">
+                        {t('pages.xray.Inbounds')}
+                      </Radio.Button>
+                      <Radio.Button value="outboundSettings">
+                        {t('pages.xray.Outbounds')}
+                      </Radio.Button>
+                      <Radio.Button value="routingRuleSettings">
+                        {t('pages.xray.Routings')}
+                      </Radio.Button>
+                    </Radio.Group>
+                    <JsonEditor
+                      value={advancedText}
+                      onChange={onAdvancedTextChange}
+                      minHeight="420px"
+                      maxHeight="720px"
+                    />
+                  </>
+                ),
+              },
+              {
+                key: 'balancer',
+                label: t('pages.xray.Balancers'),
+                children: (
+                  <BalancersTab
+                    templateSettings={templateSettings}
+                    setTemplateSettings={setTemplateSettings}
+                    clientReverseTags={clientReverseTags}
+                    subscriptionOutboundTags={subscriptionOutboundTags}
+                    isMobile={isMobile}
+                  />
+                ),
+              },
+              {
+                key: 'dns',
+                label: 'DNS',
+                children: (
+                  <DnsTab
+                    templateSettings={templateSettings}
+                    setTemplateSettings={setTemplateSettings}
+                  />
+                ),
+              },
+            ]}
+          />
         );
       default:
         return (

@@ -9,9 +9,9 @@ vi.mock('@/api/queries/useAllSettings', () => ({
   useAllSettings: () => ({ allSetting: {} }),
 }));
 
-async function renderSidebar() {
+async function renderSidebar(initialEntry = '/') {
   const view = renderWithProviders(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <AppSidebar />
     </MemoryRouter>,
   );
@@ -43,13 +43,22 @@ test('does not expose command search on desktop or mobile', async () => {
   expect(document.querySelector('.sidebar-command-trigger')).toBeNull();
 });
 
-test('shows settings and Xray section headers with always-visible links', async () => {
+test('shows direct settings and Xray links without section headings', async () => {
   const view = await renderSidebar();
-  const groups = view.container.querySelectorAll('.sider-nav .ant-menu-item-group');
-  expect(groups).toHaveLength(2);
+  expect(view.container.querySelectorAll('.sider-nav .ant-menu-item-group')).toHaveLength(0);
   expect(view.container.querySelectorAll('.sider-nav .ant-menu-submenu')).toHaveLength(0);
-  expect(
-    view.container.querySelectorAll('.sider-nav .ant-menu-item-group-list .ant-menu-item').length,
-  ).toBeGreaterThan(4);
+  expect(view.container.querySelectorAll('.sider-nav .ant-menu-item')).toHaveLength(10);
   expect(view.container.querySelector('.brand-text')?.textContent).toBe('Miniray');
 });
+
+test.each(['/xray#advanced', '/xray#balancer', '/xray#dns'])(
+  'selects advanced config in the sidebar for %s',
+  async (entry) => {
+    const view = await renderSidebar(entry);
+    const items = Array.from(view.container.querySelectorAll('.sider-nav .ant-menu-item'));
+    expect(items.at(-1)?.classList.contains('ant-menu-item-selected')).toBe(true);
+    expect(items.filter((item) => item.classList.contains('ant-menu-item-selected'))).toHaveLength(
+      1,
+    );
+  },
+);

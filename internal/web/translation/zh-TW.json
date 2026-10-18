@@ -110,8 +110,6 @@
     "dashboard": "系統狀態",
     "inbounds": "入站",
     "clients": "客戶端",
-    "settings": "面板設定",
-    "xray": "Xray 設定",
     "routing": "路由",
     "outbounds": "出站",
     "docs": "文件",

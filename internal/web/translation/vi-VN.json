@@ -110,8 +110,6 @@
     "dashboard": "Trạng thái hệ thống",
     "inbounds": "Inbound",
     "clients": "Khách hàng",
-    "settings": "Cài đặt bảng điều khiển",
-    "xray": "Cấu hình Xray",
     "routing": "Định tuyến",
     "outbounds": "Outbound",
     "docs": "Tài liệu",

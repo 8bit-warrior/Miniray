@@ -110,8 +110,6 @@
     "dashboard": "Overview",
     "inbounds": "Inbounds",
     "clients": "Clients",
-    "settings": "Panel Settings",
-    "xray": "Xray Configs",
     "routing": "Routing",
     "outbounds": "Outbounds",
     "docs": "Documentation",

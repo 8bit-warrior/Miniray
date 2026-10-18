@@ -2,11 +2,18 @@ name: Build Miniray packages
 on:
   push:
     tags: ['v*.*.*']
+    branches: [main]
+    paths:
+      - '.github/workflows/release.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   frontend:
+    if: >-
+      github.event_name != 'push' ||
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[build-packages]'))
     runs-on: ubuntu-24.04
     outputs:
       passed: ${{ steps.build.outcome }}
