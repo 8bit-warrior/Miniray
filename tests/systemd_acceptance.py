@@ -192,7 +192,7 @@ curl.write_text("""#!/usr/bin/env python3
 import os, shutil, sys
 from pathlib import Path
 args=sys.argv[1:]
-url=args[-1]
+url=next(arg for arg in args if arg.startswith(('http://', 'https://')))
 target=Path(args[args.index('-o')+1]) if '-o' in args else None
 if url == 'https://api.github.com/repos/8bit-warrior/Miniray/releases/latest':
     version=(Path(os.environ['MINIRAY_TEST_REPO']) / 'internal/config/version').read_text().strip()
