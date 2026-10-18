@@ -114,7 +114,6 @@
     "xray": "Xray Yapılandırmaları",
     "routing": "Yönlendirme",
     "outbounds": "Giden Bağlantılar",
-    "apiDocs": "API Belgeleri",
     "docs": "Belgeler",
     "openMenu": "Menüyü aç",
     "subFormats": "Abonelik Formatları"
@@ -1949,18 +1948,5 @@
       "ruleName": "Ad",
       "outboundLatency": "Gecikme"
     }
-  },
-  "commandPalette": {
-    "title": "Komut Paleti",
-    "placeholder": "Komut yazın veya istemcileri, gelen bağlantıları, sayfaları arayın...",
-    "search": "Ara...",
-    "navigation": "Gezinme",
-    "actions": "İşlemler",
-    "navigate": "Gezin",
-    "select": "Seç",
-    "copySubscription": "Aboneliği kopyala",
-    "restartXray": "Xray Hizmetini Yeniden Başlat",
-    "restartXraySuccess": "Xray hizmeti başarıyla yeniden başlatıldı",
-    "settings": "Ayarlar"
   }
 }

@@ -38,13 +38,10 @@ func (a *MINIRAYController) initRouter(g *gin.RouterGroup) {
 	g.GET("/", a.panelSPA)
 	g.GET("/inbounds", a.panelSPA)
 	g.GET("/clients", a.panelSPA)
-	g.GET("/groups", a.panelSPA)
-	g.GET("/nodes", a.panelSPA)
 	g.GET("/settings", a.panelSPA)
 	g.GET("/xray", a.panelSPA)
 	g.GET("/outbound", a.panelSPA)
 	g.GET("/routing", a.panelSPA)
-	g.GET("/api-docs", a.panelSPA)
 
 	// SPA pages built by Vite don't have a server-rendered <meta name="csrf-token">,
 	// so they fetch the session token via this endpoint at startup and replay it
@@ -100,6 +97,11 @@ func isPanelSPAFallbackRequest(c *gin.Context) bool {
 	reqPath := c.Request.URL.Path
 	if reqPath != panelPath && !strings.HasPrefix(reqPath, panelPath+"/") {
 		return false
+	}
+	for _, retired := range []string{"/groups", "/nodes", "/hosts", "/api-docs"} {
+		if reqPath == panelPath+retired || strings.HasPrefix(reqPath, panelPath+retired+"/") {
+			return false
+		}
 	}
 
 	if reqPath == panelPath+"/csrf-token" || strings.HasPrefix(reqPath, panelPath+"/csrf-token/") {

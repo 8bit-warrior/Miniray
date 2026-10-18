@@ -114,7 +114,6 @@
     "xray": "Konfigurasi Xray",
     "routing": "Pengalihan",
     "outbounds": "Outbound",
-    "apiDocs": "Dokumentasi API",
     "docs": "Dokumentasi",
     "openMenu": "Buka menu",
     "subFormats": "Sub Formats"
@@ -1949,18 +1948,5 @@
       "ruleName": "Nama",
       "outboundLatency": "Latensi"
     }
-  },
-  "commandPalette": {
-    "title": "Palet Perintah",
-    "placeholder": "Ketik perintah atau cari klien, inbound, halaman...",
-    "search": "Cari...",
-    "navigation": "Navigasi",
-    "actions": "Tindakan",
-    "navigate": "Navigasi",
-    "select": "Pilih",
-    "copySubscription": "Salin langganan",
-    "restartXray": "Mulai Ulang Layanan Xray",
-    "restartXraySuccess": "Layanan Xray berhasil dimulai ulang",
-    "settings": "Pengaturan"
   }
 }

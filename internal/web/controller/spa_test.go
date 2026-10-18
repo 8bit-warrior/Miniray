@@ -22,7 +22,7 @@ func newSPAFallbackTestEngine(t *testing.T) *gin.Engine {
 
 func TestPanelSPAFallbackServesRootBasePath(t *testing.T) {
 	engine := newSPAFallbackTestEngineWithBasePath(t, "/")
-	req := httptest.NewRequest(http.MethodGet, "/panel/hosts", nil)
+	req := httptest.NewRequest(http.MethodGet, "/panel/future", nil)
 	req.Header.Set("Accept", "text/html")
 	req.Header.Set("X-Test-Login", "1")
 	w := httptest.NewRecorder()
@@ -41,7 +41,7 @@ func TestPanelSPAFallbackServesAuthenticatedClientRoutes(t *testing.T) {
 	engine := newSPAFallbackTestEngine(t)
 
 	for _, target := range []string{
-		"/admin-random/panel/hosts",
+		"/admin-random/panel/future",
 		"/admin-random/panel/some/future/route",
 	} {
 		t.Run(target, func(t *testing.T) {
@@ -69,7 +69,7 @@ func TestPanelSPAFallbackPreservesAuthSemantics(t *testing.T) {
 	engine := newSPAFallbackTestEngine(t)
 
 	t.Run("browser redirects to login", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/admin-random/panel/hosts", nil)
+		req := httptest.NewRequest(http.MethodGet, "/admin-random/panel/future", nil)
 		req.Header.Set("Accept", "text/html")
 		w := httptest.NewRecorder()
 
@@ -84,7 +84,7 @@ func TestPanelSPAFallbackPreservesAuthSemantics(t *testing.T) {
 	})
 
 	t.Run("ajax gets json unauthorized", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/admin-random/panel/hosts", nil)
+		req := httptest.NewRequest(http.MethodGet, "/admin-random/panel/future", nil)
 		req.Header.Set("Accept", "text/html")
 		req.Header.Set("X-Requested-With", "XMLHttpRequest")
 		w := httptest.NewRecorder()
@@ -151,6 +151,21 @@ func TestPanelCSRFTokenRemainsExplicit(t *testing.T) {
 	}
 }
 
+func TestRemovedPanelRoutesReturn404(t *testing.T) {
+	engine := newSPAFallbackTestEngine(t)
+	for _, route := range []string{"/groups", "/nodes", "/hosts", "/api-docs"} {
+		target := "/admin-random/panel" + route
+		req := httptest.NewRequest(http.MethodGet, target, nil)
+		req.Header.Set("Accept", "text/html")
+		req.Header.Set("X-Test-Login", "1")
+		w := httptest.NewRecorder()
+		engine.ServeHTTP(w, req)
+		if w.Code != http.StatusNotFound {
+			t.Errorf("%s returned %d, want 404", target, w.Code)
+		}
+	}
+}
+
 func TestPanelSPAFallbackPredicate(t *testing.T) {
 	oldDistFS := distFS
 	SetDistFS(fstest.MapFS{})
@@ -164,10 +179,10 @@ func TestPanelSPAFallbackPredicate(t *testing.T) {
 		want   bool
 	}{
 		{name: "panel root", method: http.MethodGet, path: "/admin-random/panel", accept: "text/html", want: true},
-		{name: "panel descendant", method: http.MethodGet, path: "/admin-random/panel/hosts", accept: "*/*", want: true},
+		{name: "panel descendant", method: http.MethodGet, path: "/admin-random/panel/future", accept: "*/*", want: true},
 		{name: "empty accept", method: http.MethodGet, path: "/admin-random/panel/future", want: true},
-		{name: "post excluded", method: http.MethodPost, path: "/admin-random/panel/hosts", accept: "text/html"},
-		{name: "json accept excluded", method: http.MethodGet, path: "/admin-random/panel/hosts", accept: "application/json"},
+		{name: "post excluded", method: http.MethodPost, path: "/admin-random/panel/future", accept: "text/html"},
+		{name: "json accept excluded", method: http.MethodGet, path: "/admin-random/panel/future", accept: "application/json"},
 		{name: "api root excluded", method: http.MethodGet, path: "/admin-random/panel/api", accept: "text/html"},
 		{name: "api descendant excluded", method: http.MethodGet, path: "/admin-random/panel/api/unknown", accept: "text/html"},
 		{name: "csrf excluded", method: http.MethodGet, path: "/admin-random/panel/csrf-token", accept: "text/html"},

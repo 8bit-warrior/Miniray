@@ -27,7 +27,7 @@ jobs:
       - name: Verify generated API contracts
         run: |
           npm run gen --prefix frontend
-          git diff --exit-code -- frontend/src/generated frontend/public/openapi.json
+          git diff --exit-code -- frontend/src/generated
       - name: Lint and format frontend
         run: npm run lint && npm run format:check
         working-directory: frontend

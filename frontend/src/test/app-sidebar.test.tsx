@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { expect, test, vi } from 'vitest';
 
@@ -36,10 +36,11 @@ test('remains expanded at 220px across remounts without a pin setting', async ()
   );
 });
 
-test('shows the command palette shortcut for the active platform', async () => {
+test('does not expose command search on desktop or mobile', async () => {
   const view = await renderSidebar();
-  const chip = view.container.querySelector('.sidebar-command-kbd');
-  expect(chip?.textContent).toBe('CtrlK');
+  expect(view.container.querySelector('.sidebar-command-trigger')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+  expect(document.querySelector('.sidebar-command-trigger')).toBeNull();
 });
 
 test('shows settings and Xray section headers with always-visible links', async () => {
