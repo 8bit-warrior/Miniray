@@ -328,7 +328,6 @@ export default function GeneralTab({
                   onChange={(v) => updateSetting({ restartXrayOnClientDisable: v })}
                 />
               </SettingListItem>
-
             </>
           ),
         },

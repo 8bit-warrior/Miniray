@@ -53,13 +53,6 @@ function collectSources(dir: string, exts: string[], out: string[]): void {
 }
 
 describe('i18n keys', () => {
-  it('ships exactly English and Simplified Chinese', () => {
-    expect(readdirSync(translationDir).filter((file) => file.endsWith('.json')).sort()).toEqual([
-      'en-US.json',
-      'zh-CN.json',
-    ]);
-  });
-
   const enUS = JSON.parse(readFileSync(join(translationDir, 'en-US.json'), 'utf8'));
   const enKeys = flattenKeys(enUS);
 
@@ -91,8 +84,10 @@ describe('i18n keys', () => {
 
   it('every locale carries exactly the en-US key set', () => {
     const enSet = new Set(enKeys);
-    for (const file of readdirSync(translationDir)) {
-      if (!file.endsWith('.json') || file === 'en-US.json') continue;
+    const files = readdirSync(translationDir).filter((file) => file.endsWith('.json'));
+    expect(files.sort()).toEqual(['en-US.json', 'zh-CN.json']);
+    for (const file of files) {
+      if (file === 'en-US.json') continue;
       const keys = new Set(
         flattenKeys(JSON.parse(readFileSync(join(translationDir, file), 'utf8'))),
       );

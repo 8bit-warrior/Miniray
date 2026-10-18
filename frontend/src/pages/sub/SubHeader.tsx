@@ -1,11 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Button } from 'antd';
-import {
-  MoonFilled,
-  MoonOutlined,
-  SunOutlined,
-  WifiOutlined,
-} from '@ant-design/icons';
+import { MoonFilled, MoonOutlined, SunOutlined, WifiOutlined } from '@ant-design/icons';
 
 import { pauseAnimationsUntilLeave, useTheme } from '@/hooks/useTheme';
 
