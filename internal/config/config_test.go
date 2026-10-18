@@ -15,13 +15,18 @@ func TestGetPanelVersion(t *testing.T) {
 	}
 
 	buildCommit = "1d1128cf"
-	if got := GetPanelVersion(); got != "dev+1d1128cf" {
-		t.Fatalf("dev build: GetPanelVersion = %q, want %q", got, "dev+1d1128cf")
+	if got := GetPanelVersion(); got != GetBaseVersion()+"_1d1128c" {
+		t.Fatalf("Actions build: GetPanelVersion = %q, want %q", got, GetBaseVersion()+"_1d1128c")
 	}
 
 	buildCommit = "1d1128cf945c4615efa05cf41ba7fa766e2ee428"
-	if got := GetPanelVersion(); got != "dev+1d1128cf" {
-		t.Fatalf("dev build (full sha): GetPanelVersion = %q, want %q", got, "dev+1d1128cf")
+	if got := GetPanelVersion(); got != GetBaseVersion()+"_1d1128c" {
+		t.Fatalf("Actions build (full sha): GetPanelVersion = %q, want %q", got, GetBaseVersion()+"_1d1128c")
+	}
+
+	buildCommit = "7B195A37CDD0492FD6529A8C02B2B62D1BBD779C"
+	if got := GetPanelVersion(); got != GetBaseVersion()+"_7b195a3" {
+		t.Fatalf("Actions build (uppercase sha): GetPanelVersion = %q", got)
 	}
 }
 

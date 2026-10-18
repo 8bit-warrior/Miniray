@@ -490,7 +490,7 @@ fi
 
 INSTALLED_VERSION=$("$ROOT/miniray" -v)
 EXPECTED_INSTALLED="$PACKAGE_VERSION"
-if [[ -n "$ACTION_RUN_ID" ]]; then EXPECTED_INSTALLED="$EXPECTED_VERSION"; fi
+if [[ -n "$ACTION_RUN_ID" ]]; then EXPECTED_INSTALLED="${PACKAGE_VERSION}_${ACTION_COMMIT:0:7}"; fi
 if [[ "$INSTALLED_VERSION" != "$EXPECTED_INSTALLED" ]]; then
   echo "Installed Miniray version mismatch: expected $EXPECTED_INSTALLED, got $INSTALLED_VERSION" >&2
   exit 1

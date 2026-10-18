@@ -182,7 +182,12 @@ export default function OverviewActionBar({
         </Tooltip>
       ) : null}
 
-      {updateAvailable ? (
+      <Tooltip title={t('pages.index.updatePanel')}>
+        <button type="button" className="ov-panel-version ov-mono" onClick={onOpenPanelUpdate}>
+          {formatPanelVersion(panelVersion)}
+        </button>
+      </Tooltip>
+      {updateAvailable && (
         <Tag
           className="ov-update-tag"
           color="warning"
@@ -191,12 +196,6 @@ export default function OverviewActionBar({
         >
           {`${t('update')} ${formatPanelVersion(latestVersion)}`}
         </Tag>
-      ) : (
-        <Tooltip title={t('pages.index.updatePanel')}>
-          <button type="button" className="ov-panel-version ov-mono" onClick={onOpenPanelUpdate}>
-            {formatPanelVersion(panelVersion)}
-          </button>
-        </Tooltip>
       )}
 
       <div className="ov-bar-actions">

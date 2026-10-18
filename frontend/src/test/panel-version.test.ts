@@ -50,6 +50,11 @@ describe('formatPanelVersion', () => {
     expect(formatPanelVersion('V3.4.0')).toBe('v3.4.0');
   });
 
+  it('formats installed Actions builds with their short commit', () => {
+    expect(formatPanelVersion('0.0.6_7b195a3')).toBe('v0.0.6_7b195a3');
+    expect(formatPanelVersion('v0.0.6_7b195a3')).toBe('v0.0.6_7b195a3');
+  });
+
   it('shows dev builds verbatim without a v prefix', () => {
     expect(formatPanelVersion('dev+1a2b3c4d')).toBe('dev+1a2b3c4d');
     expect(formatPanelVersion('dev')).toBe('dev');

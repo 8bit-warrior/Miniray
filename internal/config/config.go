@@ -43,9 +43,7 @@ const (
 )
 
 // GetBaseVersion returns the raw embedded release version of the miniray panel
-// (e.g. "3.4.0"). This is the panel's own version, not the Xray version. For the
-// version a panel advertises/displays (which adds a "dev+<sha>" label on dev
-// builds), use GetPanelVersion.
+// (e.g. "3.4.0"). This is the panel's own version, not the Xray version.
 func GetBaseVersion() string {
 	return strings.TrimSpace(version)
 }
@@ -90,14 +88,14 @@ func IsDevBuild() bool {
 }
 
 func GetPanelVersion() string {
-	if !IsDevBuild() {
+	commit := GetBuildCommit()
+	if commit == "" {
 		return GetBaseVersion()
 	}
-	commit := GetBuildCommit()
-	if len(commit) > 8 {
-		commit = commit[:8]
+	if len(commit) > 7 {
+		commit = commit[:7]
 	}
-	return "dev+" + commit
+	return GetBaseVersion() + "_" + strings.ToLower(commit)
 }
 
 // GetLogLevel returns the current logging level based on environment variables or defaults to Info.
