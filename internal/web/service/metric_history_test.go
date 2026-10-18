@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"runtime"
+	"slices"
 	"testing"
 	"time"
 )
@@ -89,8 +90,52 @@ func TestTierBufRespectsCapacity(t *testing.T) {
 	if len(tb.samples) != 5 {
 		t.Fatalf("expected closed buckets capped at 5, got %d", len(tb.samples))
 	}
-	if last := tb.samples[len(tb.samples)-1]; last.T != 18 {
+	got := tb.readSamples()
+	if last := got[len(got)-2]; last.T != 18 {
 		t.Fatalf("expected last closed bucket T=18 (19 still open), got %d", last.T)
+	}
+	for i, point := range got {
+		if point.T != int64(14+i) || point.V != float64(14+i) {
+			t.Fatalf("chronological sample %d = %+v", i, point)
+		}
+	}
+}
+
+func TestMetricHistoryWrappedSnapshotRestore(t *testing.T) {
+	h := newMetricHistory()
+	for i := range int64(10000) {
+		h.append("cpu", time.Unix(i*600, 0), float64(i))
+	}
+	snapshot := h.snapshot()
+	restored := newMetricHistory()
+	restored.restore(snapshot)
+	for i, before := range h.series["cpu"].tiers {
+		after := restored.series["cpu"].tiers[i]
+		want := before.readSamples()
+		want = want[:len(want)-1]
+		if got := after.readSamples(); !slices.Equal(got, want) {
+			t.Fatalf("tier %d changed after wrapped snapshot/restore", i)
+		}
+		if cap(before.samples) != before.capacity {
+			t.Fatalf("tier %d allocated beyond its retention: %d", i, cap(before.samples))
+		}
+	}
+	// Restoring must not retain or modify the decoded snapshot's backing arrays.
+	snapshot["cpu"].Tiers[0].Samples[0].V = -1
+	if restored.series["cpu"].tiers[0].readSamples()[0].V == -1 {
+		t.Fatal("restore retained the input snapshot")
+	}
+}
+
+func BenchmarkTierBufSteadyState(b *testing.B) {
+	tb := &tierBuf{resolution: 2, capacity: 1800}
+	for i := range int64(1801) {
+		tb.add(i*2, float64(i))
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := range b.N {
+		tb.add(int64(i+1801)*2, float64(i))
 	}
 }
 

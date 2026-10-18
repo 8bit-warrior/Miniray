@@ -1601,10 +1601,7 @@ func sanitizeBackupHost(host string) string {
 	return out
 }
 
-// GetMigration produces a cross-engine migration file plus its filename: on a
-// SQLite panel it returns a portable .dump (SQL text), and on a PostgreSQL panel
-// it returns a .db SQLite database built from the live data. Either output can
-// then seed a panel running on the other backend.
+// GetMigration exports the SQLite database as a portable SQL dump.
 func (s *ServerService) GetMigration() ([]byte, string, error) {
 	backupPath, cleanup, err := s.backupSQLite()
 	if err != nil {
@@ -1691,7 +1688,7 @@ func (s *ServerService) ImportDB(file multipart.File, keepHostSettings bool) err
 	switch kind {
 	case importKindSQLiteDB, importKindSQLiteDump:
 	case importKindPgDump:
-		return common.NewError("This file is a PostgreSQL backup; it can only be restored on a panel running PostgreSQL")
+		return common.NewError("PostgreSQL backups are not supported; import a SQLite database or SQLite SQL dump")
 	default:
 		return common.NewError("Invalid file: expected a SQLite database (.db) from Back Up or a SQLite migration dump (.dump)")
 	}

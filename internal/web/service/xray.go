@@ -93,13 +93,6 @@ func (s *XrayService) IsXrayRunning() bool {
 	return (process != nil && process.IsRunning()) || xray.IndependentCoreRunning()
 }
 
-// XrayProcess returns the current Xray process instance (may be nil when Xray
-// is not running). It exposes the lifecycle snapshot to callers outside this
-// package (e.g. the tgbot subpackage).
-func XrayProcess() *xray.Process {
-	return currentXrayProcess()
-}
-
 // GetXrayErr returns the error from the Xray process, if any.
 func (s *XrayService) GetXrayErr() error {
 	process := currentXrayProcess()

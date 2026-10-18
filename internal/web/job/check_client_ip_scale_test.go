@@ -13,33 +13,24 @@ import (
 	"github.com/op/go-logging"
 	"gorm.io/gorm"
 
-	"github.com/8bit-warrior/Miniray/internal/config"
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/dbtest"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	miniraylogger "github.com/8bit-warrior/Miniray/internal/logger"
 )
 
-// setupScaleJobDB mirrors the service package's scale gating: Postgres via
-// MINIRAY_DB_TYPE/MINIRAY_DB_DSN, SQLite via MINIRAY_SCALE_TEST=1, skip otherwise.
+// setupScaleJobDB opens a SQLite database when scale tests are enabled.
 func setupScaleJobDB(t *testing.T) {
 	t.Helper()
 	loggerInitOnce.Do(func() { miniraylogger.InitLogger(logging.ERROR) })
 	t.Setenv("MINIRAY_LOG_FOLDER", t.TempDir())
 
-	if os.Getenv("MINIRAY_DB_TYPE") == "postgres" && strings.TrimSpace(os.Getenv("MINIRAY_DB_DSN")) != "" {
-		if err := database.InitDB(""); err != nil {
-			t.Fatalf("InitDB(postgres): %v", err)
-		}
-		t.Cleanup(func() { _ = database.CloseDB() })
-		return
-	}
 	switch strings.ToLower(strings.TrimSpace(os.Getenv("MINIRAY_SCALE_TEST"))) {
 	case "1", "true", "yes":
 		dbtest.InitDB(t, filepath.Join(t.TempDir(), "scale.db"))
 		return
 	}
-	t.Skip("set MINIRAY_SCALE_TEST=1 (sqlite) or MINIRAY_DB_TYPE=postgres + MINIRAY_DB_DSN (postgres) to run the scale benchmark")
+	t.Skip("set MINIRAY_SCALE_TEST=1 to run the SQLite scale benchmark")
 }
 
 func scaleJobSizes(t *testing.T, def ...int) []int {
@@ -206,18 +197,12 @@ func TestCheckClientIpScale(t *testing.T) {
 
 func resetScaleJobTables(t *testing.T, db *gorm.DB) {
 	t.Helper()
-	if config.GetDBKind() == "postgres" {
-		if err := db.Exec("TRUNCATE TABLE inbounds, clients, client_inbounds RESTART IDENTITY CASCADE").Error; err != nil {
-			t.Fatalf("truncate: %v", err)
+	for _, tbl := range []string{"inbounds", "clients", "client_inbounds"} {
+		if err := db.Exec("DELETE FROM " + tbl).Error; err != nil {
+			t.Fatalf("delete %s: %v", tbl, err)
 		}
-	} else {
-		for _, tbl := range []string{"inbounds", "clients", "client_inbounds"} {
-			if err := db.Exec("DELETE FROM " + tbl).Error; err != nil {
-				t.Fatalf("delete %s: %v", tbl, err)
-			}
-		}
-		db.Exec("DELETE FROM sqlite_sequence")
 	}
+	db.Exec("DELETE FROM sqlite_sequence")
 	if err := db.Where("1 = 1").Delete(&model.InboundClientIps{}).Error; err != nil {
 		t.Fatalf("clear inbound client ips: %v", err)
 	}

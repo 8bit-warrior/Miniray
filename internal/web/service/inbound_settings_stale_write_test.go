@@ -48,7 +48,7 @@ func commitTickBetweenReadAndWrite(t *testing.T, tick func(tx *gorm.DB) error, o
 
 // seedRenewableNeighbour builds an inbound holding a healthy client X and a
 // quota-disabled client Y whose auto-renew is due, as the traffic job sees them.
-func seedRenewableNeighbour(t *testing.T, port int, nodeID *int) *model.Inbound {
+func seedRenewableNeighbour(t *testing.T, port int) *model.Inbound {
 	t.Helper()
 	past := time.Now().Add(-time.Hour).UnixMilli()
 	future := time.Now().Add(30 * 24 * time.Hour).UnixMilli()
@@ -163,7 +163,7 @@ func TestClientOpsKeepNeighbourRenewedMidOp(t *testing.T) {
 	for i, op := range staleClientOps {
 		t.Run(op.name, func(t *testing.T) {
 			setupBulkDB(t)
-			ib := seedRenewableNeighbour(t, 23101+i, nil)
+			ib := seedRenewableNeighbour(t, 23101+i)
 			commitTickBetweenReadAndWrite(t, autoRenewTick, func() {
 				if err := op.run(t, ib); err != nil {
 					t.Errorf("%s: %v", op.name, err)
@@ -177,7 +177,7 @@ func TestClientOpsKeepNeighbourRenewedMidOp(t *testing.T) {
 // An op on the renewed client itself keeps the fields it did not change.
 func TestBulkAdjustOnRenewedClientKeepsRenewal(t *testing.T) {
 	setupBulkDB(t)
-	ib := seedRenewableNeighbour(t, 23120, nil)
+	ib := seedRenewableNeighbour(t, 23120)
 	commitTickBetweenReadAndWrite(t, autoRenewTick, func() {
 		if _, _, err := (&ClientService{}).BulkAdjust(&InboundService{}, []string{"y@stale"}, 0, 500, "", nil); err != nil {
 			t.Errorf("BulkAdjust: %v", err)

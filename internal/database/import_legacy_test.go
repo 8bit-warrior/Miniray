@@ -52,6 +52,14 @@ func legacyImportFixture(t *testing.T) string {
 		{"apiToken", "unwanted-secret"},
 		{"xrayTemplateConfig", `{"log":{"loglevel":"warning"}}`},
 		{"obsoleteNodeSetting", "must-not-import"},
+		{"tgBotEnable", "true"},
+		{"tgBotToken", "retired-credential"},
+		{"tgBotChatId", "123"},
+		{"tgRunTime", "@daily"},
+		{"tgBotProxy", "http://example.com"},
+		{"tgBotAPIServer", "https://example.com"},
+		{"smtpPassword", "retired-credential"},
+		{"discordBotToken", "retired-credential"},
 	} {
 		if _, err := raw.Exec(`INSERT INTO settings(key,value) VALUES (?,?)`, row[0], row[1]); err != nil {
 			t.Fatal(err)
@@ -136,6 +144,16 @@ func TestLegacySQLiteSnapshotAndSelectiveImport(t *testing.T) {
 	t.Cleanup(func() { _ = CloseDB() })
 	if result.Inbounds != 2 || result.Clients != 2 || result.TrafficRows != 2 || result.SkippedRemoteInbounds != 1 || result.SkippedUnsupportedInbounds != 1 || !result.ImportedAdmin {
 		t.Fatalf("import result: %+v", result)
+	}
+	if result.Settings != 4 {
+		t.Fatalf("imported %d settings, want only the four supported settings", result.Settings)
+	}
+	var notificationSettings int64
+	if err := GetDB().Model(&model.Setting{}).Where("key LIKE ? OR key LIKE ? OR key LIKE ?", "tg%", "smtp%", "discord%").Count(&notificationSettings).Error; err != nil {
+		t.Fatal(err)
+	}
+	if notificationSettings != 0 {
+		t.Fatalf("import retained %d notification settings", notificationSettings)
 	}
 	var inbounds []model.Inbound
 	if err := GetDB().Order("id").Find(&inbounds).Error; err != nil {

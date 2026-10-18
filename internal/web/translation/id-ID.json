@@ -248,7 +248,7 @@
       "config": "Konfigurasi",
       "backupTitle": "Cadangan & Pulihkan",
       "exportDatabase": "Cadangkan",
-      "exportDatabaseDesc": "Klik untuk mengunduh file .db yang berisi cadangan dari database Anda saat ini ke perangkat Anda. Berkas yang sama juga dapat dipulihkan ke panel yang berjalan di PostgreSQL.",
+      "exportDatabaseDesc": "Klik untuk mengunduh file .db yang berisi cadangan dari database Anda saat ini ke perangkat Anda.",
       "importDatabase": "Pulihkan",
       "importDatabaseDesc": "Klik untuk memilih dan mengunggah cadangan .db atau dump migrasi (.dump) dari perangkat Anda untuk memulihkan database.",
       "importDatabaseSuccess": "Database berhasil diimpor",

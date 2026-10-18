@@ -8,7 +8,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/8bit-warrior/Miniray/internal/config"
 	"github.com/8bit-warrior/Miniray/internal/database"
 )
 
@@ -22,20 +21,18 @@ var migrated struct {
 // t ends. Reopen an existing file with database.InitDB instead.
 func InitDB(t testing.TB, path string) {
 	t.Helper()
-	if config.GetDBKind() != "postgres" {
-		if _, err := os.Stat(path); err == nil {
-			t.Fatalf("dbtest.InitDB would overwrite existing %s; reopen it with database.InitDB", path)
-		}
-		data, err := migratedTemplate()
-		if err != nil {
-			t.Fatalf("build template database: %v", err)
-		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-			t.Fatalf("create database dir: %v", err)
-		}
-		if err := os.WriteFile(path, data, 0o600); err != nil {
-			t.Fatalf("copy template database: %v", err)
-		}
+	if _, err := os.Stat(path); err == nil {
+		t.Fatalf("dbtest.InitDB would overwrite existing %s; reopen it with database.InitDB", path)
+	}
+	data, err := migratedTemplate()
+	if err != nil {
+		t.Fatalf("build template database: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatalf("create database dir: %v", err)
+	}
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatalf("copy template database: %v", err)
 	}
 	if err := database.InitDB(path); err != nil {
 		t.Fatalf("InitDB: %v", err)

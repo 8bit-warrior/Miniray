@@ -1,12 +1,12 @@
 // Package locale provides internationalization (i18n) support for the miniray web panel,
-// including translation loading, localization, and middleware for web and bot interfaces.
+// including translation loading, localization, and request middleware.
 package locale
 
 import (
-	"encoding/json"
 	"io/fs"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/8bit-warrior/Miniray/internal/logger"
 
@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	i18nBundle   *i18n.Bundle
-	LocalizerWeb *i18n.Localizer
+	bundleMu   sync.RWMutex
+	i18nBundle *i18n.Bundle
 )
 
 // I18nType represents the type of interface for internationalization.
@@ -29,14 +29,14 @@ const (
 
 // InitLocalizer initializes the internationalization system with embedded translation files.
 func InitLocalizer(i18nFS fs.FS) error {
-	// set default bundle to English
-	i18nBundle = i18n.NewBundle(language.MustParse("en-US"))
-	i18nBundle.RegisterUnmarshalFunc("json", json.Unmarshal)
-
-	// parse files
-	if err := parseTranslationFiles(i18nFS, i18nBundle); err != nil {
+	bundle := i18n.NewBundle(language.MustParse("en-US"))
+	bundle.RegisterUnmarshalFunc("json", unmarshalBackendMessages)
+	if err := parseTranslationFiles(i18nFS, bundle); err != nil {
 		return err
 	}
+	bundleMu.Lock()
+	i18nBundle = bundle
+	bundleMu.Unlock()
 
 	return nil
 }
@@ -57,20 +57,7 @@ func createTemplateData(params []string, separator ...string) map[string]any {
 	return templateData
 }
 
-// I18n retrieves a localized message for the given key and type.
-// It supports both bot and web contexts, with optional template parameters.
-// Returns the localized message or an empty string if localization fails.
-func I18n(i18nType I18nType, key string, params ...string) string {
-	var localizer *i18n.Localizer
-
-	switch i18nType {
-	case "web":
-		localizer = LocalizerWeb
-	default:
-		logger.Errorf("Invalid type for I18n: %s", i18nType)
-		return ""
-	}
-
+func localize(localizer *i18n.Localizer, key string, params ...string) string {
 	templateData := createTemplateData(params)
 
 	if localizer == nil {
@@ -92,27 +79,12 @@ func I18n(i18nType I18nType, key string, params ...string) string {
 
 // LocalizerFor returns a new Localizer for the given language tag using the global bundle.
 func LocalizerFor(lang string) *i18n.Localizer {
+	bundleMu.RLock()
+	defer bundleMu.RUnlock()
 	if i18nBundle == nil {
 		return nil
 	}
 	return i18n.NewLocalizer(i18nBundle, lang)
-}
-
-// I18nForLang retrieves a localized message for a specific language tag with optional params.
-func I18nForLang(lang string, key string, params ...string) string {
-	loc := LocalizerFor(lang)
-	if loc == nil {
-		return key
-	}
-	templateData := createTemplateData(params)
-	msg, err := loc.Localize(&i18n.LocalizeConfig{
-		MessageID:    key,
-		TemplateData: templateData,
-	})
-	if err != nil {
-		return key
-	}
-	return msg
 }
 
 // LocalizerMiddleware returns a Gin middleware that sets up localization for web requests.
@@ -121,15 +93,16 @@ func I18nForLang(lang string, key string, params ...string) string {
 // Also provides the I18n function in the context for template rendering.
 func LocalizerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Ensure bundle is initialized so creating a Localizer won't panic
+		bundleMu.Lock()
 		if i18nBundle == nil {
-			i18nBundle = i18n.NewBundle(language.MustParse("en-US"))
-			i18nBundle.RegisterUnmarshalFunc("json", json.Unmarshal)
-			// Try lazy-load from disk when running sub server without InitLocalizer
-			if err := loadTranslationsFromDisk(i18nBundle); err != nil {
+			bundle := i18n.NewBundle(language.MustParse("en-US"))
+			bundle.RegisterUnmarshalFunc("json", unmarshalBackendMessages)
+			if err := loadTranslationsFromDisk(bundle); err != nil {
 				logger.Warning("i18n lazy load failed:", err)
 			}
+			i18nBundle = bundle
 		}
+		bundleMu.Unlock()
 		var lang string
 
 		if cookie, err := c.Request.Cookie("lang"); err == nil {
@@ -138,31 +111,18 @@ func LocalizerMiddleware() gin.HandlerFunc {
 			lang = c.GetHeader("Accept-Language")
 		}
 
-		LocalizerWeb = i18n.NewLocalizer(i18nBundle, lang)
-
-		c.Set("localizer", LocalizerWeb)
-		c.Set("I18n", I18n)
+		localizer := LocalizerFor(lang)
+		c.Set("localizer", localizer)
+		c.Set("I18n", func(_ I18nType, key string, params ...string) string {
+			return localize(localizer, key, params...)
+		})
 		c.Next()
 	}
 }
 
 // loadTranslationsFromDisk attempts to load translation files from "internal/web/translation" using the local filesystem.
 func loadTranslationsFromDisk(bundle *i18n.Bundle) error {
-	root := os.DirFS("internal/web")
-	return fs.WalkDir(root, "translation", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		data, err := fs.ReadFile(root, path)
-		if err != nil {
-			return err
-		}
-		_, err = bundle.ParseMessageFileBytes(data, path)
-		return err
-	})
+	return parseTranslationFiles(os.DirFS("internal/web"), bundle)
 }
 
 // parseTranslationFiles parses embedded translation files and adds them to the i18n bundle.

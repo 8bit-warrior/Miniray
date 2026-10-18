@@ -248,7 +248,7 @@
       "config": "Yapılandırma",
       "backupTitle": "Yedekleme ve Geri Yükleme",
       "exportDatabase": "Yedekle",
-      "exportDatabaseDesc": "Mevcut veritabanınızın yedeğini içeren bir .db dosyasını cihazınıza indirmek için tıklayın. Aynı dosya PostgreSQL üzerinde çalışan bir panele de geri yüklenebilir.",
+      "exportDatabaseDesc": "Mevcut veritabanınızın yedeğini içeren bir .db dosyasını cihazınıza indirmek için tıklayın.",
       "importDatabase": "Geri Yükle",
       "importDatabaseDesc": "Cihazınızdan bir .db yedeği veya taşıma dökümü (.dump) seçip yükleyerek veritabanınızı geri yüklemek için tıklayın.",
       "importDatabaseSuccess": "Veritabanı başarıyla içe aktarıldı.",

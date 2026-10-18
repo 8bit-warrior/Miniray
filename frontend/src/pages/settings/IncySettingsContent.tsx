@@ -105,7 +105,7 @@ export default function IncySettingsContent({
                 >
                   <Input
                     value={allSetting.subIncyAnnounceUrl}
-                    placeholder="https://t.me/your_channel"
+                    placeholder="https://example.com/support"
                     onChange={(e) => updateSetting({ subIncyAnnounceUrl: e.target.value })}
                   />
                 </SettingListItem>
@@ -279,9 +279,7 @@ export default function IncySettingsContent({
                   <Input.TextArea
                     value={allSetting.subIncyPerAppList}
                     rows={4}
-                    placeholder={
-                      'com.google.chrome\norg.telegram.messenger\n\nor https://.../apps.txt'
-                    }
+                    placeholder={'com.google.chrome\ncom.example.app\n\nor https://.../apps.txt'}
                     onChange={(e) => updateSetting({ subIncyPerAppList: e.target.value })}
                   />
                 </SettingListItem>

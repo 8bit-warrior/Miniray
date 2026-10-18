@@ -49,8 +49,6 @@ var legacySettingKeys = map[string]bool{
 	"subJsonRules": true, "subJsonRoutingRules": true, "subJsonDns": true,
 	"subClashEnableRouting": true, "subClashRules": true,
 	"subJsonMux": true, "externalSubUserAgent": true,
-	"tgBotEnable": true, "tgBotToken": true, "tgBotChatId": true,
-	"tgRunTime": true, "tgBotProxy": true, "tgBotAPIServer": true,
 	"remarkTemplate": true, "trafficDiff": true, "expireDiff": true,
 	"subExpiredTemplate": true, "subTrafficDepletedTemplate": true,
 }

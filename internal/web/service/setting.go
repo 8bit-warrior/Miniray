@@ -497,7 +497,7 @@ func (s *SettingService) PanelEgressProxyURL() string {
 	if err != nil || tag == "" {
 		return ""
 	}
-	proc := XrayProcess()
+	proc := currentXrayProcess()
 	if proc == nil || !proc.IsRunning() {
 		logger.Warning("panel outbound [", tag, "] is set but Xray is not running, using a direct connection")
 		return ""

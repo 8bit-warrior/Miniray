@@ -248,7 +248,7 @@
       "config": "配置",
       "backupTitle": "備份和恢復",
       "exportDatabase": "備份",
-      "exportDatabaseDesc": "點擊下載包含當前資料庫備份的 .db 文件到您的設備。同一檔案也可以還原到執行 PostgreSQL 的面板中。",
+      "exportDatabaseDesc": "點擊下載包含當前資料庫備份的 .db 文件到您的設備。",
       "importDatabase": "恢復",
       "importDatabaseDesc": "點擊選擇並上傳設備中的 .db 備份或遷移匯出檔（.dump）以還原資料庫。",
       "importDatabaseSuccess": "資料庫匯入成功",

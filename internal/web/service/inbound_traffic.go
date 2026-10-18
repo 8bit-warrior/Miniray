@@ -154,11 +154,7 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		}
 	}
 	now := time.Now().UnixMilli()
-	// Use atomic per-row UPDATE instead of read-modify-write Save. tx.Save
-	// issues UPDATEs in slice order, which varies between concurrent callers;
-	// on PostgreSQL two transactions locking the same rows in opposite order
-	// deadlock. An atomic "SET up = up + ?" never holds a row lock across a
-	// subsequent lock acquisition, so concurrent writers cannot deadlock.
+	// Increment counters atomically without writing back a stale traffic snapshot.
 	for _, ct := range dbClientTraffics {
 		t, ok := trafficByEmail[ct.Email]
 		if !ok || (t.Up == 0 && t.Down == 0) {

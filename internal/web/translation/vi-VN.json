@@ -248,7 +248,7 @@
       "config": "Cấu hình",
       "backupTitle": "Sao lưu & Khôi phục",
       "exportDatabase": "Sao lưu",
-      "exportDatabaseDesc": "Nhấp để tải xuống tệp .db chứa bản sao lưu cơ sở dữ liệu hiện tại của bạn vào thiết bị. Tệp này cũng có thể được khôi phục vào bảng điều khiển chạy PostgreSQL.",
+      "exportDatabaseDesc": "Nhấp để tải xuống tệp .db chứa bản sao lưu cơ sở dữ liệu hiện tại của bạn vào thiết bị.",
       "importDatabase": "Khôi phục",
       "importDatabaseDesc": "Nhấp để chọn và tải lên bản sao lưu .db hoặc tệp kết xuất di trú (.dump) từ thiết bị của bạn để khôi phục cơ sở dữ liệu.",
       "importDatabaseSuccess": "Đã nhập cơ sở dữ liệu thành công",

@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/8bit-warrior/Miniray/internal/config"
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/dbtest"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
@@ -34,21 +33,10 @@ func makeScaleClients(n int) []model.Client {
 	return clients
 }
 
-// setupScaleDB initializes the DB for a scale benchmark on either Postgres
-// (MINIRAY_DB_TYPE=postgres + MINIRAY_DB_DSN) or SQLite (MINIRAY_SCALE_TEST=1, temp file;
-// MINIRAY_SCALE_DB_PATH persists the DB for manual smoke runs), and registers
-// cleanup. Skips the test when neither backend is configured.
+// setupScaleDB opens a SQLite database when scale tests are enabled.
 func setupScaleDB(t *testing.T) {
 	t.Helper()
 	miniraylogger.InitLogger(logging.ERROR)
-
-	if os.Getenv("MINIRAY_DB_TYPE") == "postgres" && strings.TrimSpace(os.Getenv("MINIRAY_DB_DSN")) != "" {
-		if err := database.InitDB(""); err != nil {
-			t.Fatalf("InitDB(postgres): %v", err)
-		}
-		t.Cleanup(func() { _ = database.CloseDB() })
-		return
-	}
 
 	switch strings.ToLower(strings.TrimSpace(os.Getenv("MINIRAY_SCALE_TEST"))) {
 	case "1", "true", "yes":
@@ -60,7 +48,7 @@ func setupScaleDB(t *testing.T) {
 		return
 	}
 
-	t.Skip("set MINIRAY_SCALE_TEST=1 (sqlite) or MINIRAY_DB_TYPE=postgres + MINIRAY_DB_DSN (postgres) to run the scale benchmark")
+	t.Skip("set MINIRAY_SCALE_TEST=1 to run the SQLite scale benchmark")
 }
 
 // scaleSizes returns the default size ladder unless MINIRAY_SCALE_SIZES overrides
@@ -201,18 +189,9 @@ func sampleEmails(emails []string, k int) []string {
 	return out
 }
 
-// resetScaleTables empties the given tables between sub-sizes. Postgres uses a
-// single TRUNCATE ... CASCADE; SQLite deletes per table and clears the
-// autoincrement counters so ids restart like RESTART IDENTITY.
+// resetScaleTables clears SQLite tables and their autoincrement counters.
 func resetScaleTables(t *testing.T, db *gorm.DB, tables ...string) {
 	t.Helper()
-	if config.GetDBKind() == "postgres" {
-		stmt := "TRUNCATE TABLE " + strings.Join(tables, ", ") + " RESTART IDENTITY CASCADE"
-		if err := db.Exec(stmt).Error; err != nil {
-			t.Fatalf("truncate: %v", err)
-		}
-		return
-	}
 	for _, tbl := range tables {
 		if err := db.Exec("DELETE FROM " + tbl).Error; err != nil {
 			t.Fatalf("delete %s: %v", tbl, err)

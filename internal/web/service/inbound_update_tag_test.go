@@ -41,16 +41,6 @@ func TestUpdateInbound_RegeneratesAutoTagOnPortChange(t *testing.T) {
 	}
 }
 
-// a node-scoped inbound (tag carries the "n1-" prefix) must keep that prefix
-// when its port changes, even if the caller omits nodeId in the update body —
-// the node can't be migrated, so the stored NodeID drives the tag. The runtime
-// manager isn't wired in unit tests, so UpdateInbound returns a runtime error
-// for node inbounds before persisting; we assert on the tag it computed (set on
-// the returned object) which is what the save would use.
-
-// A node inbound sharing a port with a local inbound must stay editable: the
-// port-conflict check is scoped to the inbound's stored NodeID, not the body's.
-
 // a tag the user set by hand (doesn't match the canonical shape) survives a
 // port change untouched.
 func TestUpdateInbound_KeepsCustomTagOnPortChange(t *testing.T) {

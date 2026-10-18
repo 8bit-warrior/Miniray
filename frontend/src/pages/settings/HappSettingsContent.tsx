@@ -236,7 +236,7 @@ export default function HappSettingsContent({
                 >
                   <Input
                     value={allSetting.subHappSubInfoButtonLink}
-                    placeholder="https://t.me/your_channel"
+                    placeholder="https://example.com/support"
                     onChange={(e) => updateSetting({ subHappSubInfoButtonLink: e.target.value })}
                   />
                 </SettingListItem>
@@ -481,7 +481,7 @@ export default function HappSettingsContent({
                   <Input.TextArea
                     value={allSetting.subHappPerAppList}
                     rows={4}
-                    placeholder="org.telegram.messenger, com.google.android.youtube"
+                    placeholder="com.example.app, com.google.android.youtube"
                     onChange={(e) => updateSetting({ subHappPerAppList: e.target.value })}
                   />
                 </SettingListItem>

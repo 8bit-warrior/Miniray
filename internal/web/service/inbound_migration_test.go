@@ -14,12 +14,7 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/xray"
 )
 
-// TestMigrationRequirements_BackfillsClientTrafficsWithMultiDomainInbound guards the
-// PostgreSQL fix where the externalProxy detection query (executed via .Scan) errored on
-// json_extract and rolled back the whole transaction — including the client_traffics
-// backfill at inbound.go:3093-3106, leaving clients with no traffic rows. A MultiDomain
-// inbound is present so that query returns rows and the function runs to completion; both
-// the backfill and the MultiDomain→ExternalProxy migration must then commit.
+// Client traffic backfill and the MultiDomain conversion must commit together.
 func TestMigrationRequirements_BackfillsClientTrafficsWithMultiDomainInbound(t *testing.T) {
 	dbDir := t.TempDir()
 	t.Setenv("MINIRAY_DB_FOLDER", dbDir)
@@ -71,10 +66,7 @@ func TestMigrationRequirements_BackfillsClientTrafficsWithMultiDomainInbound(t *
 	svc := InboundService{}
 	svc.MigrationRequirements()
 
-	// The backfill must have committed: the settings-only client now owns a row.
-	// Before the fix this was rolled back whenever the externalProxy detection query
-	// errored (it does on Postgres via json_extract), so the MultiDomain inbound below
-	// is deliberately present to make that query return rows and run to completion.
+	// The settings-only client must now own a traffic row.
 	var ct xray.ClientTraffic
 	if err := db.Model(xray.ClientTraffic{}).Where("email = ?", backfillEmail).First(&ct).Error; err != nil {
 		t.Fatalf("client_traffics row not backfilled for %s: %v", backfillEmail, err)

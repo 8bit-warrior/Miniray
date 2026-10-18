@@ -43,6 +43,7 @@ type tierBuf struct {
 	resolution int
 	capacity   int
 	samples    []MetricSample
+	start      int
 	open       bool
 	openStart  int64
 	openSum    float64
@@ -66,9 +67,18 @@ func (tb *tierBuf) flush() {
 		tb.open = false
 		return
 	}
-	tb.samples = append(tb.samples, MetricSample{T: tb.openStart, V: tb.openSum / float64(tb.openCount)})
-	if len(tb.samples) > tb.capacity {
-		tb.samples = tb.samples[len(tb.samples)-tb.capacity:]
+	point := MetricSample{T: tb.openStart, V: tb.openSum / float64(tb.openCount)}
+	if len(tb.samples) < tb.capacity {
+		if len(tb.samples) == cap(tb.samples) {
+			size := min(tb.capacity, max(16, 2*cap(tb.samples)))
+			grown := make([]MetricSample, len(tb.samples), size)
+			copy(grown, tb.samples)
+			tb.samples = grown
+		}
+		tb.samples = append(tb.samples, point)
+	} else {
+		tb.samples[tb.start] = point
+		tb.start = (tb.start + 1) % tb.capacity
 	}
 	tb.open = false
 	tb.openStart = 0
@@ -80,11 +90,16 @@ func (tb *tierBuf) flush() {
 // the most recent point is visible before its bucket boundary closes.
 func (tb *tierBuf) readSamples() []MetricSample {
 	out := make([]MetricSample, len(tb.samples), len(tb.samples)+1)
-	copy(out, tb.samples)
+	tb.copySamples(out)
 	if tb.openCount > 0 {
 		out = append(out, MetricSample{T: tb.openStart, V: tb.openSum / float64(tb.openCount)})
 	}
 	return out
+}
+
+func (tb *tierBuf) copySamples(out []MetricSample) {
+	n := copy(out, tb.samples[tb.start:])
+	copy(out[n:], tb.samples[:tb.start])
 }
 
 // series is the rollup ladder for one metric: a sample is fed to every tier.
@@ -118,8 +133,7 @@ func (s *series) pickTier(spanSeconds int64) *tierBuf {
 }
 
 // metricHistory is a thread-safe, in-memory store of tiered series keyed by
-// arbitrary strings. Three singletons live below: system-wide host metrics,
-// per-node metrics, and xray expvar metrics.
+// arbitrary strings for system-wide host metrics and Xray expvar metrics.
 type metricHistory struct {
 	mu     sync.Mutex
 	series map[string]*series
@@ -141,8 +155,6 @@ func (h *metricHistory) append(metric string, t time.Time, v float64) {
 	s.add(t.Unix(), v)
 }
 
-// drop removes the entire history for one metric. Used when a node is deleted so
-// its old samples don't linger forever in the singleton.
 func (h *metricHistory) drop(metric string) {
 	h.mu.Lock()
 	delete(h.series, metric)
@@ -185,17 +197,15 @@ func (h *metricHistory) aggregate(metric string, bucketSeconds int, maxPoints in
 	bSize := int64(bucketSeconds)
 	curBucket := (tmp[0].T / bSize) * bSize
 	var out []map[string]any
-	var acc []float64
+	var sum float64
+	var count int
 	flush := func(ts int64) {
-		if len(acc) == 0 {
+		if count == 0 {
 			return
 		}
-		sum := 0.0
-		for _, v := range acc {
-			sum += v
-		}
-		out = append(out, map[string]any{"t": ts, "v": sum / float64(len(acc))})
-		acc = acc[:0]
+		out = append(out, map[string]any{"t": ts, "v": sum / float64(count)})
+		sum = 0
+		count = 0
 	}
 	for _, p := range tmp {
 		b := (p.T / bSize) * bSize
@@ -203,7 +213,8 @@ func (h *metricHistory) aggregate(metric string, bucketSeconds int, maxPoints in
 			flush(curBucket)
 			curBucket = b
 		}
-		acc = append(acc, p.V)
+		sum += p.V
+		count++
 	}
 	flush(curBucket)
 	if len(out) > maxPoints {
@@ -237,7 +248,7 @@ func (h *metricHistory) snapshot() map[string]persistedSeries {
 		ps := persistedSeries{Tiers: make([]persistedTier, len(s.tiers))}
 		for i, tb := range s.tiers {
 			cp := make([]MetricSample, len(tb.samples))
-			copy(cp, tb.samples)
+			tb.copySamples(cp)
 			ps.Tiers[i] = persistedTier{Resolution: tb.resolution, Samples: cp}
 		}
 		out[k] = ps
@@ -262,7 +273,7 @@ func (h *metricHistory) restore(data map[string]persistedSeries) {
 				if len(samples) > tb.capacity {
 					samples = samples[len(samples)-tb.capacity:]
 				}
-				tb.samples = samples
+				tb.samples = slices.Clone(samples)
 				break
 			}
 		}
@@ -282,9 +293,6 @@ var (
 var SystemMetricKeys = []string{
 	"cpu", "mem", "swap", "netUp", "netDown", "pktUp", "pktDown", "diskRead", "diskWrite", "diskUsage", "tcpCount", "udpCount", "online", "load1", "load5", "load15",
 }
-
-// NodeMetricKeys lists the per-node metric names NodeHeartbeatJob writes.
-var NodeMetricKeys = []string{"cpu", "mem", "netUp", "netDown"}
 
 // XrayMetricKeys lists series sourced from xray's /debug/vars expvar endpoint.
 var XrayMetricKeys = []string{

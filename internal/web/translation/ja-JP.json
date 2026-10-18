@@ -248,7 +248,7 @@
       "config": "設定",
       "backupTitle": "バックアップと復元",
       "exportDatabase": "バックアップ",
-      "exportDatabaseDesc": "クリックして、現在のデータベースのバックアップを含む .db ファイルをデバイスにダウンロードします。同じファイルは PostgreSQL で動作するパネルにも復元できます。",
+      "exportDatabaseDesc": "クリックして、現在のデータベースのバックアップを含む .db ファイルをデバイスにダウンロードします。",
       "importDatabase": "復元",
       "importDatabaseDesc": "クリックして、デバイスから .db バックアップまたは移行ダンプ (.dump) を選択し、アップロードしてデータベースを復元します。",
       "importDatabaseSuccess": "データベースのインポートに成功しました",

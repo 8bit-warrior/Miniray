@@ -248,7 +248,7 @@
       "config": "Configuração",
       "backupTitle": "Backup & Restauração",
       "exportDatabase": "Backup",
-      "exportDatabaseDesc": "Clique para baixar um arquivo .db contendo um backup do seu banco de dados atual para o seu dispositivo. O mesmo arquivo também pode ser restaurado em um painel executando PostgreSQL.",
+      "exportDatabaseDesc": "Clique para baixar um arquivo .db contendo um backup do seu banco de dados atual para o seu dispositivo.",
       "importDatabase": "Restaurar",
       "importDatabaseDesc": "Clique para selecionar e enviar um backup .db ou um dump de migração (.dump) do seu dispositivo para restaurar seu banco de dados.",
       "importDatabaseSuccess": "O banco de dados foi importado com sucesso",

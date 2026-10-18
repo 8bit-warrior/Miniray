@@ -860,7 +860,7 @@ export default function ClientInfoModal({
             ))}
           </div>
         ) : (
-          <Tag>{t('tgbot.noIpRecord')}</Tag>
+          <Tag>{t('pages.clients.noIpRecord')}</Tag>
         )}
       </Modal>
 

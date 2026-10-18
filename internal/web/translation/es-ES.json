@@ -248,7 +248,7 @@
       "config": "Configuración",
       "backupTitle": "Copia & Restauración",
       "exportDatabase": "Copia de seguridad",
-      "exportDatabaseDesc": "Haz clic para descargar un archivo .db que contiene una copia de seguridad de tu base de datos actual en tu dispositivo. El mismo archivo también puede restaurarse en un panel que funcione con PostgreSQL.",
+      "exportDatabaseDesc": "Haz clic para descargar un archivo .db que contiene una copia de seguridad de tu base de datos actual en tu dispositivo.",
       "importDatabase": "Restaurar",
       "importDatabaseDesc": "Haz clic para seleccionar y cargar una copia de seguridad .db o un volcado de migración (.dump) desde tu dispositivo para restaurar tu base de datos.",
       "importDatabaseSuccess": "La base de datos se ha importado correctamente",
