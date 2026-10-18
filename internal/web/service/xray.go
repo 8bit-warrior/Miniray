@@ -398,14 +398,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		mergeSubscriptionOutbounds(xrayConfig, prepend, appendList)
 	}
 
-	// Route opted-in local mtproto inbounds through the core's router. Each one
-	// gets a loopback SOCKS bridge — tagged with the inbound's own tag so it is
-	// matchable in routing rules — that its mtg sidecar dials Telegram through.
-	// Done after the subscription merge so a selected subscription outbound (or
-	// balancer) is a valid rule target.
-	
-
-	// Every AmneziaWG inbound is embedded (internal/amneziawgnet: amneziawg-go
+		// Every AmneziaWG inbound is embedded (internal/amneziawgnet: amneziawg-go
 	// over a gVisor netstack, no kernel module) and relays every peer's
 	// decapsulated traffic into its own loopback SOCKS5 inbound, always on —
 	// there is no opt-in gate: once
@@ -556,12 +549,6 @@ func routingTagIsBalancer(routing map[string]any, tag string) bool {
 	}
 	return false
 }
-
-// mtprotoEgressSocksSettings is the loopback SOCKS server a routed mtproto
-// inbound exposes for its mtg sidecar to dial Telegram through. mtg makes plain
-// TCP connections, so UDP is left off (matching the panel egress bridge).
-
-
 
 // Peers resolve DNS inside the tunnel, so domain rules match only via sniffing; routeOnly
 // preserves the peer's requested destination IP, with sniffing only for routing.

@@ -396,11 +396,6 @@ func (s *ClientService) fillProtocolDefaults(c *model.Client, ib *model.Inbound)
 	return nil
 }
 
-// defaultMtprotoDomain is the FakeTLS fronting domain used when an mtproto
-// inbound carries no fakeTlsDomain of its own; it mirrors the frontend default.
-
-
-
 func clientWithInboundFlow(c model.Client, ib *model.Inbound) model.Client {
 	if ib.DisableFlow || !inboundCanEnableTlsFlow(string(ib.Protocol), ib.StreamSettings, ib.Settings) {
 		c.Flow = ""

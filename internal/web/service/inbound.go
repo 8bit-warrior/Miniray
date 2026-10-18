@@ -1177,9 +1177,6 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 		postCommitApply()
 	}
 
-	// A routed mtproto inbound is not an Xray inbound itself, so the runtime
-	// push above only (re)starts the mtg sidecar. The egress SOCKS bridge lives
-	// in the generated config, so force a regen to wire it in.
 	
 
 	return inbound, needRestart, err
@@ -1271,7 +1268,6 @@ func (s *InboundService) delInbound(id int) (bool, error) {
 			}
 		}
 	}
-	// Drop the egress SOCKS bridge a routed mtproto inbound left in the config.
 	
 	return needRestart, nil
 }

@@ -455,21 +455,6 @@ func wireguardPeerEmail(remark string, peer map[string]any, index int, used map[
 		candidate = email + "-" + strconv.Itoa(n)
 	}
 }
-) string {
-	base := strings.TrimSpace(remark)
-	if base == "" {
-		base = "mtproto"
-	}
-	email := strings.ReplaceAll(base, " ", "-")
-	candidate := email
-	for n := 2; ; n++ {
-		if _, taken := used[candidate]; !taken {
-			return candidate
-		}
-		candidate = email + "-" + strconv.Itoa(n)
-	}
-}
-
 func pruneOrphanedClientInbounds() error {
 	res := db.Exec("DELETE FROM client_inbounds WHERE inbound_id NOT IN (SELECT id FROM inbounds)")
 	if res.Error != nil {

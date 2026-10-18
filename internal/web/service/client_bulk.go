@@ -344,7 +344,7 @@ func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, 
 	}
 	adjustFlow := flow != ""
 	adjustHwid := limitHwid != nil
-	if addDays == 0 && addBytes == 0 && !adjustFlow && !adjustHwid && !adjustAdTag {
+	if addDays == 0 && addBytes == 0 && !adjustFlow && !adjustHwid {
 		return result, false, common.NewError("no adjustment specified")
 	}
 
