@@ -124,6 +124,25 @@ def wait_active(unit):
     raise AssertionError(command("journalctl", "-u", unit, "-n", "40", "--no-pager").stdout)
 
 
+def wait_coexist_ready(panel_port, api_port):
+    last_error = None
+    for _ in range(30):
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{panel_port}/", timeout=1) as response:
+                assert response.status == 200, response.status
+            with socket.create_connection(("127.0.0.1", api_port), timeout=1):
+                return
+        except (OSError, AssertionError) as exc:
+            last_error = exc
+        time.sleep(0.5)
+    status = command("systemctl", "status", "miniray", "miniray-core", "miniray-agent", "--no-pager", check=False).stdout
+    logs = command("journalctl", "-u", "miniray", "-u", "miniray-core", "-u", "miniray-agent", "-n", "100", "--no-pager", check=False).stdout
+    raise AssertionError(
+        f"Coexistence panel/API ports {panel_port}/{api_port} not ready: {last_error}\n"
+        f"SYSTEMD STATUS\n{status[-6000:]}\nJOURNAL\n{logs[-10000:]}"
+    )
+
+
 def assert_schema(imported):
     db = sqlite3.connect("/etc/miniray/miniray.db")
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
@@ -287,8 +306,7 @@ try:
             ports = [int(settings["webPort"]), template["inbounds"][0]["port"], int(template["metrics"]["listen"].rsplit(":", 1)[-1])]
             assert len(set(ports)) == 3, ports
             assert not set(ports).intersection({20530, 62790, 11112, 24442}), ports
-            assert urllib.request.urlopen(f"http://127.0.0.1:{ports[0]}/", timeout=5).status == 200
-            assert socket.create_connection(("127.0.0.1", ports[1]), timeout=5)
+            wait_coexist_ready(ports[0], ports[1])
             install("2\n", succeeds=False)
             if name == "coexist":
                 wait_active("x-ui")
