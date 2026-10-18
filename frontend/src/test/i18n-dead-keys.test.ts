@@ -60,7 +60,6 @@ describe('i18n keys', () => {
     ]);
   });
 
-
   const enUS = JSON.parse(readFileSync(join(translationDir, 'en-US.json'), 'utf8'));
   const enKeys = flattenKeys(enUS);
 
