@@ -352,15 +352,17 @@ func TestGetUpdateStatus(t *testing.T) {
 		t.Fatalf("corrupt status file: State = %q, want %q", got.State, updateStatePending)
 	}
 
-
 	for _, state := range []string{updateStateDownloading, updateStateInstalling} {
 		payload := fmt.Sprintf("{\"runId\":\"123\",\"state\":\"%s\",\"progress\":42}", state)
-		if err := os.WriteFile(path, []byte(payload), 0o600); err != nil { t.Fatal(err) }
+		if err := os.WriteFile(path, []byte(payload), 0o600); err != nil {
+			t.Fatal(err)
+		}
 		got := svc.GetUpdateStatus()
 		if got.State != state || got.Progress != 42 || got.RunID != "123" {
 			t.Fatalf("update status = %+v; want state %s, progress 42, runId 123", got, state)
 		}
 	}
+
 	writeStatusFile(t, path, 1, "some-unrecognized-state")
 	if got := svc.GetUpdateStatus(); got.State != updateStatePending {
 		t.Fatalf("unrecognized state normalizes to pending: State = %q, want %q", got.State, updateStatePending)

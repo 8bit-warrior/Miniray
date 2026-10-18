@@ -46,10 +46,10 @@ const (
 	devReleaseTag = "dev-latest"
 
 	updateStateDownloading = "downloading"
-	updateStateInstalling = "installing"
-	updateStatePending = "pending"
-	updateStateSuccess = "success"
-	updateStateFailed  = "failed"
+	updateStateInstalling  = "installing"
+	updateStatePending     = "pending"
+	updateStateSuccess     = "success"
+	updateStateFailed      = "failed"
 )
 
 // PanelUpdateStatus reports the outcome of the most recently launched panel

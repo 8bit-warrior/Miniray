@@ -248,16 +248,29 @@ export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateMod
         footer={
           phase === 'confirm'
             ? [
-                <Button key="cancel" onClick={() => setSelectedUpdate(null)}>{t('cancel')}</Button>,
-                <Button key="ok" type="primary" onClick={() => void confirmUpdate()}>{t('confirm')}</Button>,
+                <Button key="cancel" onClick={() => setSelectedUpdate(null)}>
+                  {t('cancel')}
+                </Button>,
+                <Button key="ok" type="primary" onClick={() => void confirmUpdate()}>
+                  {t('confirm')}
+                </Button>,
               ]
             : phase === 'failed' || phase === 'timeout'
-              ? [<Button key="close" type="primary" onClick={() => setSelectedUpdate(null)}>{t('confirm')}</Button>]
+              ? [
+                  <Button key="close" type="primary" onClick={() => setSelectedUpdate(null)}>
+                    {t('confirm')}
+                  </Button>,
+                ]
               : null
         }
       >
         {phase === 'confirm' && (
-          <p>{t('pages.index.panelUpdateDialogDesc').replace('#version#', selectedUpdate?.build?.version || info.latestVersion || '')}</p>
+          <p>
+            {t('pages.index.panelUpdateDialogDesc').replace(
+              '#version#',
+              selectedUpdate?.build?.version || info.latestVersion || '',
+            )}
+          </p>
         )}
         {phase === 'downloading' && (
           <div className="panel-update-download-progress">
@@ -265,11 +278,23 @@ export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateMod
             <Progress percent={percent} status="active" strokeLinecap="round" />
           </div>
         )}
-        {phase === 'installing' && <p className="panel-update-installing">{t('pages.index.panelUpdateInstalling')}</p>}
+        {phase === 'installing' && (
+          <p className="panel-update-installing">{t('pages.index.panelUpdateInstalling')}</p>
+        )}
         {(phase === 'failed' || phase === 'timeout') && (
-          <Alert type={phase === 'failed' ? 'error' : 'warning'} showIcon
-            title={t(phase === 'failed' ? 'pages.index.panelUpdateFailedTitle' : 'pages.index.panelUpdateUnknownTitle')}
-            description={t(phase === 'failed' ? 'pages.index.panelUpdateFailedDesc' : 'pages.index.panelUpdateUnknownDesc')}
+          <Alert
+            type={phase === 'failed' ? 'error' : 'warning'}
+            showIcon
+            title={t(
+              phase === 'failed'
+                ? 'pages.index.panelUpdateFailedTitle'
+                : 'pages.index.panelUpdateUnknownTitle',
+            )}
+            description={t(
+              phase === 'failed'
+                ? 'pages.index.panelUpdateFailedDesc'
+                : 'pages.index.panelUpdateUnknownDesc',
+            )}
           />
         )}
       </Modal>
