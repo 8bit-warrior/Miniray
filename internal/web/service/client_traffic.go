@@ -93,7 +93,6 @@ func (s *ClientService) BulkResetTraffic(inboundSvc *InboundService, emails []st
 	if err != nil {
 		return 0, err
 	}
-	inboundSvc.resetMtprotoClientQuotas(cleanEmails)
 
 	// After the zeroing, as in ResetTrafficByEmail: enabling a still-depleted
 	// client first lets the next traffic tick switch it off again.
@@ -112,15 +111,11 @@ func (s *ClientService) BulkResetTraffic(inboundSvc *InboundService, emails []st
 }
 
 func (s *ClientService) ResetAllClientTraffics(inboundSvc *InboundService, id int) error {
-	var resetEmails []string
 	err := submitTrafficWrite(func() error {
 		var inner error
-		resetEmails, inner = s.resetAllClientTrafficsLocked(id)
+		_, inner = s.resetAllClientTrafficsLocked(id)
 		return inner
 	})
-	if err == nil {
-		inboundSvc.resetMtprotoClientQuotas(resetEmails)
-	}
 	return err
 }
 
@@ -196,8 +191,6 @@ func (s *ClientService) ResetAllTraffics() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	inbounds := &InboundService{}
-	inbounds.resetAllMtprotoQuotas()
 
 	return affected > 0, nil
 }

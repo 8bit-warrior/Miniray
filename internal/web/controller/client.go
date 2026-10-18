@@ -333,7 +333,6 @@ type bulkAdjustRequest struct {
 	AddBytes  int64    `json:"addBytes"`
 	Flow      string   `json:"flow"`
 	LimitHwid *int     `json:"limitHwid"`
-	AdTag     string   `json:"adTag"`
 }
 
 func (a *ClientController) bulkAdjust(c *gin.Context) {
@@ -342,7 +341,7 @@ func (a *ClientController) bulkAdjust(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
-	result, needRestart, err := a.clientService.BulkAdjust(&a.inboundService, req.Emails, req.AddDays, req.AddBytes, req.Flow, req.LimitHwid, req.AdTag)
+	result, needRestart, err := a.clientService.BulkAdjust(&a.inboundService, req.Emails, req.AddDays, req.AddBytes, req.Flow, req.LimitHwid)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return

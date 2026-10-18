@@ -24,16 +24,14 @@ import (
 const depletedClientsClause = "reset = 0 and reset_day = 0 and reset_weekday = 0 and ((total > 0 and up + down >= total) or (expiry_time > 0 and expiry_time <= ?))"
 
 func (s *InboundService) AddTraffic(inboundTraffics []*xray.Traffic, clientTraffics []*xray.ClientTraffic) (needRestart bool, clientsDisabled bool, err error) {
-	var renewed []string
 	err = submitTrafficWrite(func() error {
 		var inner error
-		needRestart, clientsDisabled, renewed, inner = s.addTrafficLocked(inboundTraffics, clientTraffics)
+		needRestart, clientsDisabled, _, inner = s.addTrafficLocked(inboundTraffics, clientTraffics)
 		return inner
 	})
 	if err != nil {
 		return
 	}
-	s.resetMtprotoClientQuotas(renewed)
 	return
 }
 
@@ -626,9 +624,6 @@ func (s *InboundService) ResetClientTrafficByEmail(clientEmail string) error {
 			return nil
 		})
 	})
-	if err == nil {
-		s.resetMtprotoClientQuota(clientEmail)
-	}
 	return err
 }
 
@@ -638,9 +633,6 @@ func (s *InboundService) ResetClientTraffic(id int, clientEmail string) (needRes
 		needRestart, inner = s.resetClientTrafficLocked(id, clientEmail)
 		return inner
 	})
-	if err == nil {
-		s.resetMtprotoClientQuota(clientEmail)
-	}
 	return
 }
 

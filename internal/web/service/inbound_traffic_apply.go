@@ -27,7 +27,6 @@ type trafficLocalApplyPlan struct {
 type trafficMutationBatch struct {
 	localPlans []trafficLocalApplyPlan
 
-	// renewedEmails get their MTProto sidecar quota zeroed once the tick commits.
 	renewedEmails []string
 }
 
@@ -40,10 +39,6 @@ func (s *InboundService) applyTrafficMutationBatch(b *trafficMutationBatch) bool
 	needRestart := false
 	for i := range b.localPlans {
 		plan := &b.localPlans[i]
-		if plan.inbound.Protocol == model.MTProto {
-			s.applyLocalMtproto(plan.inbound.Id)
-			continue
-		}
 		if plan.inbound.Protocol == model.AmneziaWG {
 			s.applyLocalAmneziaWG(plan.inbound.Id)
 			continue

@@ -414,13 +414,6 @@ func (s *ClientService) AddInboundClient(inboundSvc *InboundService, data *model
 			if client.PublicKey == "" {
 				return false, common.NewError("wireguard client requires a key")
 			}
-		case "mtproto":
-			if client.Secret == "" {
-				return false, common.NewError("mtproto client requires a secret")
-			}
-			if client.AdTag != "" && !model.ValidMtprotoAdTag(client.AdTag) {
-				return false, common.NewError("mtproto client ad tag must be 32 hex characters")
-			}
 		case "tuic":
 			if client.ID == "" {
 				return false, common.NewError("empty client ID")
@@ -535,8 +528,6 @@ func (s *ClientService) AddInboundClient(inboundSvc *InboundService, data *model
 	{
 		if !push {
 			needRestart = true
-		} else if oldInbound.Protocol == model.MTProto {
-			inboundSvc.applyLocalMtproto(oldInbound.Id)
 		} else if oldInbound.Protocol == model.AmneziaWG {
 			inboundSvc.applyLocalAmneziaWG(oldInbound.Id)
 		} else if oldInbound.Protocol == model.TUIC {
@@ -620,8 +611,6 @@ func (s *ClientService) UpdateInboundClient(inboundSvc *InboundService, data *mo
 		newClientId = clients[0].Auth
 	case "wireguard", "amneziawg":
 		newClientId = clients[0].Email
-	case "mtproto":
-		newClientId = clients[0].Email
 	default:
 		newClientId = clients[0].ID
 	}
@@ -643,9 +632,6 @@ func (s *ClientService) UpdateInboundClient(inboundSvc *InboundService, data *mo
 	}
 	if strings.TrimSpace(clients[0].Email) == "" {
 		return false, common.NewError("client email is required")
-	}
-	if oldInbound.Protocol == model.MTProto && clients[0].AdTag != "" && !model.ValidMtprotoAdTag(clients[0].AdTag) {
-		return false, common.NewError("mtproto client ad tag must be 32 hex characters")
 	}
 
 	if clients[0].Email != oldEmail {
@@ -936,8 +922,6 @@ func (s *ClientService) UpdateInboundClient(inboundSvc *InboundService, data *mo
 		{
 			if !push {
 				needRestart = true
-			} else if oldInbound.Protocol == model.MTProto {
-				inboundSvc.applyLocalMtproto(oldInbound.Id)
 			} else if oldInbound.Protocol == model.AmneziaWG {
 				inboundSvc.applyLocalAmneziaWG(oldInbound.Id)
 			} else if oldInbound.Protocol == model.TUIC {
@@ -1106,13 +1090,8 @@ func (s *ClientService) DelInboundClientByEmail(inboundSvc *InboundService, inbo
 
 	if len(email) > 0 {
 		{
-			if oldInbound.Protocol == model.MTProto {
-				// mtg serves the full secret set, so any client delete re-applies
-				// it (removing the last client stops the sidecar) regardless of the
-				// client's enable state.
-				inboundSvc.applyLocalMtproto(oldInbound.Id)
-			} else if oldInbound.Protocol == model.AmneziaWG {
-				// Same reasoning as MTProto above: the interface config is
+			if oldInbound.Protocol == model.AmneziaWG {
+				// The interface config is
 				// regenerated from the full peer set, so any delete re-applies it.
 				inboundSvc.applyLocalAmneziaWG(oldInbound.Id)
 			} else if oldInbound.Protocol == model.TUIC {

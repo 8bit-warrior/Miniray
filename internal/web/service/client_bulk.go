@@ -324,12 +324,12 @@ var bulkFlowAllowed = map[string]struct{}{
 // unlimited (0) are skipped — bulk extend should not accidentally
 // limit an unlimited client. addDays and addBytes may be negative.
 // flow sets the XTLS flow, limitHwid the max registered devices (0 = unlimited)
-// and adTag the MTProto sponsor channel; "none" clears flow or adTag.
+// "none" clears flow.
 //
 // Like BulkDelete, the work is grouped by inbound so each inbound's
 // settings JSON is parsed and written exactly once regardless of how
 // many target emails it contains.
-func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, addDays int, addBytes int64, flow string, limitHwid *int, adTag string) (BulkAdjustResult, bool, error) {
+func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, addDays int, addBytes int64, flow string, limitHwid *int) (BulkAdjustResult, bool, error) {
 	result := BulkAdjustResult{}
 	if len(emails) == 0 {
 		return result, false, nil
@@ -338,17 +338,12 @@ func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, 
 	if _, ok := bulkFlowAllowed[flow]; !ok {
 		flow = "" // ignore unknown directives — "" means "leave flow untouched"
 	}
-	adTag = strings.TrimSpace(adTag)
-	if adTag != "" && adTag != bulkFlowClear && !model.ValidMtprotoAdTag(adTag) {
-		return result, false, common.NewError("mtproto client ad tag must be 32 hex characters")
-	}
 	if limitHwid != nil && *limitHwid < 0 {
 		zero := 0
 		limitHwid = &zero
 	}
 	adjustFlow := flow != ""
 	adjustHwid := limitHwid != nil
-	adjustAdTag := adTag != ""
 	if addDays == 0 && addBytes == 0 && !adjustFlow && !adjustHwid && !adjustAdTag {
 		return result, false, common.NewError("no adjustment specified")
 	}
@@ -422,7 +417,7 @@ func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, 
 				}
 			}
 		}
-		if entry.applyExpiry || entry.applyTotal || adjustFlow || adjustHwid || adjustAdTag {
+		if entry.applyExpiry || entry.applyTotal || adjustFlow || adjustHwid {
 			plan[email] = entry
 		}
 	}
@@ -437,7 +432,7 @@ func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, 
 	plannedIds := make([]int, 0, len(plan))
 	recordIdToEmail := make(map[int]string, len(plan))
 	for email, entry := range plan {
-		if entry.applyExpiry || entry.applyTotal || adjustFlow || adjustAdTag {
+		if entry.applyExpiry || entry.applyTotal || adjustFlow {
 			plannedIds = append(plannedIds, entry.record.Id)
 			recordIdToEmail[entry.record.Id] = email
 		}
@@ -463,12 +458,10 @@ func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, 
 	needRestart := false
 	flowHonored := map[string]bool{}
 	flowIneligible := map[string]bool{}
-	adTagHonored := map[string]bool{}
-	adTagIneligible := map[string]bool{}
 	execFailed := map[string]bool{}
 	adjustIds := sortedInboundIds(emailsByInbound)
 	adjustResults, adjustPanics := fanoutInboundResults(adjustIds, inboundFanoutConcurrency, func(i int) bulkInboundAdjustResult {
-		return s.bulkAdjustInboundClients(inboundSvc, adjustIds[i], emailsByInbound[adjustIds[i]], plan, flow, adTag)
+		return s.bulkAdjustInboundClients(inboundSvc, adjustIds[i], emailsByInbound[adjustIds[i]], plan, flow)
 	})
 	for i, ibRes := range adjustResults {
 		if adjustPanics[i] != nil {
@@ -489,12 +482,6 @@ func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, 
 		}
 		for email := range ibRes.flowIneligible {
 			flowIneligible[email] = true
-		}
-		for email := range ibRes.adTagHonored {
-			adTagHonored[email] = true
-		}
-		for email := range ibRes.adTagIneligible {
-			adTagIneligible[email] = true
 		}
 		for email, reason := range ibRes.perEmailSkipped {
 			execFailed[email] = true
@@ -522,11 +509,6 @@ func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, 
 		for _, e := range rows {
 			wasDisabledDepleted[e] = struct{}{}
 		}
-	}
-
-	wantAdTag := ""
-	if adjustAdTag && adTag != bulkFlowClear {
-		wantAdTag = strings.ToLower(adTag)
 	}
 
 	adjusted := map[string]struct{}{}
@@ -557,16 +539,8 @@ func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, 
 				continue
 			}
 		}
-		if adjustAdTag && adTagHonored[email] {
-			if err := db.Model(&model.ClientRecord{}).Where("email = ?", email).UpdateColumn("ad_tag", wantAdTag).Error; err != nil {
-				if _, already := skippedReasons[email]; !already {
-					skippedReasons[email] = err.Error()
-				}
-				continue
-			}
-		}
-		// Counted when expiry/total changed, flow was honored, adTag was honored, or limitHwid was adjusted.
-		if len(updates) > 0 || flowHonored[email] || adTagHonored[email] || adjustHwid {
+		// Counted when expiry/total changed, flow was honored, or limitHwid was adjusted.
+		if len(updates) > 0 || flowHonored[email] || adjustHwid {
 			adjusted[email] = struct{}{}
 		}
 	}
@@ -586,15 +560,6 @@ func (s *ClientService) BulkAdjust(inboundSvc *InboundService, emails []string, 
 			continue
 		}
 		result.Skipped = append(result.Skipped, BulkAdjustReport{Email: email, Reason: "flow not supported on inbound"})
-	}
-	for email := range adTagIneligible {
-		if adTagHonored[email] {
-			continue
-		}
-		if _, already := skippedReasons[email]; already {
-			continue
-		}
-		result.Skipped = append(result.Skipped, BulkAdjustReport{Email: email, Reason: "adTag not supported on inbound"})
 	}
 
 	if len(wasDisabledDepleted) > 0 {
@@ -642,8 +607,6 @@ type bulkInboundAdjustResult struct {
 	// the same client (which would diverge the inbound JSON / ClientRecord from
 	// ClientTraffic). It only feeds the final Skipped report.
 	flowIneligible  map[string]bool
-	adTagHonored    map[string]bool
-	adTagIneligible map[string]bool
 	needRestart     bool
 }
 
@@ -653,14 +616,11 @@ func (s *ClientService) bulkAdjustInboundClients(
 	emails []string,
 	plan map[string]*bulkAdjustEntry,
 	flow string,
-	adTag string,
 ) bulkInboundAdjustResult {
 	res := bulkInboundAdjustResult{
 		perEmailSkipped: map[string]string{},
 		flowHonored:     map[string]bool{},
 		flowIneligible:  map[string]bool{},
-		adTagHonored:    map[string]bool{},
-		adTagIneligible: map[string]bool{},
 	}
 
 	defer lockInbound(inboundId).Unlock()
@@ -700,15 +660,9 @@ func (s *ClientService) bulkAdjustInboundClients(
 		(!oldInbound.DisableFlow &&
 			inboundCanEnableTlsFlow(string(oldInbound.Protocol), oldInbound.StreamSettings, oldInbound.Settings))
 
-	wantAdTag := ""
-	if adTag != "" && adTag != bulkFlowClear {
-		wantAdTag = strings.ToLower(adTag)
-	}
-
 	interfaceClients, _ := settings["clients"].([]any)
 	foundEmails := map[string]bool{}
 	flowChanged := false
-	adTagChanged := false
 	hasInboundChanges := false
 	nowMs := time.Now().Unix() * 1000
 	for i, client := range interfaceClients {
@@ -746,18 +700,6 @@ func (s *ClientService) bulkAdjustInboundClients(
 				// Record separately so this never suppresses the expiry/total
 				// write for the same client (see flowIneligible doc).
 				res.flowIneligible[targetEmail] = true
-			}
-		}
-		if adTag != "" {
-			if oldInbound.Protocol == model.MTProto {
-				if cur, _ := c["adTag"].(string); cur != wantAdTag {
-					c["adTag"] = wantAdTag
-					adTagChanged = true
-				}
-				res.adTagHonored[targetEmail] = true
-				clientChanged = true
-			} else {
-				res.adTagIneligible[targetEmail] = true
 			}
 		}
 		if clientChanged {
@@ -814,10 +756,6 @@ func (s *ClientService) bulkAdjustInboundClients(
 			if _, skip := res.perEmailSkipped[email]; !skip {
 				res.perEmailSkipped[email] = txErr.Error()
 			}
-		}
-	} else {
-		if adTagChanged && oldInbound.Protocol == model.MTProto {
-			inboundSvc.applyLocalMtproto(oldInbound.Id)
 		}
 	}
 
