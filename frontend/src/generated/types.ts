@@ -9,16 +9,6 @@ export type transportBits = number;
 
 export interface AllSetting {
   datepicker: string;
-  discordAdminIds: string;
-  discordBotBackup: boolean;
-  discordBotEnable: boolean;
-  discordBotToken: string;
-  discordChannelId: string;
-  discordCpu: number;
-  discordEnabledEvents: string;
-  discordLang: string;
-  discordMemory: number;
-  discordRunTime: string;
   expireDiff: number;
   externalSubUserAgent: string;
   externalTrafficInformEnable: boolean;
@@ -56,18 +46,6 @@ export interface AllSetting {
   remarkTemplate: string;
   restartXrayOnClientDisable: boolean;
   sessionMaxAge: number;
-  smtpCpu: number;
-  smtpEnable: boolean;
-  smtpEnabledEvents: string;
-  smtpEncryptionType: string;
-  smtpFrom: string;
-  smtpFromName: string;
-  smtpHost: string;
-  smtpMemory: number;
-  smtpPassword: string;
-  smtpPort: number;
-  smtpTo: string;
-  smtpUsername: string;
   subAnnounce: string;
   subCalendarExpireInclusive: boolean;
   subCertFile: string;
@@ -165,17 +143,6 @@ export interface AllSetting {
   subTrafficDepletedTemplate: string;
   subURI: string;
   subUpdates: number;
-  tgBotAPIServer: string;
-  tgBotBackup: boolean;
-  tgBotChatId: string;
-  tgBotEnable: boolean;
-  tgBotProxy: string;
-  tgBotToken: string;
-  tgCpu: number;
-  tgEnabledEvents: string;
-  tgLang: string;
-  tgMemory: number;
-  tgRunTime: string;
   timeLocation: string;
   trafficDiff: number;
   trustedProxyCIDRs: string;
@@ -192,27 +159,14 @@ export interface AllSetting {
 
 export interface AllSettingView {
   datepicker: string;
-  discordAdminIds: string;
-  discordBotBackup: boolean;
-  discordBotEnable: boolean;
-  discordBotToken: string;
-  discordChannelId: string;
-  discordCpu: number;
-  discordEnabledEvents: string;
-  discordLang: string;
-  discordMemory: number;
-  discordRunTime: string;
   expireDiff: number;
   externalSubUserAgent: string;
   externalTrafficInformEnable: boolean;
   externalTrafficInformURI: string;
   happLinkEnable: boolean;
   hasApiToken: boolean;
-  hasDiscordBotToken: boolean;
   hasLdapPassword: boolean;
   hasNordSecret: boolean;
-  hasSmtpPassword: boolean;
-  hasTgBotToken: boolean;
   hasTwoFactorToken: boolean;
   hasWarpSecret: boolean;
   ipLimitAllowlist: string;
@@ -247,18 +201,6 @@ export interface AllSettingView {
   remarkTemplate: string;
   restartXrayOnClientDisable: boolean;
   sessionMaxAge: number;
-  smtpCpu: number;
-  smtpEnable: boolean;
-  smtpEnabledEvents: string;
-  smtpEncryptionType: string;
-  smtpFrom: string;
-  smtpFromName: string;
-  smtpHost: string;
-  smtpMemory: number;
-  smtpPassword: string;
-  smtpPort: number;
-  smtpTo: string;
-  smtpUsername: string;
   subAnnounce: string;
   subCalendarExpireInclusive: boolean;
   subCertFile: string;
@@ -356,17 +298,6 @@ export interface AllSettingView {
   subTrafficDepletedTemplate: string;
   subURI: string;
   subUpdates: number;
-  tgBotAPIServer: string;
-  tgBotBackup: boolean;
-  tgBotChatId: string;
-  tgBotEnable: boolean;
-  tgBotProxy: string;
-  tgBotToken: string;
-  tgCpu: number;
-  tgEnabledEvents: string;
-  tgLang: string;
-  tgMemory: number;
-  tgRunTime: string;
   timeLocation: string;
   trafficDiff: number;
   trustedProxyCIDRs: string;
@@ -408,7 +339,6 @@ export interface ApiTokenView {
 }
 
 export interface Client {
-  adTag?: string;
   allowedIPs?: string[];
   allowedIPsByInbound?: Record<number, string[]>;
   auth?: string;
@@ -431,10 +361,8 @@ export interface Client {
   resetMax: number;
   resetWeekday: number;
   reverse?: ClientReverse | null;
-  secret?: string;
   security: string;
   subId: string;
-  tgId: number;
   totalGB: number;
   trafficReset?: string;
   trafficResetDay?: number;
@@ -458,7 +386,6 @@ export interface ClientPageResponse {
 }
 
 export interface ClientRecord {
-  adTag: string;
   allowedIPs: string;
   auth: string;
   comment: string;
@@ -481,10 +408,8 @@ export interface ClientRecord {
   resetMax: number;
   resetWeekday: number;
   reverse: unknown;
-  secret: string;
   security: string;
   subId: string;
-  tgId: number;
   totalGB: number;
   trafficReset: string;
   trafficResetDay: number;
@@ -678,7 +603,6 @@ export interface InboundOption {
   enable: boolean;
   id: number;
   listen?: string;
-  mtprotoDomain?: string;
   network?: string;
   port: number;
   protocol: string;

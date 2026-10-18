@@ -5,40 +5,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "datepicker": {
         "type": "string"
       },
-      "discordAdminIds": {
-        "type": "string"
-      },
-      "discordBotBackup": {
-        "type": "boolean"
-      },
-      "discordBotEnable": {
-        "type": "boolean"
-      },
-      "discordBotToken": {
-        "type": "string"
-      },
-      "discordChannelId": {
-        "type": "string"
-      },
-      "discordCpu": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "discordEnabledEvents": {
-        "type": "string"
-      },
-      "discordLang": {
-        "type": "string"
-      },
-      "discordMemory": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "discordRunTime": {
-        "type": "string"
-      },
       "expireDiff": {
         "minimum": 0,
         "type": "integer"
@@ -168,48 +134,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "maximum": 525600,
         "minimum": 1,
         "type": "integer"
-      },
-      "smtpCpu": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "smtpEnable": {
-        "type": "boolean"
-      },
-      "smtpEnabledEvents": {
-        "type": "string"
-      },
-      "smtpEncryptionType": {
-        "type": "string"
-      },
-      "smtpFrom": {
-        "type": "string"
-      },
-      "smtpFromName": {
-        "type": "string"
-      },
-      "smtpHost": {
-        "type": "string"
-      },
-      "smtpMemory": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "smtpPassword": {
-        "type": "string"
-      },
-      "smtpPort": {
-        "maximum": 65535,
-        "minimum": 1,
-        "type": "integer"
-      },
-      "smtpTo": {
-        "type": "string"
-      },
-      "smtpUsername": {
-        "type": "string"
       },
       "subAnnounce": {
         "type": "string"
@@ -508,43 +432,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "minimum": 0,
         "type": "integer"
       },
-      "tgBotAPIServer": {
-        "type": "string"
-      },
-      "tgBotBackup": {
-        "type": "boolean"
-      },
-      "tgBotChatId": {
-        "type": "string"
-      },
-      "tgBotEnable": {
-        "type": "boolean"
-      },
-      "tgBotProxy": {
-        "type": "string"
-      },
-      "tgBotToken": {
-        "type": "string"
-      },
-      "tgCpu": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "tgEnabledEvents": {
-        "type": "string"
-      },
-      "tgLang": {
-        "type": "string"
-      },
-      "tgMemory": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "tgRunTime": {
-        "type": "string"
-      },
       "timeLocation": {
         "type": "string"
       },
@@ -589,16 +476,6 @@ export const SCHEMAS: Record<string, unknown> = {
     },
     "required": [
       "datepicker",
-      "discordAdminIds",
-      "discordBotBackup",
-      "discordBotEnable",
-      "discordBotToken",
-      "discordChannelId",
-      "discordCpu",
-      "discordEnabledEvents",
-      "discordLang",
-      "discordMemory",
-      "discordRunTime",
       "expireDiff",
       "externalSubUserAgent",
       "externalTrafficInformEnable",
@@ -636,18 +513,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "remarkTemplate",
       "restartXrayOnClientDisable",
       "sessionMaxAge",
-      "smtpCpu",
-      "smtpEnable",
-      "smtpEnabledEvents",
-      "smtpEncryptionType",
-      "smtpFrom",
-      "smtpFromName",
-      "smtpHost",
-      "smtpMemory",
-      "smtpPassword",
-      "smtpPort",
-      "smtpTo",
-      "smtpUsername",
       "subAnnounce",
       "subCalendarExpireInclusive",
       "subCertFile",
@@ -745,17 +610,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "subTrafficDepletedTemplate",
       "subURI",
       "subUpdates",
-      "tgBotAPIServer",
-      "tgBotBackup",
-      "tgBotChatId",
-      "tgBotEnable",
-      "tgBotProxy",
-      "tgBotToken",
-      "tgCpu",
-      "tgEnabledEvents",
-      "tgLang",
-      "tgMemory",
-      "tgRunTime",
       "timeLocation",
       "trafficDiff",
       "trustedProxyCIDRs",
@@ -774,40 +628,6 @@ export const SCHEMAS: Record<string, unknown> = {
   "AllSettingView": {
     "properties": {
       "datepicker": {
-        "type": "string"
-      },
-      "discordAdminIds": {
-        "type": "string"
-      },
-      "discordBotBackup": {
-        "type": "boolean"
-      },
-      "discordBotEnable": {
-        "type": "boolean"
-      },
-      "discordBotToken": {
-        "type": "string"
-      },
-      "discordChannelId": {
-        "type": "string"
-      },
-      "discordCpu": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "discordEnabledEvents": {
-        "type": "string"
-      },
-      "discordLang": {
-        "type": "string"
-      },
-      "discordMemory": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "discordRunTime": {
         "type": "string"
       },
       "expireDiff": {
@@ -829,19 +649,10 @@ export const SCHEMAS: Record<string, unknown> = {
       "hasApiToken": {
         "type": "boolean"
       },
-      "hasDiscordBotToken": {
-        "type": "boolean"
-      },
       "hasLdapPassword": {
         "type": "boolean"
       },
       "hasNordSecret": {
-        "type": "boolean"
-      },
-      "hasSmtpPassword": {
-        "type": "boolean"
-      },
-      "hasTgBotToken": {
         "type": "boolean"
       },
       "hasTwoFactorToken": {
@@ -964,48 +775,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "minimum": 1,
         "type": "integer"
       },
-      "smtpCpu": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "smtpEnable": {
-        "type": "boolean"
-      },
-      "smtpEnabledEvents": {
-        "type": "string"
-      },
-      "smtpEncryptionType": {
-        "type": "string"
-      },
-      "smtpFrom": {
-        "type": "string"
-      },
-      "smtpFromName": {
-        "type": "string"
-      },
-      "smtpHost": {
-        "type": "string"
-      },
-      "smtpMemory": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "smtpPassword": {
-        "type": "string"
-      },
-      "smtpPort": {
-        "maximum": 65535,
-        "minimum": 1,
-        "type": "integer"
-      },
-      "smtpTo": {
-        "type": "string"
-      },
-      "smtpUsername": {
-        "type": "string"
-      },
       "subAnnounce": {
         "type": "string"
       },
@@ -1303,43 +1072,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "minimum": 0,
         "type": "integer"
       },
-      "tgBotAPIServer": {
-        "type": "string"
-      },
-      "tgBotBackup": {
-        "type": "boolean"
-      },
-      "tgBotChatId": {
-        "type": "string"
-      },
-      "tgBotEnable": {
-        "type": "boolean"
-      },
-      "tgBotProxy": {
-        "type": "string"
-      },
-      "tgBotToken": {
-        "type": "string"
-      },
-      "tgCpu": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "tgEnabledEvents": {
-        "type": "string"
-      },
-      "tgLang": {
-        "type": "string"
-      },
-      "tgMemory": {
-        "maximum": 100,
-        "minimum": 0,
-        "type": "integer"
-      },
-      "tgRunTime": {
-        "type": "string"
-      },
       "timeLocation": {
         "type": "string"
       },
@@ -1384,27 +1116,14 @@ export const SCHEMAS: Record<string, unknown> = {
     },
     "required": [
       "datepicker",
-      "discordAdminIds",
-      "discordBotBackup",
-      "discordBotEnable",
-      "discordBotToken",
-      "discordChannelId",
-      "discordCpu",
-      "discordEnabledEvents",
-      "discordLang",
-      "discordMemory",
-      "discordRunTime",
       "expireDiff",
       "externalSubUserAgent",
       "externalTrafficInformEnable",
       "externalTrafficInformURI",
       "happLinkEnable",
       "hasApiToken",
-      "hasDiscordBotToken",
       "hasLdapPassword",
       "hasNordSecret",
-      "hasSmtpPassword",
-      "hasTgBotToken",
       "hasTwoFactorToken",
       "hasWarpSecret",
       "ipLimitAllowlist",
@@ -1439,18 +1158,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "remarkTemplate",
       "restartXrayOnClientDisable",
       "sessionMaxAge",
-      "smtpCpu",
-      "smtpEnable",
-      "smtpEnabledEvents",
-      "smtpEncryptionType",
-      "smtpFrom",
-      "smtpFromName",
-      "smtpHost",
-      "smtpMemory",
-      "smtpPassword",
-      "smtpPort",
-      "smtpTo",
-      "smtpUsername",
       "subAnnounce",
       "subCalendarExpireInclusive",
       "subCertFile",
@@ -1548,17 +1255,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "subTrafficDepletedTemplate",
       "subURI",
       "subUpdates",
-      "tgBotAPIServer",
-      "tgBotBackup",
-      "tgBotChatId",
-      "tgBotEnable",
-      "tgBotProxy",
-      "tgBotToken",
-      "tgCpu",
-      "tgEnabledEvents",
-      "tgLang",
-      "tgMemory",
-      "tgRunTime",
       "timeLocation",
       "trafficDiff",
       "trustedProxyCIDRs",
@@ -1688,10 +1384,6 @@ export const SCHEMAS: Record<string, unknown> = {
   "Client": {
     "description": "Client represents a client configuration for Xray inbounds with traffic limits and settings.",
     "properties": {
-      "adTag": {
-        "example": "0123456789abcdef0123456789abcdef",
-        "type": "string"
-      },
       "allowedIPs": {
         "items": {
           "type": "string"
@@ -1793,10 +1485,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "description": "VLESS simple reverse proxy settings",
         "nullable": true
       },
-      "secret": {
-        "example": "ee1234567890abcdef1234567890abcd7777772e636c6f7564666c6172652e636f6d",
-        "type": "string"
-      },
       "security": {
         "description": "Security method (e.g., \"auto\", \"aes-128-gcm\")",
         "type": "string"
@@ -1804,11 +1492,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "subId": {
         "description": "Subscription identifier",
         "type": "string"
-      },
-      "tgId": {
-        "description": "Telegram user ID for notifications",
-        "format": "int64",
-        "type": "integer"
       },
       "totalGB": {
         "description": "Total traffic limit in GB",
@@ -1849,7 +1532,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "resetWeekday",
       "security",
       "subId",
-      "tgId",
       "totalGB"
     ],
     "type": "object"
@@ -1919,9 +1601,6 @@ export const SCHEMAS: Record<string, unknown> = {
   },
   "ClientRecord": {
     "properties": {
-      "adTag": {
-        "type": "string"
-      },
       "allowedIPs": {
         "type": "string"
       },
@@ -1988,18 +1667,11 @@ export const SCHEMAS: Record<string, unknown> = {
         "type": "integer"
       },
       "reverse": {},
-      "secret": {
-        "type": "string"
-      },
       "security": {
         "type": "string"
       },
       "subId": {
         "type": "string"
-      },
-      "tgId": {
-        "format": "int64",
-        "type": "integer"
       },
       "totalGB": {
         "format": "int64",
@@ -2020,7 +1692,6 @@ export const SCHEMAS: Record<string, unknown> = {
       }
     },
     "required": [
-      "adTag",
       "allowedIPs",
       "auth",
       "comment",
@@ -2043,10 +1714,8 @@ export const SCHEMAS: Record<string, unknown> = {
       "resetMax",
       "resetWeekday",
       "reverse",
-      "secret",
       "security",
       "subId",
-      "tgId",
       "totalGB",
       "trafficReset",
       "trafficResetDay",
@@ -2734,7 +2403,6 @@ export const SCHEMAS: Record<string, unknown> = {
           "mixed",
           "tunnel",
           "tun",
-          "mtproto",
           "amneziawg",
           "tuic"
         ],
@@ -2905,9 +2573,6 @@ export const SCHEMAS: Record<string, unknown> = {
         "type": "integer"
       },
       "listen": {
-        "type": "string"
-      },
-      "mtprotoDomain": {
         "type": "string"
       },
       "network": {
@@ -3245,7 +2910,7 @@ export const SCHEMAS: Record<string, unknown> = {
         "type": "string"
       },
       "certChainBytes": {
-        "description": "CertChainBytes is the sum of DER lengths of the presented peer chain.\nxray-core ML-DSA-65 REALITY needs \u003e= 3500 bytes (constant lives in xray-core).",
+        "description": "CertChainBytes is the sum of DER lengths of the presented peer chain.\nxray-core ML-DSA-65 REALITY needs >= 3500 bytes (constant lives in xray-core).",
         "example": 3427,
         "type": "integer"
       },
@@ -3380,7 +3045,7 @@ export const SCHEMAS: Record<string, unknown> = {
         "type": "string"
       },
       "headerProtectionKey": {
-        "description": "HeaderProtectionKey and ContentPaddingAddition are AmneziaWG 3.0\nfields, flat and top-level for the same tools/openapigen reason as\nthe block above; Obfuscation() below folds them back into\nObfuscation31's own identically named fields.\nHeaderProtectionKey is a base64 32-byte key; empty (the default)\ndisables AWG 3.0 header protection. A non-empty value requires\nevery one of S1-S4 above to be \u003e= 12 -- ValidateObfuscation\nenforces this at save time, not just at IpcSet time.\nContentPaddingAddition is a \"low-high\" range or bare integer, the\nsame grammar and uint32 cap as H1-H4.",
+        "description": "HeaderProtectionKey and ContentPaddingAddition are AmneziaWG 3.0\nfields, flat and top-level for the same tools/openapigen reason as\nthe block above; Obfuscation() below folds them back into\nObfuscation31's own identically named fields.\nHeaderProtectionKey is a base64 32-byte key; empty (the default)\ndisables AWG 3.0 header protection. A non-empty value requires\nevery one of S1-S4 above to be >= 12 -- ValidateObfuscation\nenforces this at save time, not just at IpcSet time.\nContentPaddingAddition is a \"low-high\" range or bare integer, the\nsame grammar and uint32 cap as H1-H4.",
         "type": "string"
       },
       "i1": {
@@ -3408,7 +3073,7 @@ export const SCHEMAS: Record<string, unknown> = {
         "type": "string"
       },
       "jc": {
-        "description": "Obfuscation31's fields, repeated flat (not embedded) rather than\nnested under their own key: encoding/json would happily inline an\nembedded Obfuscation31 the same way, but the frontend's Go-\u003eZod/TS\ngenerator (tools/openapigen) does not — it emits a genuinely nested\n`obfuscation31` object, which would silently diverge from the real\nwire JSON. See Obfuscation() below for the manager-facing conversion.",
+        "description": "Obfuscation31's fields, repeated flat (not embedded) rather than\nnested under their own key: encoding/json would happily inline an\nembedded Obfuscation31 the same way, but the frontend's Go->Zod/TS\ngenerator (tools/openapigen) does not — it emits a genuinely nested\n`obfuscation31` object, which would silently diverge from the real\nwire JSON. See Obfuscation() below for the manager-facing conversion.",
         "type": "integer"
       },
       "jmax": {
@@ -3437,7 +3102,7 @@ export const SCHEMAS: Record<string, unknown> = {
         "type": "string"
       },
       "randomTrailers": {
-        "description": "RandomTrailers/DisableCookies mirror Instance's identically named\nAmneziaWG 3.1 fields -- see that type's own doc comment for the real\nprotocol/interop details. Both real bool fields (not omitempty):\nbuildUAPIConfig always emits both lines explicitly so the\nreconfigure-in-place diff correctly notices a true-\u003efalse edit, not\njust false-\u003etrue.",
+        "description": "RandomTrailers/DisableCookies mirror Instance's identically named\nAmneziaWG 3.1 fields -- see that type's own doc comment for the real\nprotocol/interop details. Both real bool fields (not omitempty):\nbuildUAPIConfig always emits both lines explicitly so the\nreconfigure-in-place diff correctly notices a true->false edit, not\njust false->true.",
         "type": "boolean"
       },
       "rejectAfterTime": {
@@ -3549,7 +3214,7 @@ export const SCHEMAS: Record<string, unknown> = {
         "additionalProperties": {
           "type": "number"
         },
-        "description": "inboundId -\u003e leastLoad weight; absent entries mean 1.0. Only meaningful\nwith Strategy \"leastLoad\" — xray ignores costs on every other strategy.",
+        "description": "inboundId -> leastLoad weight; absent entries mean 1.0. Only meaningful\nwith Strategy \"leastLoad\" — xray ignores costs on every other strategy.",
         "type": "object"
       },
       "remark": {
