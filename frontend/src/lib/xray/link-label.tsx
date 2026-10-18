@@ -25,7 +25,6 @@ const PROTOCOL_LABELS: Record<string, string> = {
   hysteria: 'Hysteria',
   wireguard: 'WireGuard',
   wg: 'WireGuard',
-  tg: 'MTProto',
   vpn: 'AmneziaWG',
   tuic: 'TUIC',
 };
@@ -38,7 +37,6 @@ const PROTOCOL_COLORS: Record<string, string> = {
   Hysteria: 'magenta',
   Hysteria2: 'magenta',
   WireGuard: 'cyan',
-  MTProto: 'blue',
   AmneziaWG: 'yellow',
   TUIC: 'orange',
 };
@@ -118,9 +116,7 @@ export function parseLinkParts(link: string): LinkParts | null {
       const url = new URL(trimmed);
       network = url.searchParams.get('type') ?? '';
       security = url.searchParams.get('security') ?? '';
-      /* tg://proxy links (mtproto) carry the port in a `port` query param, not
-         the URL authority, so fall back to it when there is no authority port. */
-      port = url.port || (url.searchParams.get('port') ?? '');
+      port = url.port;
       const hash = url.hash.replace(/^#/, '');
       try {
         remark = decodeURIComponent(hash);

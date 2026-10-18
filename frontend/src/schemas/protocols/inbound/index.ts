@@ -4,7 +4,6 @@ import { AmneziawgInboundSettingsSchema } from './amneziawg';
 import { HttpInboundSettingsSchema } from './http';
 import { HysteriaInboundSettingsSchema } from './hysteria';
 import { MixedInboundSettingsSchema } from './mixed';
-import { MtprotoInboundSettingsSchema } from './mtproto';
 import { ShadowsocksInboundSettingsSchema } from './shadowsocks';
 import { TrojanInboundSettingsSchema } from './trojan';
 import { TuicInboundSettingsSchema } from './tuic';
@@ -18,7 +17,6 @@ export * from './amneziawg';
 export * from './http';
 export * from './hysteria';
 export * from './mixed';
-export * from './mtproto';
 export * from './shadowsocks';
 export * from './trojan';
 export * from './tuic';
@@ -44,7 +42,6 @@ export const InboundSettingsSchema = z.discriminatedUnion('protocol', [
   z.object({ protocol: z.literal('mixed'), settings: MixedInboundSettingsSchema }),
   z.object({ protocol: z.literal('tunnel'), settings: TunnelInboundSettingsSchema }),
   z.object({ protocol: z.literal('tun'), settings: TunInboundSettingsSchema }),
-  z.object({ protocol: z.literal('mtproto'), settings: MtprotoInboundSettingsSchema }),
   z.object({ protocol: z.literal('amneziawg'), settings: AmneziawgInboundSettingsSchema }),
   z.object({ protocol: z.literal('tuic'), settings: TuicInboundSettingsSchema }),
 ]);

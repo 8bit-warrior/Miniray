@@ -49,8 +49,6 @@ export const ClientRecordSchema = z
     preSharedKey: z.string().optional(),
     keepAlive: z.number().optional(),
     forwardedPorts: z.string().optional(),
-    secret: z.string().optional(),
-    adTag: z.string().optional(),
     createdAt: z.number().optional(),
     updatedAt: z.number().optional(),
   })
@@ -126,7 +124,6 @@ export const InboundOptionSchema = z
     wgDns: z.string().optional(),
     awgServer: AwgServerOptionSchema.nullable().optional(),
     tuicServer: TuicServerOptionSchema.nullable().optional(),
-    mtprotoDomain: z.string().optional(),
     listen: z.string().optional(),
     shareAddr: z.string().optional(),
     shareAddrStrategy: z.string().optional(),
@@ -283,7 +280,6 @@ export const ClientBulkAdjustFormSchema = z
     addGB: z.number(),
     flow: z.string().optional().default(''),
     limitHwid: z.number().int().min(0).nullable().optional(),
-    adTag: z.string().optional().default(''),
   })
   .refine(
     (v) =>
@@ -291,20 +287,9 @@ export const ClientBulkAdjustFormSchema = z
       v.addGB !== 0 ||
       v.flow !== '' ||
       (v.limitHwid !== undefined && v.limitHwid !== null) ||
-      (v.adTag !== undefined && v.adTag.trim() !== ''),
+      (v.limitHwid !== undefined && v.limitHwid !== null),
     {
       error: 'pages.clients.bulkAdjustNothing',
-    },
-  )
-  .refine(
-    (v) => {
-      const tag = v.adTag?.trim();
-      if (!tag || tag === 'none') return true;
-      return /^[0-9a-fA-F]{32}$/.test(tag);
-    },
-    {
-      error: 'pages.inbounds.form.mtgAdTagInvalid',
-      path: ['adTag'],
     },
   );
 export const ClientBulkAddFormSchema = z.object({

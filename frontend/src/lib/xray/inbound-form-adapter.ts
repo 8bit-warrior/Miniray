@@ -8,7 +8,6 @@ import type { InboundSettings } from '@/schemas/protocols/inbound';
 import {
   AmneziawgClientSchema,
   HysteriaClientSchema,
-  MtprotoClientSchema,
   ShadowsocksClientSchema,
   TrojanClientSchema,
   TuicClientSchema,
@@ -266,8 +265,6 @@ function clientSchemaForProtocol(protocol: string): z.ZodType | null {
       return HysteriaClientSchema;
     case 'wireguard':
       return WireguardClientSchema;
-    case 'mtproto':
-      return MtprotoClientSchema;
     case 'amneziawg':
       return AmneziawgClientSchema;
     case 'tuic':
@@ -368,8 +365,7 @@ export function formValuesToWirePayload(
     protocol: values.protocol,
     settings: JSON.stringify(settingsPruned),
     streamSettings: streamPruned ? JSON.stringify(streamPruned) : '',
-    // mtproto is mtg-served, not Xray, so sniffing never applies — emit empty
-    // rather than the default { enabled: false } so the row carries no sniffing.
+    // Non-Xray protocols don't support sniffing, so emit an empty field.
     sniffing: canEnableSniffing({ protocol: values.protocol })
       ? JSON.stringify(normalizeSniffing(values.sniffing))
       : '',

@@ -785,27 +785,6 @@ export function genHysteriaLink(input: GenHysteriaLinkInput): string {
   url.hash = encodeURIComponent(remark);
   return url.toString();
 }
-export interface GenMtprotoLinkInput {
-  inbound: Inbound;
-  address: string;
-  port?: number;
-  clientSecret?: string;
-}
-// Builds a per-client Telegram proxy deep link for an mtproto inbound from the
-// client's own FakeTLS secret. No remark fragment is added: Telegram proxy deep
-// links have no name field, and a trailing "#remark" gets folded into the last
-// query value by lenient parsers, breaking the server address. The panel shows
-// the remark separately from the link.
-export function genMtprotoLink(input: GenMtprotoLinkInput): string {
-  const { inbound, address, port = inbound.port, clientSecret = '' } = input;
-  if (inbound.protocol !== 'mtproto') return '';
-  if (clientSecret.length === 0) return '';
-  const url = new URL('tg://proxy');
-  url.searchParams.set('server', address);
-  url.searchParams.set('port', String(port));
-  url.searchParams.set('secret', clientSecret);
-  return url.toString();
-}
 export interface GenTuicLinkInput {
   inbound: Inbound;
   address: string;
@@ -1272,8 +1251,6 @@ export function getInboundClients(inbound: Inbound): ClientShape[] | null {
       return (inbound.settings.clients ?? []) as ClientShape[];
     case 'hysteria':
       return (inbound.settings.clients ?? []) as ClientShape[];
-    case 'mtproto':
-      return (inbound.settings.clients ?? []) as ClientShape[];
     case 'tuic':
       return (inbound.settings.clients ?? []) as ClientShape[];
     case 'shadowsocks': {
@@ -1363,8 +1340,6 @@ export function genLink(input: GenLinkInput): string {
         clientAuth: client.auth ?? '',
         externalProxy,
       });
-    case 'mtproto':
-      return genMtprotoLink({ inbound, address, port, clientSecret: client.secret ?? '' });
     case 'tuic':
       return genTuicLink({
         inbound,

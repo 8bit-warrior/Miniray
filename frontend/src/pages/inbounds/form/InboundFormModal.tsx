@@ -62,7 +62,6 @@ import {
   HttpFields,
   HysteriaFields,
   MixedFields,
-  MtprotoFields,
   ShadowsocksFields,
   TuicFields,
   TunFields,
@@ -570,8 +569,6 @@ export default function InboundFormModal({
         <Input placeholder={t('pages.inbounds.monitorDesc')} />
       </FormField>
 
-      {protocol !== Protocols.MTPROTO && (
-        <>
           <FormField
             name="shareAddrStrategy"
             label={labelWithHint(
@@ -603,9 +600,6 @@ export default function InboundFormModal({
               <Input placeholder="edge.example.com" />
             </FormField>
           )}
-        </>
-      )}
-
       <FormField
         name="subSortIndex"
         label={labelWithHint(
@@ -732,8 +726,6 @@ export default function InboundFormModal({
 
       {protocol === Protocols.HTTP && <HttpFields />}
       {protocol === Protocols.MIXED && <MixedFields mixedUdpOn={mixedUdpOn} />}
-
-      {protocol === Protocols.MTPROTO && <MtprotoFields />}
 
       {protocol === Protocols.SHADOWSOCKS && <ShadowsocksFields isSSWith2022={isSSWith2022} />}
 
@@ -1062,7 +1054,6 @@ export default function InboundFormModal({
                     Protocols.TUNNEL,
                     Protocols.TUN,
                     Protocols.WIREGUARD,
-                    Protocols.MTPROTO,
                     Protocols.AMNEZIAWG,
                     Protocols.TUIC,
                   ] as string[]
