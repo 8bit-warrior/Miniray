@@ -61,14 +61,14 @@ describe('formatInboundValidation', () => {
   it('resolves a real client array index back to the client email', () => {
     const schema = z.object({
       settings: z.object({
-        clients: z.array(z.object({ email: z.string(), tgId: z.number() })),
+        clients: z.array(z.object({ email: z.string(), totalGB: z.number() })),
       }),
     });
     const values = {
       settings: {
         clients: [
-          { email: 'first@x.com', tgId: 1 },
-          { email: 'broken@x.com', tgId: 'oops' },
+          { email: 'first@x.com', totalGB: 1 },
+          { email: 'broken@x.com', totalGB: 'oops' },
         ],
       },
     };
@@ -76,14 +76,14 @@ describe('formatInboundValidation', () => {
     expect(parsed.success).toBe(false);
     if (parsed.success) return;
     expect(formatInboundIssue(parsed.error.issues[0], values, t)).toContain(
-      'Client "broken@x.com": tgId — ',
+      'Client "broken@x.com": totalGB — ',
     );
   });
 
   it('falls back to the index when the client has no email', () => {
-    const issue = { path: ['settings', 'clients', 7, 'tgId'], message: 'Invalid input' };
+    const issue = { path: ['settings', 'clients', 7, 'totalGB'], message: 'Invalid input' };
     const values = { settings: { clients: [] } };
-    expect(formatInboundIssue(issue, values, t)).toBe('Client #7: tgId — Invalid input');
+    expect(formatInboundIssue(issue, values, t)).toBe('Client #7: totalGB — Invalid input');
   });
 
   it('formats non-client paths plainly', () => {
@@ -101,12 +101,12 @@ describe('formatInboundValidation', () => {
 
   it('appends a count when several fields fail', () => {
     const issues = [
-      { path: ['settings', 'clients', 0, 'tgId'], message: 'Invalid input' },
+      { path: ['settings', 'clients', 0, 'totalGB'], message: 'Invalid input' },
       { path: ['port'], message: 'Invalid input' },
     ];
     const values = { settings: { clients: [{ email: 'a@x.com' }] } };
     expect(formatInboundValidation(issues, values, t)).toBe(
-      'Client "a@x.com": tgId — Invalid input  (+1 more)',
+      'Client "a@x.com": totalGB — Invalid input  (+1 more)',
     );
   });
 });

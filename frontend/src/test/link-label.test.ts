@@ -29,20 +29,6 @@ describe('link-label parseLinkParts', () => {
     expect(parseLinkParts('not-a-link')).toBeNull();
   });
 
-  // MTProto share links are tg://proxy deep links whose port rides in a query
-  // param, not the URL authority; they carry no transport and use FakeTLS.
-  it('labels an mtproto tg://proxy link with its query-param port and FakeTLS', () => {
-    const parts = parseLinkParts(
-      'tg://proxy?server=host.example.com&port=8443&secret=ee00#mt-inbound',
-    );
-    expect(parts?.protocol).toBe('MTProto');
-    expect(parts?.network).toBe('');
-    expect(parts?.security).toBe('FAKETLS');
-    expect(parts?.port).toBe('8443');
-    expect(parts?.remark).toBe('mt-inbound');
-    expect(parts && linkMetaText(parts)).toBe('mt-inbound:8443');
-  });
-
   // AmneziaWG's vpn:// links are base64url of a plain .conf text, not a
   // structured URL (see inbound-link.ts's genAmneziaWGLink) -- there's no
   // query string or #hash available, so the remark/port have to be read back

@@ -9,12 +9,12 @@ import { parseLogLine } from '@/pages/index/logParse';
 describe('parseLogLine — SysLog (journalctl) formats', () => {
   it('miniray go-logging line: keeps level, strips prefix, tags miniray', () => {
     const r = parseLogLine(
-      'Jun 08 23:57:28 ubuntu-4gb-fsn1-1 /usr/local/miniray/miniray[72297]: INFO - mtproto: started mtg for inbound 3 on 0.0.0.0:8443',
+      'Jun 08 23:57:28 ubuntu-4gb-fsn1-1 /usr/local/miniray/miniray[72297]: INFO - inbound config applied for tag example',
     );
     expect(r.stamp).toBe('Jun 08 23:57:28');
     expect(r.levelText).toBe('INFO');
     expect(r.service).toBe('miniray:');
-    expect(r.body).toBe('mtproto: started mtg for inbound 3 on 0.0.0.0:8443');
+    expect(r.body).toBe('inbound config applied for tag example');
   });
 
   it('xray go-logging line: lifts the XRAY service tag', () => {
@@ -36,13 +36,13 @@ describe('parseLogLine — SysLog (journalctl) formats', () => {
     expect(r.body).toBe('http: TLS handshake error from 18.97.5.1:36022: EOF');
   });
 
-  it('telego bracketed line: lifts the ERROR level out of "[ts] ERROR ..."', () => {
+  it('bracketed timestamp line: lifts the ERROR level out of "[ts] ERROR ..."', () => {
     const r = parseLogLine(
-      'Jun 09 00:14:52 ubuntu-4gb-fsn1-1 miniray[72297]: [Tue Jun  9 00:14:52 UTC 2026] ERROR Retrying getting updates in 8s...',
+      'Jun 09 00:14:52 ubuntu-4gb-fsn1-1 miniray[72297]: [Tue Jun  9 00:14:52 UTC 2026] ERROR Restarting proxy service in 8s...',
     );
     expect(r.stamp).toBe('Jun 09 00:14:52');
     expect(r.levelText).toBe('ERROR');
-    expect(r.body).toBe('Retrying getting updates in 8s...');
+    expect(r.body).toBe('Restarting proxy service in 8s...');
   });
 
   it('systemd line: shows the body rather than a bare timestamp', () => {
@@ -55,7 +55,7 @@ describe('parseLogLine — SysLog (journalctl) formats', () => {
 
   it('never collapses a journald entry to just its timestamp', () => {
     const r = parseLogLine(
-      'Jun 09 00:15:00 ubuntu-4gb-fsn1-1 miniray[72297]: [Tue Jun  9 00:15:00 UTC 2026] ERROR Getting updates: telego: getUpdates: api: 409 "Conflict"',
+      'Jun 09 00:15:00 ubuntu-4gb-fsn1-1 miniray[72297]: [Tue Jun  9 00:15:00 UTC 2026] ERROR Proxy restart rejected: Conflict',
     );
     expect(r.body.length).toBeGreaterThan(0);
     expect(r.body).toContain('Conflict');
@@ -65,13 +65,13 @@ describe('parseLogLine — SysLog (journalctl) formats', () => {
 describe('parseLogLine — app-log format (SysLog off)', () => {
   it('parses "YYYY/MM/DD HH:MM:SS LEVEL - body"', () => {
     const r = parseLogLine(
-      '2026/06/09 00:35:09 INFO - mtproto: started mtg for inbound 3 on 0.0.0.0:8443',
+      '2026/06/09 00:35:09 INFO - inbound config applied for tag example',
     );
     expect(r.date).toBe('2026/06/09');
     expect(r.time).toBe('00:35:09');
     expect(r.levelText).toBe('INFO');
     expect(r.service).toBe('miniray:');
-    expect(r.body).toBe('mtproto: started mtg for inbound 3 on 0.0.0.0:8443');
+    expect(r.body).toBe('inbound config applied for tag example');
   });
 
   it('handles an empty line without throwing', () => {

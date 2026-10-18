@@ -32,7 +32,7 @@ const CATEGORIES = {
   items: [
     { code: 'cn', entries: 2, attributes: [] },
     { code: 'google', entries: 2, attributes: ['ads'] },
-    { code: 'telegram', entries: 1, attributes: [] },
+    { code: 'example-category', entries: 1, attributes: [] },
   ],
 };
 
@@ -207,7 +207,7 @@ describe('GeoBrowserModal selection', () => {
 
     await user.click(await screen.findByText('cn'));
     await user.type(screen.getByPlaceholderText('Filter inside category'), 'abcd');
-    await user.click(screen.getByText('telegram'));
+    await user.click(screen.getByText('example-category'));
 
     await act(() => new Promise((resolve) => setTimeout(resolve, 800)));
     expect(entryFilters(get)).toEqual(['', '']);

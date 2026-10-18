@@ -73,7 +73,6 @@ const vlessRow: RawInboundRow = {
         totalGB: 0,
         expiryTime: 0,
         enable: true,
-        tgId: 0,
         subId: 'abc123def',
         comment: '',
         reset: 0,
@@ -235,16 +234,6 @@ describe('formValuesToWirePayload', () => {
     const values = rawInboundToFormValues({ ...vlessRow, streamSettings: '' });
     const payload = formValuesToWirePayload(values);
     expect(payload.streamSettings).toBe('');
-  });
-  it('emits empty sniffing for mtproto (mtg-served, not Xray)', () => {
-    const values = rawInboundToFormValues({
-      ...vlessRow,
-      protocol: 'mtproto',
-      settings: { fakeTlsDomain: 'www.cloudflare.com', secret: 'ee00' },
-    });
-    const payload = formValuesToWirePayload(values);
-    expect(payload.protocol).toBe('mtproto');
-    expect(payload.sniffing).toBe('');
   });
   it('omits nodeId when null', () => {
     const values = rawInboundToFormValues({ ...vlessRow });
