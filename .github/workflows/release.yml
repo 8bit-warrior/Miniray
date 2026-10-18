@@ -1,4 +1,5 @@
 name: Build Miniray packages
+# Build request: manually trigger package workflow from main.
 on:
   push:
     tags: ['v*.*.*']
