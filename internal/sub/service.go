@@ -644,7 +644,7 @@ func (s *SubService) getInboundsBySubId(subId string) ([]*model.Inbound, error) 
 		JOIN client_inbounds ON client_inbounds.inbound_id = inbounds.id
 		JOIN clients ON clients.id = client_inbounds.client_id
 		WHERE
-			inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','amneziawg','mtproto','tuic')
+			inbounds.protocol in ('vmess','vless','trojan','shadowsocks','hysteria','wireguard','amneziawg','tuic')
 			AND clients.sub_id = ? AND inbounds.enable = ?
 	)`, subId, true).Order("sub_sort_index ASC").Order("id ASC").Find(&inbounds).Error
 	if err != nil {
@@ -779,8 +779,6 @@ func (s *SubService) GetLink(inbound *model.Inbound, email string) string {
 		return s.genShadowsocksLink(inbound, email)
 	case "hysteria":
 		return s.genHysteriaLink(inbound, email)
-	case "mtproto":
-		return s.genMtprotoLink(inbound, email)
 	case "wireguard":
 		return s.genWireguardLink(inbound, email)
 	case "amneziawg":
@@ -1048,27 +1046,6 @@ func (s *SubService) genAmneziaWGLink(inbound *model.Inbound, email string) stri
 	return strings.Join(links, "\n")
 }
 
-// genMtprotoLink builds one Telegram link per advertised endpoint with the client's FakeTLS secret.
-// It omits remarks because lenient parsers fold a fragment into the last query value.
-func (s *SubService) genMtprotoLink(inbound *model.Inbound, email string) string {
-	if inbound.Protocol != model.MTProto {
-		return ""
-	}
-	resolved, ok := s.clientForLink(inbound, email)
-	if !ok || resolved.Secret == "" {
-		return ""
-	}
-	endpoints := s.advertisedEndpoints(inbound)
-	links := make([]string, 0, len(endpoints))
-	for _, endpoint := range endpoints {
-		links = append(links, buildLinkWithParams("tg://proxy", map[string]string{
-			"server": endpoint.Address,
-			"port":   fmt.Sprintf("%d", endpoint.Port),
-			"secret": resolved.Secret,
-		}, ""))
-	}
-	return strings.Join(links, "\n")
-}
 
 // Protocol link generators are intentionally ordered as:
 // vmess -> vless -> trojan -> shadowsocks -> hysteria.

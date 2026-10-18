@@ -208,11 +208,6 @@ func remarkVarValue(token string, ctx remarkContext) string {
 			return c.ID[:8]
 		}
 		return c.ID
-	case "TELEGRAM_ID":
-		if c.TgID != 0 {
-			return strconv.FormatInt(c.TgID, 10)
-		}
-		return ""
 	case "SUB_ID":
 		return c.SubID
 	case "COMMENT":

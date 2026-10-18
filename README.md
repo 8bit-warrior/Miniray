@@ -1,6 +1,6 @@
 # Miniray
 
-Miniray 是一款基于 SQLite 的代理管理面板，支持本地入站、客户端、订阅和 Xray 配置管理。内置 Xray-core **v26.6.27**，并支持 TUIC、AmneziaWG 和 MTProto。Web 面板与代理服务独立运行。XDNS 设置会转换为内置核心支持的配置格式；对于 v26.6.27 不支持的选项，程序会明确报错。
+Miniray 是一款基于 SQLite 的代理管理面板，支持本地入站、客户端、订阅和 Xray 配置管理。内置 Xray-core **v26.6.27**，并支持 TUIC和 AmneziaWG。Web 面板与代理服务独立运行。XDNS 设置会转换为内置核心支持的配置格式；对于 v26.6.27 不支持的选项，程序会明确报错。
 
 ## Linux 安装
 

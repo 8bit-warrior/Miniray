@@ -125,15 +125,6 @@ jobs:
             test -s "/tmp/miniray-xray/$data"
             cp "/tmp/miniray-xray/$data" staging/miniray/bin/
           done
-          MTG_VERSION=1.15.0
-          MTG_PACKAGE="mtg-multi-${MTG_VERSION}-linux-${GOARCH}"
-          curl -fL --retry 4 -o /tmp/miniray-mtg.tar.gz \
-            "https://github.com/mhsanaei/mtg-multi/releases/download/v${MTG_VERSION}/${MTG_PACKAGE}.tar.gz"
-          mkdir -p /tmp/miniray-mtg
-          tar -xzf /tmp/miniray-mtg.tar.gz -C /tmp/miniray-mtg
-          MTG_BINARY=$(find /tmp/miniray-mtg -type f -name "mtg-multi" -print -quit)
-          test -n "$MTG_BINARY"
-          cp "$MTG_BINARY" "staging/miniray/bin/mtg-linux-${GOARCH}"
           cp README.md LICENSE staging/miniray/
           cp -r openrc staging/miniray/
           cp miniray.sh install.sh update.sh miniray-core.service miniray-agent.service miniray.service.* tools/coexist_ports.py staging/miniray/
@@ -142,7 +133,7 @@ jobs:
             ln -s "${script%.sh}.real.sh" "staging/miniray/$script"
           done
           cp internal/web/service/config.json staging/miniray/bin/template.json
-          chmod +x staging/miniray/miniray staging/miniray/*.sh staging/miniray/bin/xray-linux-${GOARCH} staging/miniray/bin/mtg-linux-${GOARCH}
+          chmod +x staging/miniray/miniray staging/miniray/*.sh staging/miniray/bin/xray-linux-${GOARCH}
           (cd staging && tar -czf "../miniray-linux-${GOARCH}.tar.gz" miniray)
           ls -lh miniray-*
       - uses: actions/upload-artifact@v4

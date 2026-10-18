@@ -346,13 +346,7 @@ for binary in "$TMP/miniray"/bin/xray-linux-*; do
   if [[ ! -e "$destination" ]]; then install -m 0755 "$binary" "$destination"; fi
   rm -f "$binary"
 done
-for binary in "$TMP/miniray"/bin/mtg-*; do
-  [[ -f "$binary" ]] || continue
-  destination="$ROOT/bin/$(basename "$binary")"
-  install -m 0755 "$binary" "$destination.next"
-  mv -f "$destination.next" "$destination"
-  rm -f "$binary"
-done
+rm -f "$ROOT"/bin/mtg-*
 install -m 0755 "$TMP/miniray/miniray" "$ROOT/.miniray.next"
 mv -f "$ROOT/.miniray.next" "$ROOT/miniray"
 rm -f "$TMP/miniray/miniray"

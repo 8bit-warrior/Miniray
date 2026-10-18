@@ -9,7 +9,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/amneziawg"
 	"github.com/8bit-warrior/Miniray/internal/amneziawgnet"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
-	"github.com/8bit-warrior/Miniray/internal/mtproto"
 	"github.com/8bit-warrior/Miniray/internal/tuic"
 	"github.com/8bit-warrior/Miniray/internal/xray"
 )
@@ -47,13 +46,7 @@ func (l *Local) withAPI(fn func(api *xray.XrayAPI) error) error {
 }
 
 func (l *Local) AddInbound(_ context.Context, ib *model.Inbound) error {
-	if ib.Protocol == model.MTProto {
-		inst, ok := mtproto.InstanceFromInbound(ib)
-		if !ok {
-			return nil
-		}
-		return mtproto.GetManager().Ensure(inst)
-	}
+	
 	if ib.Protocol == model.AmneziaWG {
 		inst, ok := amneziawg.InstanceFromInbound(ib)
 		if !ok {
@@ -104,10 +97,7 @@ func (l *Local) AddInbound(_ context.Context, ib *model.Inbound) error {
 }
 
 func (l *Local) DelInbound(_ context.Context, ib *model.Inbound) error {
-	if ib.Protocol == model.MTProto {
-		mtproto.GetManager().Remove(ib.Id)
-		return nil
-	}
+	
 	if ib.Protocol == model.AmneziaWG {
 		amneziawgnet.GetManager().Remove(ib.Id)
 		// The removed inbound may have been the only one backing Xray's
@@ -131,9 +121,7 @@ func (l *Local) DelInbound(_ context.Context, ib *model.Inbound) error {
 }
 
 func (l *Local) UpdateInbound(ctx context.Context, oldIb, newIb *model.Inbound) error {
-	if oldIb.Protocol == model.MTProto || newIb.Protocol == model.MTProto {
-		return l.updateMtprotoInbound(ctx, oldIb, newIb)
-	}
+	
 	if oldIb.Protocol == model.AmneziaWG || newIb.Protocol == model.AmneziaWG {
 		return l.updateAmneziaWGInbound(ctx, oldIb, newIb)
 	}
@@ -147,36 +135,8 @@ func (l *Local) UpdateInbound(ctx context.Context, oldIb, newIb *model.Inbound) 
 	return l.AddInbound(ctx, newIb)
 }
 
-// updateMtprotoInbound applies an inbound update without the Del+Add sequence
-// the xray path uses: Remove would drop the manager's fingerprint state, which
-// is what lets Ensure keep the running mtg process (and its live connections)
-// when nothing in the generated config changed. The sidecar is only stopped
-// when the inbound is disabled, loses its last active secret, or moves to a
-// different protocol.
-func (l *Local) updateMtprotoInbound(ctx context.Context, oldIb, newIb *model.Inbound) error {
-	if oldIb.Protocol == model.MTProto && newIb.Protocol != model.MTProto {
-		mtproto.GetManager().Remove(oldIb.Id)
-		if !newIb.Enable {
-			return nil
-		}
-		return l.AddInbound(ctx, newIb)
-	}
-	if oldIb.Protocol != model.MTProto {
-		_ = l.DelInbound(ctx, oldIb)
-	}
-	if !newIb.Enable {
-		mtproto.GetManager().Remove(newIb.Id)
-		return nil
-	}
-	inst, ok := mtproto.InstanceFromInbound(newIb)
-	if !ok {
-		mtproto.GetManager().Remove(newIb.Id)
-		return nil
-	}
-	return mtproto.GetManager().Ensure(inst)
-}
 
-// updateAmneziaWGInbound mirrors updateMtprotoInbound: it skips the
+// updateAmneziaWGInbound skips the
 // Remove+Ensure sequence a plain Del+Add would force so that, on an
 // AmneziaWG-to-AmneziaWG edit, Manager.Ensure's own fingerprint comparison
 // can reconfigure the running embedded Device in place via IpcSet instead
@@ -271,7 +231,7 @@ func (l *Local) updateTuicInbound(ctx context.Context, oldIb, newIb *model.Inbou
 }
 
 func (l *Local) AddUser(_ context.Context, ib *model.Inbound, userMap map[string]any) error {
-	if ib.Protocol == model.MTProto || ib.Protocol == model.AmneziaWG || ib.Protocol == model.TUIC {
+	if ib.Protocol == model.AmneziaWG || ib.Protocol == model.TUIC {
 		return nil
 	}
 	return l.withAPI(func(api *xray.XrayAPI) error {
@@ -280,7 +240,7 @@ func (l *Local) AddUser(_ context.Context, ib *model.Inbound, userMap map[string
 }
 
 func (l *Local) RemoveUser(_ context.Context, ib *model.Inbound, email string) error {
-	if ib.Protocol == model.MTProto || ib.Protocol == model.AmneziaWG || ib.Protocol == model.TUIC {
+	if ib.Protocol == model.AmneziaWG || ib.Protocol == model.TUIC {
 		return nil
 	}
 	return l.withAPI(func(api *xray.XrayAPI) error {

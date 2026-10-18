@@ -50,7 +50,6 @@ var subMetadataTokens = map[string]bool{
 	"EMAIL":       true,
 	"ID":          true,
 	"SHORT_ID":    true,
-	"TELEGRAM_ID": true,
 	"SUB_ID":      true,
 }
 
