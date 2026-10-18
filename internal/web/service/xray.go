@@ -204,7 +204,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			continue
 		}
 
-		if inbound.Protocol == model.MTProto || inbound.Protocol == model.AmneziaWG || inbound.Protocol == model.TUIC {
+		if inbound.Protocol == model.AmneziaWG || inbound.Protocol == model.TUIC {
 			continue
 		}
 		settings := map[string]any{}
@@ -403,18 +403,12 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 	// matchable in routing rules — that its mtg sidecar dials Telegram through.
 	// Done after the subscription merge so a selected subscription outbound (or
 	// balancer) is a valid rule target.
-	for i := range inbounds {
-		inbound := inbounds[i]
-		if inbound.Protocol != model.MTProto || !inbound.Enable {
-			continue
-		}
-		injectMtprotoEgress(xrayConfig, inbound)
-	}
+	
 
 	// Every AmneziaWG inbound is embedded (internal/amneziawgnet: amneziawg-go
 	// over a gVisor netstack, no kernel module) and relays every peer's
 	// decapsulated traffic into its own loopback SOCKS5 inbound, always on —
-	// unlike mtproto's bridge above, there's no opt-in gate here: once
+	// there is no opt-in gate: once
 	// traffic is decapsulated in gVisor, Xray's own freedom outbound is the
 	// only way it reaches the real internet at all, not an optional extra
 	// hop. Whether it goes anywhere beyond Xray's default routing is up to
@@ -566,76 +560,11 @@ func routingTagIsBalancer(routing map[string]any, tag string) bool {
 // mtprotoEgressSocksSettings is the loopback SOCKS server a routed mtproto
 // inbound exposes for its mtg sidecar to dial Telegram through. mtg makes plain
 // TCP connections, so UDP is left off (matching the panel egress bridge).
-const mtprotoEgressSocksSettings = `{"auth":"noauth","udp":false}`
 
-// injectMtprotoEgress wires one routed mtproto inbound into the generated
-// config after any selected outbound resolves in the final target set. Invalid
-// selected targets or routing data skip the entire injection; without a selected
-// outbound, the bridge retains default-route behavior. Generated state remains
-// hot-appliable, leaves the stored template untouched, and never forces a full
-// Xray restart. Mirrors injectPanelEgress.
-func injectMtprotoEgress(cfg *xray.Config, inbound *model.Inbound) {
-	var parsed struct {
-		RouteThroughXray bool   `json:"routeThroughXray"`
-		RouteXrayPort    int    `json:"routeXrayPort"`
-		OutboundTag      string `json:"outboundTag"`
-	}
-	if err := json.Unmarshal([]byte(inbound.Settings), &parsed); err != nil {
-		return
-	}
-	if !parsed.RouteThroughXray || parsed.RouteXrayPort <= 0 || inbound.Tag == "" {
-		return
-	}
-	tag := inbound.Tag
-	for i := range cfg.InboundConfigs {
-		if cfg.InboundConfigs[i].Tag == tag {
-			logger.Warning("mtproto egress: inbound tag [", tag, "] already present in generated config, skipping bridge")
-			return
-		}
-	}
 
-	if parsed.OutboundTag != "" {
-		routing := map[string]any{}
-		if len(cfg.RouterConfig) > 0 {
-			if err := json.Unmarshal(cfg.RouterConfig, &routing); err != nil {
-				logger.Warning("mtproto egress: routing section is unparsable, skipping injection:", err)
-				return
-			}
-		}
-		if !routingTargetExists(routing, cfg.OutboundConfigs, parsed.OutboundTag) {
-			logger.Warning("mtproto egress: target tag [", parsed.OutboundTag, "] not found, skipping injection")
-			return
-		}
-		rules, _ := routing["rules"].([]any)
-		rule := map[string]any{
-			"type":       "field",
-			"inboundTag": []any{tag},
-		}
-		if routingTagIsBalancer(routing, parsed.OutboundTag) {
-			rule["balancerTag"] = parsed.OutboundTag
-		} else {
-			rule["outboundTag"] = parsed.OutboundTag
-		}
-		routing["rules"] = append([]any{rule}, rules...)
-		newRouting, err := json.Marshal(routing)
-		if err != nil {
-			logger.Warning("mtproto egress: failed to rebuild routing section, skipping injection:", err)
-			return
-		}
-		cfg.RouterConfig = json_util.RawMessage(newRouting)
-	}
-
-	cfg.InboundConfigs = append(cfg.InboundConfigs, xray.InboundConfig{
-		Listen:   json_util.RawMessage(`"127.0.0.1"`),
-		Port:     parsed.RouteXrayPort,
-		Protocol: "socks",
-		Settings: json_util.RawMessage(mtprotoEgressSocksSettings),
-		Tag:      tag,
-	})
-}
 
 // Peers resolve DNS inside the tunnel, so domain rules match only via sniffing; routeOnly
-// keeps the dial on the peer's IP, else Telegram's FakeTLS (IP + foreign SNI) breaks.
+// preserves the peer's requested destination IP, with sniffing only for routing.
 const amneziawgEgressSniffingSettings = `{"enabled":true,"destOverride":["http","tls","quic","fakedns"],"routeOnly":true}`
 
 // injectAmneziawgnetSocks gives every enabled AmneziaWG inbound with at

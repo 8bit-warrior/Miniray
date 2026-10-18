@@ -28,7 +28,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/crypto/secretcodec"
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/logger"
-	"github.com/8bit-warrior/Miniray/internal/mtproto"
 	"github.com/8bit-warrior/Miniray/internal/paneloffline"
 	"github.com/8bit-warrior/Miniray/internal/sub"
 	"github.com/8bit-warrior/Miniray/internal/tuic"
@@ -870,14 +869,12 @@ func runProxyAgent() {
 		logger.Warning("proxy agent: initial Xray reconcile failed:", err)
 	}
 
-	mtprotoJob := job.NewMtprotoJob()
 	amneziawgJob := job.NewAmneziaWGJob()
 	tuicJob := job.NewTuicJob()
 	xrayTrafficJob := job.NewXrayTrafficJob()
 	ipLimitJob := job.NewCheckClientIpJob()
 	xrayWatchdog := job.NewCheckXrayRunningJob()
 
-	mtprotoJob.Run()
 	amneziawgJob.Run()
 	tuicJob.Run()
 	xrayService.ApplyPendingRestart()
@@ -894,8 +891,7 @@ func runProxyAgent() {
 	for {
 		select {
 		case <-reconcileTicker.C:
-			mtprotoJob.Run()
-			amneziawgJob.Run()
+					amneziawgJob.Run()
 			tuicJob.Run()
 			xrayService.ApplyPendingRestart()
 		case <-trafficTicker.C:
@@ -909,7 +905,6 @@ func runProxyAgent() {
 			if err := tuicJob.FlushStoppedTraffic(); err != nil {
 				logger.Warning("proxy agent: flush TUIC counters:", err)
 			}
-			mtproto.GetManager().StopAll()
 			amneziawgnet.GetManager().StopAll()
 			amneziawgnet.GetOutboundManager().StopAll()
 			service.StopTrafficWriter()

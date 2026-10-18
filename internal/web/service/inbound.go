@@ -22,7 +22,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/database"
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 	"github.com/8bit-warrior/Miniray/internal/logger"
-	"github.com/8bit-warrior/Miniray/internal/mtproto"
 	"github.com/8bit-warrior/Miniray/internal/tuic"
 	"github.com/8bit-warrior/Miniray/internal/util/common"
 	"github.com/8bit-warrior/Miniray/internal/util/maskcompat"
@@ -57,11 +56,7 @@ func normalizeInboundShareAddress(inbound *model.Inbound) {
 	if inbound == nil {
 		return
 	}
-	if inbound.Protocol == model.MTProto {
-		inbound.ShareAddrStrategy = "listen"
-		inbound.ShareAddr = ""
-		return
-	}
+	
 	inbound.ShareAddrStrategy = normalizeInboundShareAddrStrategy(inbound.ShareAddrStrategy)
 	if addr, err := normalizeInboundShareHost(inbound.ShareAddr); err == nil {
 		inbound.ShareAddr = addr
@@ -74,11 +69,7 @@ func normalizeInboundShareAddressStrict(inbound *model.Inbound) error {
 	if inbound == nil {
 		return nil
 	}
-	if inbound.Protocol == model.MTProto {
-		inbound.ShareAddrStrategy = "listen"
-		inbound.ShareAddr = ""
-		return nil
-	}
+	
 	inbound.ShareAddrStrategy = normalizeInboundShareAddrStrategy(inbound.ShareAddrStrategy)
 	addr, err := normalizeInboundShareHost(inbound.ShareAddr)
 	if err != nil {
@@ -301,7 +292,6 @@ type InboundOption struct {
 	WgPublicKey    string `json:"wgPublicKey,omitempty"`
 	WgMtu          int    `json:"wgMtu,omitempty"`
 	WgDns          string `json:"wgDns,omitempty"`
-	MtprotoDomain  string `json:"mtprotoDomain,omitempty"`
 	// AwgServer carries the full AmneziaWG server block (keys, subnet,
 	// obfuscation params) so the clients page can render a downloadable
 	// per-client .conf without a second round trip.
@@ -358,7 +348,6 @@ func (s *InboundService) GetInboundOptions(userId int) ([]InboundOption, error) 
 			WgPublicKey:       wgPublicKey,
 			WgMtu:             wgMtu,
 			WgDns:             wgDns,
-			MtprotoDomain:     inboundMtprotoDomain(r.Protocol, r.Settings),
 			AwgServer:         inboundAmneziaWGServer(r.Protocol, r.Settings),
 			TuicServer:        inboundTuicServer(r.Protocol, r.Settings),
 			Listen:            r.Listen,
@@ -475,21 +464,7 @@ func inboundTuicServer(protocol string, settings string) *tuic.TuicServerSetting
 	}
 }
 
-// inboundMtprotoDomain returns the inbound-level FakeTLS default domain, used by
-// the clients UI to seed a new mtproto client's secret with the right fronting
-// hostname.
-func inboundMtprotoDomain(protocol string, settings string) string {
-	if protocol != string(model.MTProto) || strings.TrimSpace(settings) == "" {
-		return ""
-	}
-	var parsed struct {
-		FakeTLSDomain string `json:"fakeTlsDomain"`
-	}
-	if err := json.Unmarshal([]byte(settings), &parsed); err != nil {
-		return ""
-	}
-	return strings.TrimSpace(parsed.FakeTLSDomain)
-}
+
 
 // GetAllInbounds retrieves all inbounds with client stats.
 func (s *InboundService) GetAllInbounds() ([]*model.Inbound, error) {
@@ -926,128 +901,15 @@ func validateFinalMaskXmcProfiles(streamSettings string) error {
 	return common.NewError("XMC finalmask requires at least one complete Minecraft profile — each needs a username (3-16 of A-Z a-z 0-9 _), a UUID, and both texture fields from Mojang's session server (XTLS/Xray-core#6487). Complete the profiles or remove the XMC mask.")
 }
 
-// normalizeMtprotoSecret rebuilds every mtproto client's FakeTLS secret so it is
-// always valid before the row is persisted, and drops the vestigial inbound-level
-// secret and adTag: MTProto is multi-client, so mtg and every share link read
-// only the per-client values. Leaving an inbound-level secret behind is what
-// produced stale links that failed with "incorrect client random".
-func (s *InboundService) normalizeMtprotoSecret(inbound *model.Inbound) {
-	if inbound.Protocol != model.MTProto {
-		return
-	}
-	if stripped, ok := model.StripMtprotoInboundSecret(inbound.Settings); ok {
-		inbound.Settings = stripped
-	}
-	if stripped, ok := model.StripMtprotoInboundAdTag(inbound.Settings); ok {
-		inbound.Settings = stripped
-	}
-	if healed, ok := model.HealMtprotoClientSecrets(inbound.Settings); ok {
-		inbound.Settings = healed
-	}
-}
 
-// mtprotoRoutesThroughXray reports whether an mtproto inbound is configured to
-// egress through the core's router (the loopback SOCKS bridge in §xray.go).
-func mtprotoRoutesThroughXray(inbound *model.Inbound) bool {
-	if inbound == nil || inbound.Protocol != model.MTProto {
-		return false
-	}
-	var parsed struct {
-		RouteThroughXray bool `json:"routeThroughXray"`
-	}
-	if err := json.Unmarshal([]byte(inbound.Settings), &parsed); err != nil {
-		return false
-	}
-	return parsed.RouteThroughXray
-}
 
-func settingsRouteXrayPort(parsed map[string]any) int {
-	switch v := parsed["routeXrayPort"].(type) {
-	case float64:
-		return int(v)
-	case int:
-		return v
-	case json.Number:
-		if n, err := v.Int64(); err == nil {
-			return int(n)
-		}
-	}
-	return 0
-}
 
-func parseRouteXrayPort(settings string) int {
-	if settings == "" {
-		return 0
-	}
-	var parsed map[string]any
-	if err := json.Unmarshal([]byte(settings), &parsed); err != nil {
-		return 0
-	}
-	return settingsRouteXrayPort(parsed)
-}
 
-// normalizeMtprotoXrayPort guarantees a routed mtproto inbound carries a stable
-// loopback egress port in its settings, so the generated Xray SOCKS bridge and
-// the mtg sidecar agree on where mtg dials out. The port is backend-owned: it is
-// allocated once when routing is first enabled and preserved across edits
-// (carried over from oldSettings, which wins over any value the client echoed
-// back). When routing is off it — together with the now-inert outbound
-// selection — is stripped so a disabled bridge leaves nothing stale behind.
-//
-// It returns an error when an egress port cannot be allocated or persisted, so
-// the caller refuses the save rather than storing a routed-but-portless inbound,
-// which would otherwise route no traffic and have its mtg metrics skipped (see
-// mtproto_job) — silently losing its accounting.
-func (s *InboundService) normalizeMtprotoXrayPort(inbound *model.Inbound, oldSettings string) error {
-	if inbound.Protocol != model.MTProto {
-		return nil
-	}
-	var parsed map[string]any
-	if err := json.Unmarshal([]byte(inbound.Settings), &parsed); err != nil || parsed == nil {
-		return nil
-	}
-	routed, _ := parsed["routeThroughXray"].(bool)
-	if !routed {
-		_, hadPort := parsed["routeXrayPort"]
-		_, hadTag := parsed["outboundTag"]
-		if !hadPort && !hadTag {
-			return nil
-		}
-		delete(parsed, "routeXrayPort")
-		delete(parsed, "outboundTag")
-		if bs, err := json.MarshalIndent(parsed, "", "  "); err == nil {
-			inbound.Settings = string(bs)
-		} else {
-			logger.Warning("mtproto: failed to marshal settings after disabling routing:", err)
-		}
-		return nil
-	}
 
-	// Prefer the already-stored port (carried across edits), then any value the
-	// client sent, then allocate a fresh one.
-	port := parseRouteXrayPort(oldSettings)
 
-	if port <= 0 {
-		port = settingsRouteXrayPort(parsed)
-	}
-	if port <= 0 {
-		allocated, err := mtproto.FreeLocalPort()
-		if err != nil {
-			return common.NewError("mtproto: could not allocate an Xray egress port:", err)
-		}
-		port = allocated
-	}
-	if settingsRouteXrayPort(parsed) == port {
-		return nil
-	}
-	parsed["routeXrayPort"] = port
-	bs, err := json.MarshalIndent(parsed, "", "  ")
-	if err != nil {
-		return common.NewError("mtproto: could not persist the Xray egress port:", err)
-	}
-	inbound.Settings = string(bs)
-	return nil
-}
+
+
+
 
 // AddInbound creates a new inbound configuration.
 // It validates port uniqueness, client email uniqueness, and required fields,
@@ -1070,10 +932,6 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 		return inbound, false, err
 	}
 	if err := validateFinalMaskXmcProfiles(inbound.StreamSettings); err != nil {
-		return inbound, false, err
-	}
-	s.normalizeMtprotoSecret(inbound)
-	if err := s.normalizeMtprotoXrayPort(inbound, ""); err != nil {
 		return inbound, false, err
 	}
 	if err := s.normalizeAmneziaWGSettings(inbound, ""); err != nil {
@@ -1170,14 +1028,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 			if client.PublicKey == "" {
 				return inbound, false, common.NewError("wireguard client requires a key")
 			}
-		case "mtproto":
-			if client.Secret == "" {
-				return inbound, false, common.NewError("mtproto client requires a secret")
-			}
-			if client.AdTag != "" && !model.ValidMtprotoAdTag(client.AdTag) {
-				return inbound, false, common.NewError("mtproto client ad tag must be 32 hex characters")
-			}
-		case "tuic":
+			case "tuic":
 			if client.ID == "" {
 				return inbound, false, common.NewError("empty client ID")
 			}
@@ -1293,7 +1144,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 				if push {
 					payload := inbound
 					pushable := true
-					if inbound.Protocol == model.MTProto || inbound.Protocol == model.TUIC {
+					if inbound.Protocol == model.TUIC {
 						if built, bErr := s.buildInboundForLocalRuntime(tx, inbound); bErr == nil {
 							payload = built
 						} else {
@@ -1307,7 +1158,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 								logger.Debug("New inbound added on", rt.Name(), ":", inbound.Tag)
 							} else {
 								logger.Debug("Unable to add inbound on", rt.Name(), ":", err1)
-								if inbound.Protocol != model.MTProto && inbound.Protocol != model.TUIC {
+								if inbound.Protocol != model.TUIC {
 									needRestart = true
 								}
 							}
@@ -1329,9 +1180,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 	// A routed mtproto inbound is not an Xray inbound itself, so the runtime
 	// push above only (re)starts the mtg sidecar. The egress SOCKS bridge lives
 	// in the generated config, so force a regen to wire it in.
-	if mtprotoRoutesThroughXray(inbound) {
-		needRestart = true
-	}
+	
 
 	return inbound, needRestart, err
 }
@@ -1423,9 +1272,7 @@ func (s *InboundService) delInbound(id int) (bool, error) {
 		}
 	}
 	// Drop the egress SOCKS bridge a routed mtproto inbound left in the config.
-	if mtprotoRoutesThroughXray(&ib) {
-		needRestart = true
-	}
+	
 	return needRestart, nil
 }
 
@@ -1551,9 +1398,7 @@ func (s *InboundService) SetInboundEnable(id int, enable bool) (bool, error) {
 		return false, perr
 	}
 
-	if mtprotoRoutesThroughXray(inbound) {
-		needRestart = true
-	}
+	
 
 	if !push {
 		return true, nil
@@ -1619,7 +1464,6 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 	if err := validateFinalMaskXmcProfiles(inbound.StreamSettings); err != nil {
 		return inbound, false, err
 	}
-	s.normalizeMtprotoSecret(inbound)
 
 	oldInbound, err := s.GetInbound(inbound.Id)
 	if err != nil {
@@ -1646,10 +1490,6 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 	// overwritten with the new values further down, then ensure a routed
 	// inbound keeps a stable egress port (reusing the one already stored).
 	oldProtocol := oldInbound.Protocol
-	oldRoutedMtproto := mtprotoRoutesThroughXray(oldInbound)
-	if err := s.normalizeMtprotoXrayPort(inbound, oldInbound.Settings); err != nil {
-		return inbound, false, err
-	}
 
 	tag := oldInbound.Tag
 	oldBits := inboundTransports(oldInbound.Protocol, oldInbound.StreamSettings, oldInbound.Settings)
@@ -1811,7 +1651,7 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 			}
 			if !push {
 				needRestart = true
-			} else if oldProtocol == model.MTProto || oldInbound.Protocol == model.MTProto || oldProtocol == model.TUIC || oldInbound.Protocol == model.TUIC {
+			} else if oldProtocol == model.TUIC || oldInbound.Protocol == model.TUIC {
 				oldSnapshot := *oldInbound
 				oldSnapshot.Tag = tag
 				oldSnapshot.Protocol = oldProtocol
@@ -1825,7 +1665,7 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 						pushable = false
 					}
 				}
-				newProtocolIsSidecar := oldInbound.Protocol == model.MTProto || oldInbound.Protocol == model.TUIC
+				newProtocolIsSidecar := oldInbound.Protocol == model.TUIC
 				if pushable {
 					postCommitApply = func() {
 						if err2 := rt.UpdateInbound(context.Background(), &oldSnapshot, payload); err2 == nil {
@@ -1881,9 +1721,7 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 		// (Re)generate the Xray config whenever routing was or is now enabled, so
 		// the egress SOCKS bridge is added, moved, or dropped to match the new
 		// settings.
-		if mtprotoRoutesThroughXray(inbound) || oldRoutedMtproto {
-			needRestart = true
-		}
+		
 		return nil
 	})
 	if txErr != nil {

@@ -25,7 +25,6 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/amneziawgnet"
 	"github.com/8bit-warrior/Miniray/internal/config"
 	"github.com/8bit-warrior/Miniray/internal/logger"
-	"github.com/8bit-warrior/Miniray/internal/mtproto"
 	"github.com/8bit-warrior/Miniray/internal/tuic"
 	"github.com/8bit-warrior/Miniray/internal/util/common"
 	"github.com/8bit-warrior/Miniray/internal/util/sys"
@@ -281,7 +280,6 @@ const (
 	cadenceXrayRunning   = "@every 1s"
 	cadenceXrayRestart   = "@every 30s"
 	cadenceXrayTraffic   = "@every 5s"
-	cadenceMtproto       = "@every 10s"
 	cadenceAmneziaWG     = "@every 10s"
 	cadenceTuic          = "@every 10s"
 	cadenceClientIPScan  = "@every 10s"
@@ -317,10 +315,6 @@ func (s *Server) startTask(restartXray bool, loc *time.Location) {
 
 	// The independent agent owns embedded and sidecar listeners on Linux.
 	if os.Getenv("MINIRAY_SEPARATE_CORE") != "1" {
-		mtJob := job.NewMtprotoJob()
-		_, _ = s.cron.AddJob(cadenceMtproto, mtJob)
-		go mtJob.Run()
-
 		awgJob := job.NewAmneziaWGJob()
 		_, _ = s.cron.AddJob(cadenceAmneziaWG, awgJob)
 		go awgJob.Run()
@@ -518,7 +512,6 @@ func (s *Server) stop(stopXray bool) error {
 			logger.Warning("persist final TUIC traffic on shutdown failed:", err)
 			err2 = err
 		}
-		mtproto.GetManager().StopAll()
 		amneziawgnet.GetManager().StopAll()
 		amneziawgnet.GetOutboundManager().StopAll()
 	}
