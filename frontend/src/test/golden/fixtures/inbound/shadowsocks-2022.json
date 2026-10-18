@@ -13,7 +13,6 @@
         "totalGB": 0,
         "expiryTime": 0,
         "enable": true,
-        "tgId": 0,
         "subId": "ssm001",
         "comment": "multi-user shadowsocks 2022",
         "reset": 0

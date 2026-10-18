@@ -28,7 +28,6 @@
         "totalGB": 0,
         "expiryTime": 0,
         "enable": true,
-        "tgId": 0,
         "subId": "abc123def",
         "comment": "",
         "reset": 0
