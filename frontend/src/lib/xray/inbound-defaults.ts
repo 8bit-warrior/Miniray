@@ -33,7 +33,6 @@ interface ClientBaseSeed {
   totalGB?: number;
   expiryTime?: number;
   enable?: boolean;
-  tgId?: number;
   comment?: string;
   reset?: number;
 }
@@ -44,7 +43,6 @@ interface ClientBase {
   totalGB: number;
   expiryTime: number;
   enable: boolean;
-  tgId: number;
   subId: string;
   comment: string;
   reset: number;
@@ -57,7 +55,6 @@ function clientBase(seed: ClientBaseSeed = {}): ClientBase {
     totalGB: seed.totalGB ?? 0,
     expiryTime: seed.expiryTime ?? 0,
     enable: seed.enable ?? true,
-    tgId: seed.tgId ?? 0,
     subId: seed.subId ?? RandomUtil.randomLowerAndNum(16),
     comment: seed.comment ?? '',
     reset: seed.reset ?? 0,

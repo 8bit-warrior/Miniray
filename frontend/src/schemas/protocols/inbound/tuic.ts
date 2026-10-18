@@ -27,10 +27,6 @@ export const TuicClientSchema = z.object({
   totalGB: z.number().int().min(0).default(0),
   expiryTime: z.number().int().default(0),
   enable: z.boolean().default(true),
-  tgId: z
-    .union([z.number(), z.string()])
-    .transform((v) => Number(v) || 0)
-    .default(0),
   subId: z.string().default(''),
   comment: z.string().default(''),
   reset: z.number().int().min(0).default(0),
