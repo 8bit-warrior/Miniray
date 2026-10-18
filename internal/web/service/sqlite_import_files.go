@@ -18,7 +18,7 @@ func moveSQLiteFiles(from, to string) error {
 			}
 			for i := len(moved) - 1; i >= 0; i-- {
 				if restoreErr := os.Rename(to+moved[i], from+moved[i]); restoreErr != nil {
-					return fmt.Errorf("move SQLite sidecar %s: %w; rollback %s: %v", from+suffix, err, to+moved[i], restoreErr)
+					return fmt.Errorf("move SQLite sidecar %s: %w; rollback %s: %w", from+suffix, err, to+moved[i], restoreErr)
 				}
 			}
 			return fmt.Errorf("move SQLite sidecar %s: %w", from+suffix, err)
