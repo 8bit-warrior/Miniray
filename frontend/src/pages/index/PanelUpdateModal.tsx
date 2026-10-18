@@ -16,6 +16,7 @@ export interface PanelUpdateInfo {
   channel?: string;
   currentVersion: string;
   latestVersion: string;
+  stableLatestVersion?: string;
   currentCommit?: string;
   latestCommit?: string;
   updateAvailable: boolean;
@@ -158,9 +159,10 @@ export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateMod
                     <div className="version-list-item">
                       <span>{t('pages.index.latestPanelVersion')}</span>
                       <Tag color="purple">
-                        {info.channel === 'development'
-                          ? '-'
-                          : formatPanelVersion(info.latestVersion) || '-'}
+                        {formatPanelVersion(
+                          info.stableLatestVersion ||
+                            (info.channel !== 'development' ? info.latestVersion : ''),
+                        ) || '-'}
                       </Tag>
                     </div>
                   </div>

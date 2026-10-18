@@ -30,12 +30,13 @@ type PanelService struct{}
 
 // PanelUpdateInfo describes the installed channel and its own latest available update.
 type PanelUpdateInfo struct {
-	Channel         string `json:"channel"`
-	CurrentVersion  string `json:"currentVersion"`
-	LatestVersion   string `json:"latestVersion"`
-	CurrentCommit   string `json:"currentCommit,omitempty"`
-	LatestCommit    string `json:"latestCommit,omitempty"`
-	UpdateAvailable bool   `json:"updateAvailable"`
+	Channel             string `json:"channel"`
+	CurrentVersion      string `json:"currentVersion"`
+	LatestVersion       string `json:"latestVersion"`
+	StableLatestVersion string `json:"stableLatestVersion"`
+	CurrentCommit      string `json:"currentCommit,omitempty"`
+	LatestCommit       string `json:"latestCommit,omitempty"`
+	UpdateAvailable    bool   `json:"updateAvailable"`
 }
 
 const (
@@ -136,10 +137,15 @@ func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
 		if err != nil {
 			return nil, err
 		}
+		stableLatest, stableErr := fetchLatestPanelVersion()
+		if stableErr != nil {
+			logger.Debug("stable release lookup failed:", stableErr)
+		}
 		info := &PanelUpdateInfo{
-			Channel:        "development",
-			CurrentVersion: currentVersion,
-			CurrentCommit:  shortCommit(currentCommit),
+			Channel:            "development",
+			CurrentVersion:     currentVersion,
+			CurrentCommit:      shortCommit(currentCommit),
+			StableLatestVersion: stableLatest,
 		}
 		if len(builds) == 0 {
 			return info, nil
@@ -155,10 +161,11 @@ func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
 		return nil, err
 	}
 	return &PanelUpdateInfo{
-		Channel:         "stable",
-		CurrentVersion:  currentVersion,
-		LatestVersion:   latest,
-		UpdateAvailable: isNewerVersion(latest, config.GetBaseVersion()),
+		Channel:             "stable",
+		CurrentVersion:      currentVersion,
+		LatestVersion:       latest,
+		StableLatestVersion: latest,
+		UpdateAvailable:     isNewerVersion(latest, config.GetBaseVersion()),
 	}, nil
 }
 
