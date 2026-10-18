@@ -40,12 +40,6 @@ func TestUpdate_PersistsFields_NoInbound(t *testing.T) {
 			want:     7,
 		},
 		{
-			name:     "tgId",
-			mutate:   func(c *model.Client) { c.TgID = 9876543210 },
-			readBack: func(rec *model.ClientRecord) any { return rec.TgID },
-			want:     int64(9876543210),
-		},
-		{
 			name:     "comment cleared to empty",
 			mutate:   func(c *model.Client) { c.Comment = "" },
 			readBack: func(rec *model.ClientRecord) any { return rec.Comment },
@@ -91,7 +85,6 @@ func TestUpdate_PersistsFields_NoInbound(t *testing.T) {
 				TotalGB:    5,
 				ExpiryTime: 1000,
 				LimitIP:    1,
-				TgID:       1,
 				Comment:    "seeded",
 				Reset:      1,
 				Flow:       "seeded-flow",

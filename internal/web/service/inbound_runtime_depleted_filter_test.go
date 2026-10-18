@@ -68,28 +68,6 @@ func TestRuntimeDropsDepletedClientWhoseStatsRowPointsAtSibling(t *testing.T) {
 		requireOnlyHealthy(t, "buildInboundForLocalRuntime", emails)
 	})
 
-	t.Run("mtproto sidecar", func(t *testing.T) {
-		a, _ := seedDepletedOnSibling(t, model.MTProto, 23321,
-			`{"clients":[{"email":"d","secret":"`+mtprotoTestSecretA+`","enable":true},`+
-				`{"email":"h","secret":"`+mtprotoTestSecretB+`","enable":true}]}`)
-		instances, err := (&InboundService{}).DesiredMtprotoInstances()
-		if err != nil {
-			t.Fatalf("DesiredMtprotoInstances: %v", err)
-		}
-		for _, inst := range instances {
-			if inst.Id != a.Id {
-				continue
-			}
-			var emails []string
-			for _, sec := range inst.Secrets {
-				emails = append(emails, sec.Name)
-			}
-			requireOnlyHealthy(t, "DesiredMtprotoInstances", emails)
-			return
-		}
-		t.Fatal("sibling mtproto inbound missing from desired instances")
-	})
-
 	t.Run("tuic sidecar", func(t *testing.T) {
 		a, _ := seedDepletedOnSibling(t, model.TUIC, 23331,
 			`{"certificate":"/c.pem","private_key":"/k.pem","clients":[`+

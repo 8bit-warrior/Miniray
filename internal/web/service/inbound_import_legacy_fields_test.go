@@ -8,13 +8,12 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/database/model"
 )
 
-// Exports from v2.x store tgId as a string ("" when unset); the stored copies
-// are healed by a startup migration, but an imported export never passes it.
+// Older imports can encode numeric client fields as strings; normalize on import.
 func TestAddInboundAcceptsLegacyStringClientFields(t *testing.T) {
 	setupConflictDB(t)
 	settings := `{"clients":[` +
-		`{"id":"11111111-1111-1111-1111-111111111111","email":"legacy-a","tgId":"","subId":"s-a","enable":true,"limitIp":0,"totalGB":0,"expiryTime":0,"reset":0},` +
-		`{"id":"22222222-2222-2222-2222-222222222222","email":"legacy-b","tgId":"123456","subId":"s-b","enable":true,"limitIp":0,"totalGB":0,"expiryTime":0,"reset":0}` +
+		`{"id":"11111111-1111-1111-1111-111111111111","email":"legacy-a","limitIp":"","subId":"s-a","enable":true,"totalGB":0,"expiryTime":0,"reset":0},` +
+		`{"id":"22222222-2222-2222-2222-222222222222","email":"legacy-b","limitIp":"7","subId":"s-b","enable":true,"totalGB":0,"expiryTime":0,"reset":0}` +
 		`],"decryption":"none","fallbacks":[]}`
 	in := makeImportInbound("in-9201-tcp", 9201, settings, nil)
 
@@ -27,8 +26,8 @@ func TestAddInboundAcceptsLegacyStringClientFields(t *testing.T) {
 	if err := database.GetDB().Where("email = ?", "legacy-b").First(&rec).Error; err != nil {
 		t.Fatalf("read client: %v", err)
 	}
-	if rec.TgID != 123456 {
-		t.Fatalf("client tgId = %d, want 123456 parsed from the string", rec.TgID)
+	if rec.LimitIP != 7 {
+		t.Fatalf("client limitIp = %d, want 7 parsed from the string", rec.LimitIP)
 	}
 	var stored struct {
 		Clients []map[string]any `json:"clients"`
@@ -37,8 +36,8 @@ func TestAddInboundAcceptsLegacyStringClientFields(t *testing.T) {
 		t.Fatalf("stored settings: %v", err)
 	}
 	for _, c := range stored.Clients {
-		if _, isString := c["tgId"].(string); isString {
-			t.Fatalf("stored settings keep a string tgId for %v: %v", c["email"], c["tgId"])
+		if _, isString := c["limitIp"].(string); isString {
+			t.Fatalf("stored settings keep a string limitIp for %v: %v", c["email"], c["limitIp"])
 		}
 	}
 }

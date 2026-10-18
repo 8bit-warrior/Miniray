@@ -27,7 +27,6 @@ type pagingSeed struct {
 	password   string
 	auth       string
 	comment    string
-	tgID       int64
 	reset      int
 	lastOnline int64
 	inbounds   []int
@@ -59,7 +58,7 @@ func seedPagingClients(t *testing.T) (int64, []pagingSeed) {
 		{email: "golf@x", enable: true, totalGB: 10 * pagingGB, expiryTime: now + 2*pagingDay, inbounds: []int{vless.Id}},
 		{email: "hotel@x", enable: true, totalGB: 10 * pagingGB, expiryTime: now + 30*pagingDay, used: 10*pagingGB - pagingGB/2, inbounds: []int{vless.Id}},
 		{email: "india@x", enable: true, totalGB: 0, expiryTime: -5 * pagingDay, inbounds: []int{vless.Id}},
-		{email: "juliet@x", enable: true, comment: " vip customer ", tgID: 555, reset: 7, inbounds: []int{vless.Id}},
+		{email: "juliet@x", enable: true, comment: " vip customer ", reset: 7, inbounds: []int{vless.Id}},
 		{email: "kilo_1@x", enable: true, inbounds: nil},
 		{email: "kilo1@x", enable: true, inbounds: []int{trojan.Id}},
 	}
@@ -72,7 +71,6 @@ func seedPagingClients(t *testing.T) (int64, []pagingSeed) {
 			Password:   s.password,
 			Auth:       s.auth,
 			Comment:    s.comment,
-			TgID:       s.tgID,
 			Reset:      s.reset,
 			Enable:     s.enable,
 			TotalGB:    s.totalGB,

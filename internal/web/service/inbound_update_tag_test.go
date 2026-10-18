@@ -165,14 +165,3 @@ func TestNormalizeInboundShareAddressStrict_RequiresHostOnly(t *testing.T) {
 	}
 }
 
-func TestNormalizeInboundShareAddressStrictDropsMtprotoCustomAddress(t *testing.T) {
-	inbound := &model.Inbound{
-		Protocol: model.MTProto, ShareAddrStrategy: "custom", ShareAddr: "proxy.example.com",
-	}
-	if err := normalizeInboundShareAddressStrict(inbound); err != nil {
-		t.Fatalf("normalizeInboundShareAddressStrict: %v", err)
-	}
-	if inbound.ShareAddrStrategy != "listen" || inbound.ShareAddr != "" {
-		t.Fatalf("share fields = (%q, %q), want (listen, empty)", inbound.ShareAddrStrategy, inbound.ShareAddr)
-	}
-}
