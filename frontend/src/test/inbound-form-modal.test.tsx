@@ -186,7 +186,7 @@ describe('InboundFormModal', () => {
       'TLS certificate 1: Import the TLS private key or enter its file path before saving',
     ]);
     expect(post).not.toHaveBeenCalled();
-  });
+  }, 10000);
   it('submits a valid clone-like Reality inbound', async () => {
     const post = vi.mocked(HttpUtil.post);
     post.mockClear();

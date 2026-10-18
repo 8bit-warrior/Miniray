@@ -77,7 +77,7 @@ func TestSocksRelayAgainstRealXray(t *testing.T) {
 		t.Fatalf("generate client keypair: %v", err)
 	}
 
-	const listenPort = 58715
+	listenPort := freeTestPorts(t, 1)[0]
 	inst := amneziawg.Instance{
 		Id:            4,
 		InterfaceName: "awgtest4",
@@ -310,7 +310,7 @@ func TestManagerEnsureAutomaticallyWiresRelay(t *testing.T) {
 	}
 
 	const wantEmail = "manager-e2e-peer@example.com"
-	const listenPort = 58716
+	listenPort := freeTestPorts(t, 1)[0]
 	const inboundID = 5
 
 	tcpEcho, tcpEchoAddr := startTCPEcho(t, localIP)

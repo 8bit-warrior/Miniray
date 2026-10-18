@@ -18,6 +18,32 @@ import (
 	"github.com/8bit-warrior/Miniray/internal/util/wireguard"
 )
 
+func freeTestPorts(t *testing.T, count int) []int {
+	t.Helper()
+	var sockets []io.Closer
+	defer func() {
+		for _, socket := range sockets {
+			socket.Close()
+		}
+	}()
+	ports := make([]int, 0, count)
+	for len(ports) < count {
+		tcp, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		port := tcp.Addr().(*net.TCPAddr).Port
+		udp, err := net.ListenPacket("udp", fmt.Sprintf(":%d", port))
+		if err != nil {
+			tcp.Close()
+			continue
+		}
+		sockets = append(sockets, tcp, udp)
+		ports = append(ports, port)
+	}
+	return ports
+}
+
 func peerWithPortsAndIPs(email, forwardedPorts string, ips ...string) amneziawg.Peer {
 	return amneziawg.Peer{Email: email, PublicKey: "pub-" + email, AllowedIPs: ips, ForwardedPorts: forwardedPorts}
 }
@@ -141,8 +167,9 @@ func dialLoopback(t *testing.T, network string, port int) {
 func TestPortForwardSetReconcileOpensAndClosesListeners(t *testing.T) {
 	gs := newTestStack(t, "10.211.0.1")
 	set := NewPortForwardSet(gs, 501)
+	t.Cleanup(set.Close)
 
-	const port = 58910
+	port := freeTestPorts(t, 1)[0]
 	inst := amneziawg.Instance{Peers: []amneziawg.Peer{
 		peerWithPortsAndIPs("a@x", fmt.Sprintf("%d", port), "10.211.0.2/32"),
 	}}
@@ -186,9 +213,10 @@ func TestPortForwardSetReconcileOpensAndClosesListeners(t *testing.T) {
 func TestPortForwardSetReconcileSurvivesPreBoundPort(t *testing.T) {
 	gs := newTestStack(t, "10.211.1.1")
 	set := NewPortForwardSet(gs, 502)
+	t.Cleanup(set.Close)
 
-	const collidingPort = 58911
-	const okPort = 58912
+	ports := freeTestPorts(t, 2)
+	collidingPort, okPort := ports[0], ports[1]
 	blocker, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", collidingPort))
 	if err != nil {
 		t.Fatalf("pre-bind test port: %v", err)
@@ -239,9 +267,8 @@ func TestPortForwardRoundTripTCPAndUDP(t *testing.T) {
 		t.Fatalf("generate client keypair: %v", err)
 	}
 
-	const listenPort = 58920 // fixed loopback test port, matches this package's existing test convention
-	const tcpPort = 58921
-	const udpPort = 58922
+	ports := freeTestPorts(t, 3)
+	listenPort, tcpPort, udpPort := ports[0], ports[1], ports[2]
 	const clientAddr = "10.202.0.2"
 
 	inst := amneziawg.Instance{

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { act, fireEvent } from '@testing-library/react';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { act, cleanup, fireEvent } from '@testing-library/react';
 
 import BalancerFormModal from '@/pages/xray/balancers/BalancerFormModal';
 import type { BalancerFormValue } from '@/pages/xray/balancers/BalancerFormModal';
@@ -40,6 +40,21 @@ function primaryButton(): HTMLElement {
 }
 
 describe('BalancerFormModal', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    cleanup();
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    vi.useRealTimers();
+  });
+
   it('shows no validation errors when freshly opened in add mode', () => {
     renderModal();
     expect(document.querySelector('.ant-modal')).toBeTruthy();
@@ -61,7 +76,7 @@ describe('BalancerFormModal', () => {
     expect(onConfirm).not.toHaveBeenCalled();
 
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await vi.runOnlyPendingTimersAsync();
     });
   });
 
