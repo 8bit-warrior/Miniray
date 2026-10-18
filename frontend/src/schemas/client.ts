@@ -286,7 +286,6 @@ export const ClientBulkAdjustFormSchema = z
       v.addDays !== 0 ||
       v.addGB !== 0 ||
       v.flow !== '' ||
-      (v.limitHwid !== undefined && v.limitHwid !== null) ||
       (v.limitHwid !== undefined && v.limitHwid !== null),
     {
       error: 'pages.clients.bulkAdjustNothing',

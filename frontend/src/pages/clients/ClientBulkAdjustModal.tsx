@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Form, Input, InputNumber, Modal, Select, message } from 'antd';
+import { Alert, Form, InputNumber, Modal, Select, message } from 'antd';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { ClientBulkAdjustFormSchema, type ClientBulkAdjustFormValues } from '@/schemas/client';
@@ -16,7 +16,6 @@ const EMPTY: ClientBulkAdjustFormValues = {
   addGB: 0,
   flow: '',
   limitHwid: null,
-  adTag: '',
 };
 
 interface ClientBulkAdjustModalProps {
@@ -28,7 +27,6 @@ interface ClientBulkAdjustModalProps {
     addBytes: number,
     flow: string,
     limitHwid?: number | null,
-    adTag?: string,
   ) => Promise<{ adjusted: number; skipped?: { email: string; reason: string }[] } | null>;
 }
 
@@ -59,17 +57,16 @@ export default function ClientBulkAdjustModal({
         (values.limitHwid as unknown) !== ''
           ? Math.trunc(Number(values.limitHwid))
           : null,
-      adTag: values.adTag?.trim() ?? '',
     });
     if (!validated.success) {
       messageApi.warning(t(validated.error.issues[0]?.message ?? 'somethingWentWrong'));
       return;
     }
-    const { addDays: days, addGB: gb, flow: flowValue, limitHwid, adTag } = validated.data;
+    const { addDays: days, addGB: gb, flow: flowValue, limitHwid } = validated.data;
     setSubmitting(true);
     try {
       const bytes = Math.trunc(gb * GB);
-      const result = await onSubmit(days, bytes, flowValue, limitHwid, adTag);
+      const result = await onSubmit(days, bytes, flowValue, limitHwid);
       if (!result) return;
       const ok = result.adjusted ?? 0;
       const skipped = result.skipped?.length ?? 0;
@@ -138,13 +135,6 @@ export default function ClientBulkAdjustModal({
                 precision={0}
                 placeholder={t('pages.clients.bulkFlowNoChange')}
               />
-            </FormField>
-            <FormField
-              name="adTag"
-              label={t('pages.clients.mtprotoAdTag')}
-              extra={t('pages.clients.bulkAdTagHint')}
-            >
-              <Input placeholder={t('pages.clients.bulkFlowNoChange')} allowClear />
             </FormField>
           </Form>
         </FormProvider>

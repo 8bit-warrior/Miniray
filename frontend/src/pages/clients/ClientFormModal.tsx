@@ -30,7 +30,6 @@ import type { Dayjs } from 'dayjs';
 import { Controller, FormProvider, useForm, useWatch, useFieldArray } from 'react-hook-form';
 import { HttpUtil, IntlUtil, RandomUtil, Wireguard } from '@/utils';
 import { formatInboundLabel } from '@/lib/inbounds/label';
-import { generateMtprotoSecret } from '@/lib/xray/inbound-defaults';
 import { normalizeClientIps, type ClientIpInfo } from '@/lib/clients/ip-log';
 import { resolveExternalLinkExpiry } from '@/lib/clients/external-link';
 import { useDatepicker } from '@/hooks/useDatepicker';
@@ -58,7 +57,6 @@ const MULTI_CLIENT_PROTOCOLS = new Set([
   'trojan',
   'hysteria',
   'wireguard',
-  'mtproto',
   'amneziawg',
   'tuic',
 ]);
@@ -122,8 +120,6 @@ type Values = ClientFormValues & {
   awgAllowedIPs: string;
   awgForwardedPorts: string;
   wgKeepAlive: number;
-  secret: string;
-  adTag: string;
 };
 const EMPTY: Values = {
   email: '',
@@ -157,8 +153,6 @@ const EMPTY: Values = {
   awgAllowedIPs: '',
   awgForwardedPorts: '',
   wgKeepAlive: 25,
-  secret: '',
-  adTag: '',
 };
 function toExternalLinkRows(links: ExternalLink[] | undefined): ExternalLinkRow[] {
   return (links || []).map((l) => ({
@@ -238,7 +232,6 @@ export default function ClientFormModal({
   const enable = useWatch({ control: methods.control, name: 'enable' });
   const flow = useWatch({ control: methods.control, name: 'flow' });
   const reverseTag = useWatch({ control: methods.control, name: 'reverseTag' });
-  const secret = useWatch({ control: methods.control, name: 'secret' });
   const email = useWatch({ control: methods.control, name: 'email' });
   const uuid = useWatch({ control: methods.control, name: 'uuid' });
   const trafficReset = useWatch({ control: methods.control, name: 'trafficReset' });
@@ -352,8 +345,6 @@ export default function ClientFormModal({
         awgAllowedIPs: awgTunnelIPs ?? client.allowedIPs ?? '',
         awgForwardedPorts: client.forwardedPorts || '',
         wgKeepAlive: client.keepAlive ?? 0,
-        secret: client.secret || '',
-        adTag: client.adTag || '',
       };
       if (et < 0) {
         seed.delayedStart = true;
@@ -403,20 +394,6 @@ export default function ClientFormModal({
     }
     return ids;
   }, [inbounds]);
-  const mtprotoIds = useMemo(() => {
-    const ids = new Set<number>();
-    for (const row of inbounds || []) {
-      if (row && row.protocol === 'mtproto') ids.add(row.id);
-    }
-    return ids;
-  }, [inbounds]);
-  const mtprotoDomain = useMemo(() => {
-    for (const id of inboundIds || []) {
-      const ib = (inbounds || []).find((row) => row.id === id);
-      if (ib?.protocol === 'mtproto' && ib.mtprotoDomain) return ib.mtprotoDomain;
-    }
-    return 'www.cloudflare.com';
-  }, [inboundIds, inbounds]);
   const ss2022Method = useMemo(() => {
     for (const id of inboundIds || []) {
       const ib = (inbounds || []).find((row) => row.id === id);
@@ -453,10 +430,6 @@ export default function ClientFormModal({
     () => (inboundIds || []).some((id) => amneziawgIds.has(id)),
     [inboundIds, amneziawgIds],
   );
-  const showMtproto = useMemo(
-    () => (inboundIds || []).some((id) => mtprotoIds.has(id)),
-    [inboundIds, mtprotoIds],
-  );
   function regenerateWireguardKeys() {
     const kp = Wireguard.generateKeypair();
     methods.setValue('wgPrivateKey', kp.privateKey);
@@ -464,9 +437,6 @@ export default function ClientFormModal({
   }
   function regenerateWireguardPresharedKey() {
     methods.setValue('wgPreSharedKey', Wireguard.keyToBase64(Wireguard.generatePresharedKey()));
-  }
-  function regenerateMtprotoSecret() {
-    methods.setValue('secret', generateMtprotoSecret(mtprotoDomain));
   }
   useEffect(() => {
     // Only clear the flow once we actually have inbound options to judge
@@ -490,11 +460,6 @@ export default function ClientFormModal({
       methods.setValue('password', RandomUtil.randomShadowsocksPassword(ss2022Method));
     }
   }, [ss2022Method, methods]);
-  useEffect(() => {
-    if (showMtproto && !secret) {
-      methods.setValue('secret', generateMtprotoSecret(mtprotoDomain));
-    }
-  }, [showMtproto, secret, mtprotoDomain, methods]);
   const inboundOptions = useMemo(
     () =>
       (inbounds || [])
@@ -668,15 +633,6 @@ export default function ClientFormModal({
       if (showAmneziawg) {
         clientPayload.forwardedPorts = values.awgForwardedPorts.trim();
       }
-    }
-    if (showMtproto) {
-      const adTag = values.adTag.trim();
-      if (adTag !== '' && !/^[0-9a-fA-F]{32}$/.test(adTag)) {
-        messageApi.error(t('pages.inbounds.form.mtgAdTagInvalid'));
-        return;
-      }
-      clientPayload.secret = values.secret;
-      clientPayload.adTag = adTag;
     }
     const externalLinks: ExternalLinkInput[] = values.externalLinks
       .map((r) => ({
@@ -1195,33 +1151,7 @@ export default function ClientFormModal({
                           )}
                         </>
                       )}
-                      {showMtproto && (
-                        <>
-                          <Form.Item
-                            label={t('pages.clients.mtprotoSecret')}
-                            extra={t('pages.clients.mtprotoSecretHint')}
-                          >
-                            <Space.Compact style={{ display: 'flex' }}>
-                              <Input
-                                value={secret}
-                                style={{ flex: 1 }}
-                                onChange={(e) => methods.setValue('secret', e.target.value)}
-                              />
-                              <Button
-                                aria-label={t('regenerate')}
-                                icon={<ReloadOutlined />}
-                                onClick={regenerateMtprotoSecret}
-                              />
-                            </Space.Compact>
-                          </Form.Item>
-                          <FormField
-                            name="adTag"
-                            label={t('pages.clients.mtprotoAdTag')}
-                            extra={t('pages.clients.mtprotoAdTagHint')}
-                          >
-                            <Input allowClear placeholder="0123456789abcdef0123456789abcdef" />
-                          </FormField>
-                        </>
+                    </>
                       )}
                     </>
                   ),

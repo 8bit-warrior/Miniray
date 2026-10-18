@@ -340,7 +340,6 @@ export function useClients(options: UseClientsOptions = {}) {
       addBytes: number;
       flow?: string;
       limitHwid?: number | null;
-      adTag?: string;
     }): Promise<Msg<BulkAdjustResult>> => {
       const raw = await HttpUtil.post('/panel/api/clients/bulkAdjust', payload, JSON_HEADERS);
       return parseMsg(raw, BulkAdjustResultSchema, 'clients/bulkAdjust');
@@ -503,10 +502,9 @@ export function useClients(options: UseClientsOptions = {}) {
       addBytes: number,
       flow = '',
       limitHwid?: number | null,
-      adTag?: string,
     ) => {
       if (!Array.isArray(emails) || emails.length === 0) return Promise.resolve(null);
-      return bulkAdjustMut.mutateAsync({ emails, addDays, addBytes, flow, limitHwid, adTag });
+      return bulkAdjustMut.mutateAsync({ emails, addDays, addBytes, flow, limitHwid });
     },
     [bulkAdjustMut],
   );

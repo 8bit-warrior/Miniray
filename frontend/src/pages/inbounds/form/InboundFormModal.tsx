@@ -569,8 +569,8 @@ export default function InboundFormModal({
         <Input placeholder={t('pages.inbounds.monitorDesc')} />
       </FormField>
 
-          <FormField
-            name="shareAddrStrategy"
+      <FormField
+        name="shareAddrStrategy"
             label={labelWithHint(
               t('pages.inbounds.form.shareAddrStrategy'),
               t('pages.inbounds.form.shareAddrStrategyHelp'),
@@ -584,7 +584,7 @@ export default function InboundFormModal({
             />
           </FormField>
 
-          {shareAddrStrategy === 'custom' && (
+      {shareAddrStrategy === 'custom' && (
             <FormField
               name="shareAddr"
               label={labelWithHint(
@@ -599,7 +599,8 @@ export default function InboundFormModal({
             >
               <Input placeholder="edge.example.com" />
             </FormField>
-          )}
+      )}
+
       <FormField
         name="subSortIndex"
         label={labelWithHint(

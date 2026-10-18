@@ -14,7 +14,6 @@ const MULTI_USER_PROTOCOLS = new Set([
   'hysteria',
   'shadowsocks',
   'wireguard',
-  'mtproto',
   'amneziawg',
   'tuic',
 ]);

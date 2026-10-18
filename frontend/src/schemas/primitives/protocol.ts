@@ -11,7 +11,6 @@ export const ProtocolSchema = z.enum([
   'mixed',
   'tunnel',
   'tun',
-  'mtproto',
   'amneziawg',
   'tuic',
 ]);
@@ -34,7 +33,6 @@ export const Protocols = Object.freeze({
   MIXED: 'mixed',
   TUNNEL: 'tunnel',
   TUN: 'tun',
-  MTPROTO: 'mtproto',
   AMNEZIAWG: 'amneziawg',
   TUIC: 'tuic',
 });
