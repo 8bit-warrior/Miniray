@@ -20,6 +20,8 @@ jobs:
           mkdir -p internal/web/dist/assets
           printf '<html><body>Miniray test fixture</body></html>' > internal/web/dist/index.html
           printf '/* test fixture */' > internal/web/dist/assets/fixture.css
+      - name: Lint Go backend
+        run: make lint-go
       - name: Compile and test Go backend
         env:
           CGO_ENABLED: '1'

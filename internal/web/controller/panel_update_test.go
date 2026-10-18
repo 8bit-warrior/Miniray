@@ -15,11 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// newPanelUpdateTestEngine registers only updatePanel/getUpdateStatus directly
-// on the controller's zero value, bypassing NewServerController's cron/metrics
-// setup (unrelated to these two handlers, and unnecessary weight for a unit
-// test). Callers must set up a DB first (newControllerTestDB(t)) since StartUpdate
-// reads the dev-channel setting before doing anything else.
+// Register only the update handlers, without starting cron or metrics jobs.
 func newPanelUpdateTestEngine() *gin.Engine {
 	a := &ServerController{}
 	engine := gin.New()
@@ -122,16 +118,11 @@ func TestUpdatePanel_UnsupportedPlatformReturnsNoRunId(t *testing.T) {
 	}
 }
 
-// TestUpdatePanel_InvalidDevValueRejectedBeforeLaunch covers the one branch of
-// updatePanel that's both untested and safe to exercise on any OS/CI runner:
-// an unparseable "dev" form value is rejected by strconv.ParseBool before
-// StartUpdateChannel (and therefore any real exec/network call) is ever
-// reached, on Linux or otherwise.
-func TestUpdatePanel_InvalidDevValueRejectedBeforeLaunch(t *testing.T) {
+func TestUpdatePanel_InvalidActionRunIDRejectedBeforeLaunch(t *testing.T) {
 	newControllerTestDB(t)
 	engine := newPanelUpdateTestEngine()
 
-	form := url.Values{"dev": {"notabool"}}
+	form := url.Values{"actionRunId": {"not-a-run"}}
 	req := httptest.NewRequest(http.MethodPost, "/panel/api/server/updatePanel", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
@@ -144,7 +135,10 @@ func TestUpdatePanel_InvalidDevValueRejectedBeforeLaunch(t *testing.T) {
 		t.Fatalf("decode envelope: %v body=%s", err, w.Body.String())
 	}
 	if env.Success {
-		t.Fatal("updatePanel with dev=notabool: success = true, want false")
+		t.Fatal("updatePanel with invalid actionRunId: success = true, want false")
+	}
+	if !strings.Contains(env.Msg, "invalid Actions run ID") {
+		t.Fatalf("updatePanel error = %q, want invalid Actions run ID", env.Msg)
 	}
 	if len(env.Obj) != 0 && string(env.Obj) != "null" {
 		t.Fatalf("updatePanel error response must not carry an obj/runId: got %s", env.Obj)

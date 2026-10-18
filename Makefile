@@ -3,6 +3,7 @@
 
 SHELL := bash
 GO_PKGS = $(shell go list ./... | grep -v '/frontend/node_modules/')
+GOLANGCI_LINT_VERSION = v2.15.0
 FRONTEND = frontend
 
 .DEFAULT_GOAL := help
@@ -28,7 +29,7 @@ gen-check: gen ## Fail if generated files are stale
 
 .PHONY: lint-go
 lint-go: dist-stub ## golangci-lint on Go sources
-	golangci-lint run
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run
 
 .PHONY: lint-fe
 lint-fe: ## oxlint on frontend sources
