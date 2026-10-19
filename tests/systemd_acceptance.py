@@ -130,11 +130,11 @@ def wait_active(unit):
     raise AssertionError(command("journalctl", "-u", unit, "-n", "40", "--no-pager").stdout)
 
 
-def wait_coexist_ready(panel_port, api_port):
+def wait_coexist_ready(panel_url, api_port):
     last_error = None
     for _ in range(30):
         try:
-            with urllib.request.urlopen(f"http://127.0.0.1:{panel_port}/", timeout=1) as response:
+            with urllib.request.urlopen(panel_url, timeout=1) as response:
                 assert response.status == 200, response.status
             with socket.create_connection(("127.0.0.1", api_port), timeout=1):
                 return
@@ -144,7 +144,7 @@ def wait_coexist_ready(panel_port, api_port):
     status = command("systemctl", "status", "miniray", "miniray-core", "miniray-agent", "--no-pager", check=False).stdout
     logs = command("journalctl", "-u", "miniray", "-u", "miniray-core", "-u", "miniray-agent", "-n", "100", "--no-pager", check=False).stdout
     raise AssertionError(
-        f"Coexistence panel/API ports {panel_port}/{api_port} not ready: {last_error}\n"
+        f"Coexistence panel {panel_url} / API port {api_port} not ready: {last_error}\n"
         f"SYSTEMD STATUS\n{status[-6000:]}\nJOURNAL\n{logs[-10000:]}"
     )
 
@@ -286,10 +286,11 @@ try:
                 ["/usr/local/bin/mr", "change-port"],
                 input=str(new_port) + "\n", text=True, capture_output=True, check=True,
             )
-            assert command("/usr/local/miniray/miniray", "panel-info", "127.0.0.1").stdout.splitlines()[0].startswith(f"http://127.0.0.1:{new_port}/")
+            changed_port_url = command("/usr/local/miniray/miniray", "panel-info", "127.0.0.1").stdout.splitlines()[0]
+            assert changed_port_url == f"http://127.0.0.1:{new_port}/custom-login/"
             for _ in range(30):
                 try:
-                    if urllib.request.urlopen(f"http://127.0.0.1:{new_port}/", timeout=1).status == 200:
+                    if urllib.request.urlopen(changed_port_url, timeout=1).status == 200:
                         break
                 except OSError:
                     time.sleep(0.5)
@@ -324,7 +325,7 @@ try:
             ports = [int(settings["webPort"]), template["inbounds"][0]["port"], int(template["metrics"]["listen"].rsplit(":", 1)[-1])]
             assert len(set(ports)) == 3, ports
             assert not set(ports).intersection({20530, 62790, 11112, 24442}), ports
-            wait_coexist_ready(ports[0], ports[1])
+            wait_coexist_ready(panel_info[0], ports[1])
             install("2\n", succeeds=False)
             if name == "coexist":
                 wait_active("x-ui")
