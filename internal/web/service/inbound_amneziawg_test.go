@@ -45,9 +45,11 @@ func TestCheckForwardedPortsConflict_CollidesWithPanelPort(t *testing.T) {
 	if err != nil {
 		t.Fatalf("loadPortConflictContext: %v", err)
 	}
-	// getString falls back to defaultValueMap's "webPort": "2053" on a fresh
-	// DB with no explicit setting row.
-	hit := svc.checkForwardedPortsConflict(ctx, "2053")
+	port, err := (&SettingService{}).GetPort()
+	if err != nil {
+		t.Fatalf("read panel port: %v", err)
+	}
+	hit := svc.checkForwardedPortsConflict(ctx, fmt.Sprint(port))
 	if !strings.Contains(hit, "panel") {
 		t.Fatalf("expected a collision naming the panel's own port, got %q", hit)
 	}
