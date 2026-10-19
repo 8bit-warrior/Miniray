@@ -2,11 +2,15 @@ package database
 
 import (
 	"encoding/json"
+	"os"
+	"strconv"
+	"strings"
 	"path/filepath"
 	"regexp"
 	"testing"
 
 	"github.com/8bit-warrior/Miniray/internal/database/model"
+	"github.com/8bit-warrior/Miniray/internal/util/crypto"
 )
 
 func TestInitDB_GeneratesPerPanelSubscriptionPaths(t *testing.T) {
@@ -53,6 +57,248 @@ func TestInitDB_GeneratesPerPanelSubscriptionPaths(t *testing.T) {
 	for key, firstPath := range first {
 		if firstPath == second[key] {
 			t.Fatalf("%s reused across panels: %q", key, firstPath)
+		}
+	}
+}
+
+func TestInitDB_GeneratesPanelAccess(t *testing.T) {
+	t.Setenv("MINIRAY_IN_DOCKER", "false")
+	dbPath := filepath.Join(t.TempDir(), "miniray.db")
+	if err := InitDB(dbPath); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = CloseDB() }()
+
+	credentials, err := os.ReadFile(filepath.Join(filepath.Dir(dbPath), "initial-admin-credentials"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts := strings.Split(strings.TrimSpace(string(credentials)), "\n")
+	if len(parts) != 2 || !regexp.MustCompile(`^[0-9a-zA-Z]{8,10}package database
+
+import (
+	"encoding/json"
+	"os"
+	"strconv"
+	"strings"
+	"path/filepath"
+	"regexp"
+	"testing"
+
+	"github.com/8bit-warrior/Miniray/internal/database/model"
+	"github.com/8bit-warrior/Miniray/internal/util/crypto"
+)
+
+func TestInitDB_GeneratesPerPanelSubscriptionPaths(t *testing.T) {
+	pathPattern := regexp.MustCompile(`^/[0-9a-z]{16}/$`)
+	loadPaths := func(dbPath string) map[string]string {
+		t.Helper()
+		if err := InitDB(dbPath); err != nil {
+			t.Fatalf("InitDB failed: %v", err)
+		}
+		defer func() {
+			if err := CloseDB(); err != nil {
+				t.Errorf("CloseDB failed: %v", err)
+			}
+		}()
+
+		keys := []string{"subPath", "subJsonPath", "subClashPath"}
+		paths := make(map[string]string, len(keys))
+		for _, key := range keys {
+			var setting model.Setting
+			if err := db.Where("key = ?", key).First(&setting).Error; err != nil {
+				t.Fatalf("read %s: %v", key, err)
+			}
+			if !pathPattern.MatchString(setting.Value) {
+				t.Fatalf("%s = %q, want /<16 lowercase alphanumeric characters>/", key, setting.Value)
+			}
+			paths[key] = setting.Value
+		}
+		if paths["subPath"] == paths["subJsonPath"] || paths["subPath"] == paths["subClashPath"] || paths["subJsonPath"] == paths["subClashPath"] {
+			t.Fatalf("subscription paths must be distinct: %v", paths)
+		}
+		return paths
+	}
+
+	firstDB := filepath.Join(t.TempDir(), "miniray.db")
+	first := loadPaths(firstDB)
+	reloaded := loadPaths(firstDB)
+	for key, firstPath := range first {
+		if firstPath != reloaded[key] {
+			t.Fatalf("%s changed after restart: %q, then %q", key, firstPath, reloaded[key])
+		}
+	}
+
+	second := loadPaths(filepath.Join(t.TempDir(), "miniray.db"))
+	for key, firstPath := range first {
+		if firstPath == second[key] {
+			t.Fatalf("%s reused across panels: %q", key, firstPath)
+		}
+	}
+}
+
+).MatchString(parts[0]) || !regexp.MustCompile(`^[0-9a-zA-Z]{10,12}package database
+
+import (
+	"encoding/json"
+	"os"
+	"strconv"
+	"strings"
+	"path/filepath"
+	"regexp"
+	"testing"
+
+	"github.com/8bit-warrior/Miniray/internal/database/model"
+	"github.com/8bit-warrior/Miniray/internal/util/crypto"
+)
+
+func TestInitDB_GeneratesPerPanelSubscriptionPaths(t *testing.T) {
+	pathPattern := regexp.MustCompile(`^/[0-9a-z]{16}/$`)
+	loadPaths := func(dbPath string) map[string]string {
+		t.Helper()
+		if err := InitDB(dbPath); err != nil {
+			t.Fatalf("InitDB failed: %v", err)
+		}
+		defer func() {
+			if err := CloseDB(); err != nil {
+				t.Errorf("CloseDB failed: %v", err)
+			}
+		}()
+
+		keys := []string{"subPath", "subJsonPath", "subClashPath"}
+		paths := make(map[string]string, len(keys))
+		for _, key := range keys {
+			var setting model.Setting
+			if err := db.Where("key = ?", key).First(&setting).Error; err != nil {
+				t.Fatalf("read %s: %v", key, err)
+			}
+			if !pathPattern.MatchString(setting.Value) {
+				t.Fatalf("%s = %q, want /<16 lowercase alphanumeric characters>/", key, setting.Value)
+			}
+			paths[key] = setting.Value
+		}
+		if paths["subPath"] == paths["subJsonPath"] || paths["subPath"] == paths["subClashPath"] || paths["subJsonPath"] == paths["subClashPath"] {
+			t.Fatalf("subscription paths must be distinct: %v", paths)
+		}
+		return paths
+	}
+
+	firstDB := filepath.Join(t.TempDir(), "miniray.db")
+	first := loadPaths(firstDB)
+	reloaded := loadPaths(firstDB)
+	for key, firstPath := range first {
+		if firstPath != reloaded[key] {
+			t.Fatalf("%s changed after restart: %q, then %q", key, firstPath, reloaded[key])
+		}
+	}
+
+	second := loadPaths(filepath.Join(t.TempDir(), "miniray.db"))
+	for key, firstPath := range first {
+		if firstPath == second[key] {
+			t.Fatalf("%s reused across panels: %q", key, firstPath)
+		}
+	}
+}
+
+).MatchString(parts[1]) {
+		t.Fatalf("invalid generated credentials: %q", parts)
+	}
+	var user model.User
+	if err := db.First(&user).Error; err != nil {
+		t.Fatal(err)
+	}
+	if user.Username != parts[0] || !crypto.CheckPasswordHash(user.Password, parts[1]) {
+		t.Fatal("generated credentials do not match persisted user")
+	}
+	settings := map[string]string{}
+	for _, key := range []string{"webPort", "webBasePath"} {
+		var setting model.Setting
+		if err := db.Where("key = ?", key).First(&setting).Error; err != nil {
+			t.Fatal(err)
+		}
+		settings[key] = setting.Value
+	}
+	port, err := strconv.Atoi(settings["webPort"])
+	if err != nil || port < 20000 || port > 65535 {
+		t.Fatalf("port not a high port: %q", settings["webPort"])
+	}
+	if !regexp.MustCompile(`^/[0-9a-z]{8,10}/package database
+
+import (
+	"encoding/json"
+	"os"
+	"strconv"
+	"strings"
+	"path/filepath"
+	"regexp"
+	"testing"
+
+	"github.com/8bit-warrior/Miniray/internal/database/model"
+	"github.com/8bit-warrior/Miniray/internal/util/crypto"
+)
+
+func TestInitDB_GeneratesPerPanelSubscriptionPaths(t *testing.T) {
+	pathPattern := regexp.MustCompile(`^/[0-9a-z]{16}/$`)
+	loadPaths := func(dbPath string) map[string]string {
+		t.Helper()
+		if err := InitDB(dbPath); err != nil {
+			t.Fatalf("InitDB failed: %v", err)
+		}
+		defer func() {
+			if err := CloseDB(); err != nil {
+				t.Errorf("CloseDB failed: %v", err)
+			}
+		}()
+
+		keys := []string{"subPath", "subJsonPath", "subClashPath"}
+		paths := make(map[string]string, len(keys))
+		for _, key := range keys {
+			var setting model.Setting
+			if err := db.Where("key = ?", key).First(&setting).Error; err != nil {
+				t.Fatalf("read %s: %v", key, err)
+			}
+			if !pathPattern.MatchString(setting.Value) {
+				t.Fatalf("%s = %q, want /<16 lowercase alphanumeric characters>/", key, setting.Value)
+			}
+			paths[key] = setting.Value
+		}
+		if paths["subPath"] == paths["subJsonPath"] || paths["subPath"] == paths["subClashPath"] || paths["subJsonPath"] == paths["subClashPath"] {
+			t.Fatalf("subscription paths must be distinct: %v", paths)
+		}
+		return paths
+	}
+
+	firstDB := filepath.Join(t.TempDir(), "miniray.db")
+	first := loadPaths(firstDB)
+	reloaded := loadPaths(firstDB)
+	for key, firstPath := range first {
+		if firstPath != reloaded[key] {
+			t.Fatalf("%s changed after restart: %q, then %q", key, firstPath, reloaded[key])
+		}
+	}
+
+	second := loadPaths(filepath.Join(t.TempDir(), "miniray.db"))
+	for key, firstPath := range first {
+		if firstPath == second[key] {
+			t.Fatalf("%s reused across panels: %q", key, firstPath)
+		}
+	}
+}
+
+).MatchString(settings["webBasePath"]) {
+		t.Fatalf("unexpected web path: %q", settings["webBasePath"])
+	}
+	if err := InitDB(dbPath); err != nil {
+		t.Fatal(err)
+	}
+	var secondUser model.User
+	if err := db.First(&secondUser).Error; err != nil || secondUser.Username != user.Username {
+		t.Fatal("reinitialization replaced the existing user")
+	}
+	for key, original := range settings {
+		var setting model.Setting
+		if err := db.Where("key = ?", key).First(&setting).Error; err != nil || setting.Value != original {
+			t.Fatalf("%s changed on reinitialization: %v", key, err)
 		}
 	}
 }

@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import pty
+import re
 import select
 import shutil
 import signal
@@ -76,11 +77,15 @@ def fixture(corrupt=False):
     command("systemctl", "enable", "--now", "x-ui")
 
 
-def install(answers="", succeeds=True, version=None):
+def install(answers="", succeeds=True, version=None, custom_setup=False):
     pid, fd = pty.fork()
     if pid == 0:
         env = os.environ.copy()
         env["PATH"] = str(work / "bin") + ":" + env["PATH"]
+        if not custom_setup:
+            env["MINIRAY_INSTALL_NONINTERACTIVE"] = "1"
+        else:
+            env.pop("MINIRAY_INSTALL_NONINTERACTIVE", None)
         if version is None:
             env.pop("MINIRAY_UPDATE_TAG", None)
         else:
@@ -114,6 +119,7 @@ def install(answers="", succeeds=True, version=None):
             raise AssertionError(output.decode(errors="replace")[-6000:] + "\\nSYSTEMD STATUS\\n" + status[-6000:] + "\\nJOURNAL\\n" + logs[-9000:])
     finally:
         os.close(fd)
+    return output.decode(errors="replace")
 
 
 def wait_active(unit):
@@ -240,7 +246,16 @@ try:
             fixture()
         if name == "coexist-inactive":
             command("systemctl", "stop", "x-ui")
-        install(answers)
+        if name == "fresh":
+            with socket.socket() as probe:
+                probe.bind(("127.0.0.1", 0))
+                chosen_port = probe.getsockname()[1]
+            setup_output = install(f"y\\n{chosen_port}\\n/custom-login/\\nchosenuser\\nchosen-password\\n", custom_setup=True)
+            assert "已自动生成 Web 面板连接信息" in setup_output, setup_output[-2500:]
+            assert "是否自定义面板连接信息" in setup_output, setup_output[-2500:]
+            assert re.search(r"密码: [0-9a-zA-Z]{10,12}", setup_output), setup_output[-2500:]
+        else:
+            install(answers)
         assert_schema(imported)
         assert Path("/usr/local/bin/mr").is_symlink()
         assert command("/usr/local/bin/mr", "--help").returncode == 0
@@ -249,6 +264,9 @@ try:
         assert panel_info[0].startswith("http://127.0.0.1:"), panel_info
         assert panel_info[1], panel_info
         if name == "fresh":
+            assert panel_info[0] == f"http://127.0.0.1:{chosen_port}/custom-login/", panel_info
+            assert panel_info[1] == "chosenuser", panel_info
+            assert not Path("/etc/miniray/initial-admin-credentials").exists()
             with sqlite3.connect("/etc/miniray/miniray.db") as db:
                 previous = db.execute("SELECT password, login_epoch FROM users LIMIT 1").fetchone()
             updated = subprocess.run(
