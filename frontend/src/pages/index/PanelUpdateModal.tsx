@@ -30,6 +30,11 @@ interface ActionBuild {
   title: string;
 }
 
+interface PanelUpdateTarget {
+  version: string;
+  params?: { channel: 'stable' } | { actionRunId: string };
+}
+
 interface PanelUpdateModalProps {
   open: boolean;
   info: PanelUpdateInfo;
@@ -38,9 +43,11 @@ interface PanelUpdateModalProps {
 
 export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateModalProps) {
   const { t } = useTranslation();
-  const [selectedUpdate, setSelectedUpdate] = useState<{ build?: ActionBuild } | null>(null);
+  const [selectedUpdate, setSelectedUpdate] = useState<PanelUpdateTarget | null>(null);
   const [phase, setPhase] = useState<UpdatePhase>('confirm');
   const [percent, setPercent] = useState(0);
+  const stableLatestVersion =
+    info.stableLatestVersion || (info.channel !== 'development' ? info.latestVersion : '');
   const defaultKey = info.channel === 'development' ? 'actions' : 'stable';
   const [activeKey, setActiveKey] = useState(defaultKey);
   const [previousOpen, setPreviousOpen] = useState(open);
@@ -97,20 +104,19 @@ export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateMod
     return 'timeout';
   }
 
-  function updatePanel(build?: ActionBuild) {
-    setSelectedUpdate({ build });
+  function updatePanel(target: PanelUpdateTarget) {
+    setSelectedUpdate(target);
     setPhase('confirm');
     setPercent(0);
   }
 
   async function confirmUpdate() {
-    const build = selectedUpdate?.build;
     setPhase('downloading');
     setPercent(0);
     try {
       const result = await HttpUtil.post<{ runId: string }>(
         '/panel/api/server/updatePanel',
-        build ? { actionRunId: build.runId } : undefined,
+        selectedUpdate?.params,
       );
       if (!result?.success || !result.obj?.runId) {
         setPhase('failed');
@@ -159,18 +165,23 @@ export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateMod
                     <div className="version-list-item">
                       <span>{t('pages.index.latestPanelVersion')}</span>
                       <Tag color="purple">
-                        {formatPanelVersion(
-                          info.stableLatestVersion ||
-                            (info.channel !== 'development' ? info.latestVersion : ''),
-                        ) || '-'}
+                        {formatPanelVersion(stableLatestVersion) || '-'}
                       </Tag>
                     </div>
                   </div>
                   <div className="actions-row">
                     <Button
                       type="primary"
-                      disabled={info.channel === 'development' || !info.updateAvailable}
-                      onClick={() => updatePanel()}
+                      disabled={
+                        !stableLatestVersion ||
+                        (info.channel !== 'development' && !info.updateAvailable)
+                      }
+                      onClick={() =>
+                        updatePanel({
+                          version: stableLatestVersion,
+                          params: { channel: 'stable' },
+                        })
+                      }
                       icon={<CloudDownloadOutlined />}
                     >
                       {t('pages.index.updatePanel')}
@@ -194,7 +205,7 @@ export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateMod
                     <div className="actions-row">
                       <Button
                         type="primary"
-                        onClick={() => updatePanel()}
+                        onClick={() => updatePanel({ version: info.latestVersion })}
                         icon={<CloudDownloadOutlined />}
                       >
                         {t('pages.index.updatePanel')}
@@ -227,7 +238,12 @@ export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateMod
                                 !!info.currentCommit &&
                                 info.currentCommit.toLowerCase() === build.commit.toLowerCase()
                               }
-                              onClick={() => updatePanel(build)}
+                              onClick={() =>
+                                updatePanel({
+                                  version: build.version,
+                                  params: { actionRunId: build.runId },
+                                })
+                              }
                             />
                           </div>
                         ))}
@@ -270,7 +286,7 @@ export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateMod
           <p>
             {t('pages.index.panelUpdateDialogDesc').replace(
               '#version#',
-              selectedUpdate?.build?.version || info.latestVersion || '',
+              selectedUpdate?.version || '',
             )}
           </p>
         )}

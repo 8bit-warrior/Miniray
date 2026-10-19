@@ -219,6 +219,8 @@ func (a *ServerController) updatePanel(c *gin.Context) {
 	var err error
 	if actionRunID != "" {
 		runID, err = a.panelService.StartUpdateBuild(actionRunID)
+	} else if c.PostForm("channel") == "stable" {
+		runID, err = a.panelService.StartUpdateChannel(false)
 	} else {
 		runID, err = a.panelService.StartUpdate()
 	}

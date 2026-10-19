@@ -122,7 +122,7 @@ func TestUpdatePanel_InvalidActionRunIDRejectedBeforeLaunch(t *testing.T) {
 	newControllerTestDB(t)
 	engine := newPanelUpdateTestEngine()
 
-	form := url.Values{"actionRunId": {"not-a-run"}}
+	form := url.Values{"actionRunId": {"not-a-run"}, "channel": {"stable"}}
 	req := httptest.NewRequest(http.MethodPost, "/panel/api/server/updatePanel", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
