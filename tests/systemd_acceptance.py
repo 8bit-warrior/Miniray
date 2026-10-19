@@ -250,7 +250,7 @@ try:
             with socket.socket() as probe:
                 probe.bind(("127.0.0.1", 0))
                 chosen_port = probe.getsockname()[1]
-            setup_output = install(f"y\\n{chosen_port}\\n/custom-login/\\nchosenuser\\nchosen-password\\n", custom_setup=True)
+            setup_output = install(f"y\n{chosen_port}\n/custom-login/\nchosenuser\nchosen-password\n", custom_setup=True)
             assert "已自动生成 Web 面板连接信息" in setup_output, setup_output[-2500:]
             assert "是否自定义面板连接信息" in setup_output, setup_output[-2500:]
             assert re.search(r"密码: [0-9a-zA-Z]{10,12}", setup_output), setup_output[-2500:]
