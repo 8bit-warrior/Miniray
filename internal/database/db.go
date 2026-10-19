@@ -3,14 +3,13 @@ package database
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"path"
 	"path/filepath"
@@ -48,7 +47,6 @@ func Dialect() string {
 }
 
 const (
-	defaultUsername       = "admin"
 	sqliteBackupDirPrefix = ".miniray-backup-"
 )
 
@@ -767,33 +765,63 @@ func isIgnorableDuplicateColumnErr(gdb *gorm.DB, err error, mdl any) bool {
 func initUser(dbPath string) error {
 	empty, err := isTableEmpty("users")
 	if err != nil {
-		log.Printf("Error checking if users table is empty: %v", err)
 		return err
 	}
-	if empty {
-		secret := make([]byte, 24)
-		if _, err := rand.Read(secret); err != nil {
-			return err
-		}
-		password := base64.RawURLEncoding.EncodeToString(secret)
-		hash, err := crypto.HashPasswordAsBcrypt(password)
-		if err != nil {
-			return err
-		}
-		passwordPath := filepath.Join(filepath.Dir(dbPath), "initial-admin-password")
-		if err := os.WriteFile(passwordPath, []byte(password+"\n"), 0o600); err != nil {
-			return err
-		}
-		if err := os.Chmod(passwordPath, 0o600); err != nil {
-			return err
-		}
-		if err := db.Create(&model.User{Username: defaultUsername, Password: hash}).Error; err != nil {
-			_ = os.Remove(passwordPath)
-			return err
-		}
-		log.Printf("Initial admin password: read %s as root; change it after first login", passwordPath)
+	if !empty {
+		return nil
+	}
+	username := random.Seq(8 + random.Number(3))
+	password := random.Seq(10 + random.Number(3))
+	hash, err := crypto.HashPasswordAsBcrypt(password)
+	if err != nil {
+		return err
+	}
+	credentialsFile := filepath.Join(filepath.Dir(dbPath), "initial-admin-credentials")
+	if err := os.WriteFile(credentialsFile, []byte(username+"\n"+password+"\n"), 0o600); err != nil {
+		return err
+	}
+	if err := os.Chmod(credentialsFile, 0o600); err != nil {
+		return err
+	}
+	if err := db.Create(&model.User{Username: username, Password: hash}).Error; err != nil {
+		_ = os.Remove(credentialsFile)
+		return err
 	}
 	return nil
+}
+
+func seedRandomPanelSettings() error {
+	settings := []model.Setting{
+		{Key: "webBasePath", Value: "/" + random.NumLower(8+random.Number(3)) + "/"},
+	}
+	if os.Getenv("MINIRAY_IN_DOCKER") != "true" {
+		port := 0
+		for range 100 {
+			candidate := 20000 + random.Number(45536)
+			if candidate == 62790 {
+				continue
+			}
+			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", candidate))
+			if err != nil {
+				continue
+			}
+			_ = listener.Close()
+			port = candidate
+			break
+		}
+		if port == 0 {
+			return fmt.Errorf("failed to find a free high port for the panel")
+		}
+		settings = append(settings, model.Setting{Key: "webPort", Value: strconv.Itoa(port)})
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		for i := range settings {
+			if err := tx.Where("key = ?", settings[i].Key).FirstOrCreate(&settings[i]).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func seedRandomSubscriptionPaths() error {
@@ -2264,6 +2292,9 @@ func InitDB(dbPath string) error {
 	}
 	if isUsersEmpty {
 		if err := seedRandomSubscriptionPaths(); err != nil {
+			return err
+		}
+		if err := seedRandomPanelSettings(); err != nil {
 			return err
 		}
 	}

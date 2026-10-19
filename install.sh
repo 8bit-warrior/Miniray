@@ -205,7 +205,7 @@ finish_install() {
   fi
   if (( status != 0 && LEGACY_REMOVED == 0 && EXISTING_MINIRAY == 0 )); then
     if (( CREATED_DB == 1 )); then
-      rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm" "$DB_FOLDER/initial-admin-password"
+      rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm" "$DB_FOLDER/initial-admin-credentials"
     fi
     if (( UNIT_STAGED == 1 )); then
       for unit in miniray.service miniray-agent.service miniray-core.service; do service_disable "$unit" 2>/dev/null || :; done
@@ -538,6 +538,54 @@ if [[ "$INSTALLED_VERSION" != "$EXPECTED_INSTALLED" ]]; then
   exit 1
 fi
 echo "Miniray $INSTALLED_VERSION installed."
-if [[ -f "$DB_FOLDER/initial-admin-password" ]]; then
-  echo 'First-login administrator password: run sudo miniray initial-password'
+if (( CREATED_DB == 1 )) && [[ -f "$DB_FOLDER/initial-admin-credentials" ]]; then
+  mapfile -t initial_credentials < "$DB_FOLDER/initial-admin-credentials"
+  rm -f "$DB_FOLDER/initial-admin-credentials"
+  if [[ "${MINIRAY_MENU_LANG:-zh}" == en ]]; then
+    printf '\nGenerated web panel access:\n'
+  else
+    printf '\n已自动生成 Web 面板连接信息：\n'
+  fi
+  MINIRAY_MAIN_FOLDER="$ROOT" MINIRAY_DB_FOLDER="$DB_FOLDER" "$ROOT/miniray.sh" web-info
+  if [[ "${MINIRAY_MENU_LANG:-zh}" == en ]]; then
+    printf 'Password: %s\n' "${initial_credentials[1]}"
+  else
+    printf '密码: %s\n' "${initial_credentials[1]}"
+  fi
+  if [[ -r /dev/tty && "${MINIRAY_INSTALL_NONINTERACTIVE:-0}" != 1 ]]; then
+    if [[ "${MINIRAY_MENU_LANG:-zh}" == en ]]; then
+      prompt='Customize web panel connection settings? [y/N]: '
+    else
+      prompt='是否自定义面板连接信息？[y/N]: '
+    fi
+    read -r -p "$prompt" customize </dev/tty || customize=n
+    if [[ "${customize,,}" == y || "${customize,,}" == yes ]]; then
+      while true; do
+        read -r -p 'Web port (1-65535): ' custom_port </dev/tty
+        if [[ "$custom_port" =~ ^[1-9][0-9]{0,4}$ ]] && (( 10#$custom_port <= 65535 )); then break; fi
+        printf '%s\n' 'Invalid port / 端口无效'
+      done
+      while true; do
+        read -r -p 'Web Path (/path): ' custom_path </dev/tty
+        if [[ "$custom_path" == /* && ! "$custom_path" =~ [[:space:]?#] ]]; then break; fi
+        printf '%s\n' 'Invalid path / Path 无效'
+      done
+      while true; do
+        read -r -p 'Username / 用户名: ' custom_username </dev/tty
+        if [[ -n "$custom_username" ]]; then break; fi
+      done
+      while true; do
+        read -r -s -p 'Password / 密码: ' custom_password </dev/tty
+        printf '\n'
+        if [[ -n "$custom_password" ]]; then break; fi
+      done
+      MINIRAY_DB_FOLDER="$DB_FOLDER" "$ROOT/miniray" setting -port "$custom_port" -webBasePath "$custom_path"
+      printf '%s\n%s\n' "$custom_username" "$custom_password" | MINIRAY_DB_FOLDER="$DB_FOLDER" "$ROOT/miniray" reset-credentials
+      if service_active miniray.service; then
+        service_action restart miniray.service
+        service_active miniray.service
+      fi
+      MINIRAY_MAIN_FOLDER="$ROOT" MINIRAY_DB_FOLDER="$DB_FOLDER" "$ROOT/miniray.sh" web-info
+    fi
+  fi
 fi

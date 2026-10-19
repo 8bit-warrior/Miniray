@@ -142,7 +142,7 @@ func (s *UserService) UpdateUser(id int, username string, password string) error
 			"login_epoch": gorm.Expr("login_epoch + 1"),
 		}).Error
 	if err == nil {
-		_ = os.Remove(filepath.Join(config.GetDBFolderPath(), "initial-admin-password"))
+		_ = os.Remove(filepath.Join(config.GetDBFolderPath(), "initial-admin-credentials"))
 	}
 	return err
 }

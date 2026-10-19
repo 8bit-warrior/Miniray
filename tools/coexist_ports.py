@@ -2,6 +2,7 @@
 
 import errno
 import json
+import secrets
 import socket
 import sqlite3
 import sys
@@ -60,7 +61,11 @@ def is_free(port):
 
 
 def allocate(preferred, reserved):
-    for port in (preferred, *range(20000, 65536)):
+    if preferred not in reserved and is_free(preferred):
+        reserved.add(preferred)
+        return preferred
+    for _ in range(4096):
+        port = 20000 + secrets.randbelow(45536)
         if port not in reserved and is_free(port):
             reserved.add(port)
             return port
@@ -69,7 +74,9 @@ def allocate(preferred, reserved):
 
 def main(db_path, template_path, legacy_path):
     reserved = legacy_ports(legacy_path)
-    panel, api, metrics = (allocate(port, reserved) for port in (20530, 62790, 11112))
+    with sqlite3.connect(db_path) as db:
+        (panel_port,) = db.execute("SELECT value FROM settings WHERE key='webPort'").fetchone()
+    panel, api, metrics = (allocate(port, reserved) for port in (int(panel_port), 62790, 11112))
     config = json.loads(Path(template_path).read_text(encoding="utf-8"))
     for inbound in config["inbounds"]:
         if inbound.get("tag") == "api":

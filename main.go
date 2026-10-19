@@ -694,12 +694,6 @@ func main() {
 		if err := database.InitDB(config.GetDBPath()); err != nil {
 			log.Fatal(err)
 		}
-	case "initial-password":
-		password, err := os.ReadFile(config.GetDBFolderPath() + "/initial-admin-password")
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Print(string(password))
 	case "agent":
 		runProxyAgent()
 	case "panel-info":
@@ -839,7 +833,6 @@ Commands:
     init-db        initialize SQLite without starting network listeners
     snapshot-legacy create an online-consistent snapshot of a legacy SQLite database
     import-legacy  import supported data into a new Miniray database
-    initial-password  print the generated first-login password (root only)
     migrate        migrate from other/old miniray
     migrate-db     SQLite <-> .dump (--dump/--restore)
     setting        set settings

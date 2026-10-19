@@ -308,7 +308,7 @@ uninstall_miniray() {
       rm -rf -- "$folder"
     else
       for suffix in '' -wal -shm -journal; do rm -f -- "$folder/miniray.db$suffix"; done
-      rm -f -- "$folder/initial-admin-password" "$folder/menu-language" "$folder/update-status.json"
+      rm -f -- "$folder/initial-admin-password" "$folder/initial-admin-credentials" "$folder/menu-language" "$folder/update-status.json"
       rm -rf -- "$folder/imported-legacy-files"
       rmdir "$folder" 2>/dev/null || :
     fi
@@ -370,7 +370,6 @@ action() {
     change-port) change_port;;
     change-path) change_path;;
     reset-credentials) reset_credentials;;
-    initial-password) "$ROOT/miniray" initial-password;;
     settings) "$ROOT/miniray" setting -show;;
     reset-settings) "$ROOT/miniray" setting -reset;;
     version) "$ROOT/miniray" -v;;

@@ -78,5 +78,15 @@ if [ -f /root/.acme.sh/acme.sh ]; then
     crond
 fi
 
+# Display initial credentials during the first container startup.
+/app/miniray init-db
+credentials_file="${MINIRAY_DB_FOLDER:-/etc/miniray}/initial-admin-credentials"
+if [ -f "$credentials_file" ]; then
+    echo 'Generated web panel access:'
+    /app/miniray panel-info 127.0.0.1
+    printf 'Password: %s\n' "$(sed -n '2p' "$credentials_file")"
+    rm -f "$credentials_file"
+fi
+
 # Run miniray
 exec /app/miniray
