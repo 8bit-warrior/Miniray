@@ -234,9 +234,6 @@ finish_install() {
         rm -f "$DB_PATH$suffix"
         if [[ -f "$DB_BACKUP_DIR/miniray.db$suffix" ]]; then mv "$DB_BACKUP_DIR/miniray.db$suffix" "$DB_PATH$suffix"; fi
       done
-      if [[ -f "$DB_BACKUP_DIR/initial-admin-password" ]]; then
-        mv "$DB_BACKUP_DIR/initial-admin-password" "$DB_FOLDER/initial-admin-password"
-      fi
     fi
     rm -rf "$DB_BACKUP_DIR"
   fi
@@ -449,9 +446,6 @@ if (( CLEAR_EXISTING_DB == 1 )); then
   for suffix in '' -wal -shm -journal; do
     if [[ -f "$DB_PATH$suffix" ]]; then mv "$DB_PATH$suffix" "$DB_BACKUP_DIR/miniray.db$suffix"; fi
   done
-  if [[ -f "$DB_FOLDER/initial-admin-password" ]]; then
-    mv "$DB_FOLDER/initial-admin-password" "$DB_BACKUP_DIR/initial-admin-password"
-  fi
 fi
 if [[ ! -f "$DB_PATH" ]]; then
   CREATED_DB=1
