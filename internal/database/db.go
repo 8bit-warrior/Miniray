@@ -770,8 +770,8 @@ func initUser(dbPath string) error {
 	if !empty {
 		return nil
 	}
-	username := random.Seq(8 + random.Number(3))
-	password := random.Seq(10 + random.Number(3))
+	username := random.Seq(8 + random.Num(3))
+	password := random.Seq(10 + random.Num(3))
 	hash, err := crypto.HashPasswordAsBcrypt(password)
 	if err != nil {
 		return err
@@ -792,12 +792,12 @@ func initUser(dbPath string) error {
 
 func seedRandomPanelSettings() error {
 	settings := []model.Setting{
-		{Key: "webBasePath", Value: "/" + random.NumLower(8+random.Number(3)) + "/"},
+		{Key: "webBasePath", Value: "/" + random.NumLower(8+random.Num(3)) + "/"},
 	}
 	if os.Getenv("MINIRAY_IN_DOCKER") != "true" {
 		port := 0
 		for range 100 {
-			candidate := 20000 + random.Number(45536)
+			candidate := 20000 + random.Num(45536)
 			if candidate == 62790 {
 				continue
 			}
