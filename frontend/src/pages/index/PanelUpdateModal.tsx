@@ -164,9 +164,7 @@ export default function PanelUpdateModal({ open, info, onClose }: PanelUpdateMod
                     </div>
                     <div className="version-list-item">
                       <span>{t('pages.index.latestPanelVersion')}</span>
-                      <Tag color="purple">
-                        {formatPanelVersion(stableLatestVersion) || '-'}
-                      </Tag>
+                      <Tag color="purple">{formatPanelVersion(stableLatestVersion) || '-'}</Tag>
                     </div>
                   </div>
                   <div className="actions-row">

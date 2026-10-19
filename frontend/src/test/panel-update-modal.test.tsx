@@ -25,7 +25,9 @@ async function confirmUpdate(
   version: string,
   params?: { channel: 'stable' } | { actionRunId: string },
 ) {
-  const dialog = screen.getByRole('dialog', { name: 'Do you really want to update the panel?' });
+  const dialog = screen
+    .getByText('Do you really want to update the panel?')
+    .closest<HTMLElement>('[role="dialog"]')!;
   expect(dialog.textContent).toContain(
     `This will update miniray to ${version} and restart the panel service.`,
   );
@@ -37,7 +39,9 @@ async function confirmUpdate(
 
 describe('PanelUpdateModal', () => {
   beforeEach(() => {
-    vi.mocked(HttpUtil.get).mockReset().mockResolvedValue(new Msg(true, '', []));
+    vi.mocked(HttpUtil.get)
+      .mockReset()
+      .mockResolvedValue(new Msg(true, '', []));
     vi.mocked(HttpUtil.post).mockReset().mockResolvedValue(new Msg(false));
   });
 
