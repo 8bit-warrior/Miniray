@@ -801,7 +801,7 @@ func seedRandomPanelSettings() error {
 			if candidate == 62790 {
 				continue
 			}
-			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", candidate))
+			listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf(":%d", candidate))
 			if err != nil {
 				continue
 			}
