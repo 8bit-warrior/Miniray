@@ -137,11 +137,9 @@ export const ClientsSummarySchema = z.object({
   active: z.number(),
   onlineCount: z.number().optional().default(0),
   depletedCount: z.number().optional().default(0),
-  expiringCount: z.number().optional().default(0),
   deactiveCount: z.number().optional().default(0),
   online: nullableStringArray,
   depleted: nullableStringArray,
-  expiring: nullableStringArray,
   deactive: nullableStringArray,
 });
 const nullableClientArray = z
