@@ -464,8 +464,10 @@ fi
 
 if [[ "$SERVICE_MANAGER" == openrc ]]; then
   install -d -m 0755 /etc/conf.d
-  printf 'MINIRAY_SERVICE_MANAGER="openrc"\nMINIRAY_SEPARATE_CORE="1"\nMINIRAY_DB_FOLDER="%s"\n' "$DB_FOLDER" > /etc/conf.d/miniray
+  touch /etc/conf.d/miniray
   chmod 600 /etc/conf.d/miniray
+  sed -i '/^MINIRAY_SERVICE_MANAGER=/d; /^MINIRAY_SEPARATE_CORE=/d; /^MINIRAY_DB_FOLDER=/d' /etc/conf.d/miniray
+  printf 'MINIRAY_SERVICE_MANAGER="openrc"\nMINIRAY_SEPARATE_CORE="1"\nMINIRAY_DB_FOLDER="%s"\n' "$DB_FOLDER" >> /etc/conf.d/miniray
 fi
 if [[ -n "${MINIRAY_DB_FOLDER:-}" || "$DB_FOLDER" != /etc/miniray ]]; then
   install -d -m 0755 /etc/default

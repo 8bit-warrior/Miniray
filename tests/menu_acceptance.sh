@@ -62,6 +62,12 @@ cat > "$work/bin/ip" <<'MOCK'
 printf '1.1.1.1 via 192.0.2.1 dev eth0 src 192.0.2.42 uid 0\n'
 MOCK
 
+cat > "$work/bin/curl" <<'MOCK'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$MINIRAY_TEST_STATE/public-ip-calls"
+printf '203.0.113.42\n'
+MOCK
+
 cat > "$work/root/miniray" <<'MOCK'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$MINIRAY_TEST_STATE/commands"
@@ -116,20 +122,23 @@ grep -qE '12[[:space:]]+中文' "$work/english"
 ! grep -q 'Switch to 中文' "$work/english"
 grep -q 'Web panel  Running' "$work/english"
 grep -q "M I N I R A Y   v${MINIRAY_TEST_VERSION}" "$work/english"
-grep -q 'http://192.0.2.42:2053/panel/' "$work/english"
+grep -q 'http://203.0.113.42:2053/panel/' "$work/english"
 grep -q 'Username: admin' "$work/english"
+grep -Fq -- '--noproxy *' "$work/state/public-ip-calls"
+MINIRAY_PUBLIC_IPV4=198.51.100.24 bash "$SCRIPT" web-info > "$work/override-ip"
+grep -q 'http://198.51.100.24:2053/panel/' "$work/override-ip"
 test -f "$work/state/miniray.service.running"
 test -f "$work/state/miniray.service.enabled"
 test "$(cat "$work/state/lang")" = en
 
 printf '5\nadmin-area\n\n7\n\n0\n' | bash "$SCRIPT" > "$work/path"
-grep -q 'http://192.0.2.42:2053/admin-area/' "$work/path"
+grep -q 'http://203.0.113.42:2053/admin-area/' "$work/path"
 grep -q 'setting -webBasePath /admin-area/' "$work/state/commands"
 grep -q 'restart miniray.service' "$work/state/services"
 ! grep -q 'restart miniray-core.service' "$work/state/services"
 
 printf '/dashboard/\n' | bash "$SCRIPT" change-path > "$work/cli-path"
-grep -q 'http://192.0.2.42:2053/dashboard/' "$work/cli-path"
+grep -q 'http://203.0.113.42:2053/dashboard/' "$work/cli-path"
 grep -q 'setting -webBasePath /dashboard/' "$work/state/commands"
 
 printf '5\nbad?query\n\n0\n' | bash "$SCRIPT" > "$work/invalid-path"

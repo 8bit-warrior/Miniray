@@ -382,16 +382,19 @@ type MLKEM768Response struct {
 	Client string `json:"client" example:"mlkem768-client"`
 }
 
-func getPublicIP(url string) string {
-	client := &http.Client{
-		Timeout: 3 * time.Second,
-	}
+var publicIPHTTPClient = &http.Client{
+	Timeout: 3 * time.Second,
+	Transport: &http.Transport{
+		Proxy: nil,
+	},
+}
 
+func getPublicIP(url string) string {
 	req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	if reqErr != nil {
 		return "N/A"
 	}
-	resp, err := client.Do(req)
+	resp, err := publicIPHTTPClient.Do(req)
 	if err != nil {
 		return "N/A"
 	}
@@ -416,6 +419,24 @@ func getPublicIP(url string) string {
 	}
 
 	return ipString
+}
+
+func configuredPublicIP(name string, ipv6 bool) string {
+	ip := stdnet.ParseIP(strings.TrimSpace(os.Getenv(name)))
+	if ip == nil {
+		return ""
+	}
+	if ipv6 {
+		if ip.To4() != nil {
+			return ""
+		}
+		return ip.String()
+	}
+	v4 := ip.To4()
+	if v4 == nil {
+		return ""
+	}
+	return v4.String()
 }
 
 var publicIPv4Services = []string{
@@ -448,10 +469,16 @@ func (s *ServerService) resolvePublicIPs() {
 
 	var ipv4, ipv6 string
 	if wantIPv4 {
-		ipv4 = firstPublicIP(publicIPv4Services)
+		ipv4 = configuredPublicIP("MINIRAY_PUBLIC_IPV4", false)
+		if ipv4 == "" {
+			ipv4 = firstPublicIP(publicIPv4Services)
+		}
 	}
 	if wantIPv6 {
-		ipv6 = firstPublicIP(publicIPv6Services)
+		ipv6 = configuredPublicIP("MINIRAY_PUBLIC_IPV6", true)
+		if ipv6 == "" {
+			ipv6 = firstPublicIP(publicIPv6Services)
+		}
 	}
 
 	s.mu.Lock()

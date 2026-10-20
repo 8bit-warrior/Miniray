@@ -54,3 +54,21 @@ func TestStatusSampleDoesNotWaitOnPublicIPLookup(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 }
+
+func TestConfiguredPublicIPsOverrideLookups(t *testing.T) {
+	t.Setenv("MINIRAY_PUBLIC_IPV4", "198.51.100.24")
+	t.Setenv("MINIRAY_PUBLIC_IPV6", "2001:db8::24")
+	svc := &ServerService{}
+	svc.resolvePublicIPs()
+	v4, v6 := svc.publicIPs()
+	if v4 != "198.51.100.24" || v6 != "2001:db8::24" {
+		t.Fatalf("configured IPs ignored: v4=%q, v6=%q", v4, v6)
+	}
+}
+
+func TestPublicIPLookupsIgnoreEnvironmentProxies(t *testing.T) {
+	transport, ok := publicIPHTTPClient.Transport.(*http.Transport)
+	if !ok || transport.Proxy != nil {
+		t.Fatal("public IP lookup must use a direct HTTP transport")
+	}
+}

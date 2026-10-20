@@ -195,20 +195,46 @@ render_menu() {
   printf '\n'
 }
 
-panel_ip() {
-  local value=''
-  if command -v ip >/dev/null 2>&1; then
-    value=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for (i=1; i<=NF; i++) if ($i=="src") {print $(i+1); exit}}')
-  fi
-  if [[ -z "$value" ]] && command -v hostname >/dev/null 2>&1; then
-    value=$(hostname -I 2>/dev/null | awk '{print $1}')
-  fi
-  printf '%s' "${value:-127.0.0.1}"
+valid_ipv4() {
+  local octet IFS=.
+  local -a parts
+  [[ "$1" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || return 1
+  read -r -a parts <<< "$1"
+  for octet in "${parts[@]}"; do
+    (( 10#$octet <= 255 )) || return 1
+  done
 }
 
+panel_ip() {
+  local value="${MINIRAY_PUBLIC_IPV4:-}" file url
+  if [[ -z "$value" ]]; then
+    for file in /etc/default/miniray /etc/conf.d/miniray; do
+      [[ -r "$file" ]] || continue
+      value=$(sed -n 's/^MINIRAY_PUBLIC_IPV4=//p' "$file" | tail -n 1)
+      value="${value%\"}"
+      value="${value#\"}"
+      [[ -n "$value" ]] && break
+    done
+  fi
+  if [[ -n "$value" ]]; then
+    if valid_ipv4 "$value"; then printf '%s' "$value"; return; fi
+    printf 'Invalid MINIRAY_PUBLIC_IPV4: %s\n' "$value" >&2
+  fi
+  if command -v curl >/dev/null 2>&1; then
+    for url in https://icanhazip.com https://ipinfo.io/ip; do
+      value=$(curl --noproxy '*' -fsS4 --connect-timeout 2 --max-time 3 "$url" 2>/dev/null) || continue
+      value="${value//$'\r'/}"
+      value="${value//$'\n'/}"
+      if valid_ipv4 "$value"; then printf '%s' "$value"; return; fi
+    done
+  fi
+  printf '%s\n' "$(tr_text '无法获取服务器公网 IP，请设置 MINIRAY_PUBLIC_IPV4。' 'Unable to detect the server public IP; set MINIRAY_PUBLIC_IPV4.')" >&2
+  return 1
+}
 web_info() {
-  local output url username
-  output=$("$ROOT/miniray" panel-info "$(panel_ip)") || return
+  local output url username ip
+  ip=$(panel_ip) || return
+  output=$("$ROOT/miniray" panel-info "$ip") || return
   url=${output%%$'\n'*}
   username=${output#*$'\n'}
   printf '%s\n' "$url"
