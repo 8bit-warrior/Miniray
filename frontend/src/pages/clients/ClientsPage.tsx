@@ -464,21 +464,18 @@ export default function ClientsPage() {
     const ib = inboundsById[id];
     return formatInboundLabel(ib?.tag, ib?.remark);
   }
-  const clientBucket = useCallback(
-    (row: ClientRecord | null | undefined): Bucket | null => {
-      if (!row) return null;
-      const traffic = row.traffic || {};
-      const used = (traffic.up || 0) + (traffic.down || 0);
-      const total = row.totalGB || 0;
-      const now = Date.now();
-      const expired = (row.expiryTime ?? 0) > 0 && (row.expiryTime ?? 0) <= now;
-      const exhausted = total > 0 && used >= total;
-      if (expired || exhausted) return 'depleted';
-      if (!row.enable) return 'deactive';
-      return 'active';
-    },
-    [],
-  );
+  const clientBucket = useCallback((row: ClientRecord | null | undefined): Bucket | null => {
+    if (!row) return null;
+    const traffic = row.traffic || {};
+    const used = (traffic.up || 0) + (traffic.down || 0);
+    const total = row.totalGB || 0;
+    const now = Date.now();
+    const expired = (row.expiryTime ?? 0) > 0 && (row.expiryTime ?? 0) <= now;
+    const exhausted = total > 0 && used >= total;
+    if (expired || exhausted) return 'depleted';
+    if (!row.enable) return 'deactive';
+    return 'active';
+  }, []);
   function bucketBadgeStatus(bucket: Bucket | null): 'success' | 'warning' | 'error' | 'default' {
     switch (bucket) {
       case 'depleted':
@@ -1033,16 +1030,7 @@ export default function ClientsPage() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      t,
-      togglingEmail,
-      clientBucket,
-      isOnline,
-      inboundsById,
-      filters,
-      datepicker,
-      clientSpeed,
-    ],
+    [t, togglingEmail, clientBucket, isOnline, inboundsById, filters, datepicker, clientSpeed],
   );
   const tablePagination = {
     current: currentPage,
