@@ -171,14 +171,13 @@ function readFilterState(): PersistedFilterState {
   try {
     const raw = JSON.parse(localStorage.getItem(FILTER_STATE_KEY) || '{}');
     const fromRaw = (raw.filters ?? {}) as Partial<ClientFilters>;
+    const fromBuckets = Array.isArray(fromRaw.buckets) ? fromRaw.buckets : [];
     return {
       searchKey: typeof raw.searchKey === 'string' ? raw.searchKey : '',
       filters: {
         ...emptyFilters(),
         ...fromRaw,
-        buckets: Array.isArray(fromRaw.buckets)
-          ? fromRaw.buckets.filter((b) => b !== 'expiring')
-          : [],
+        buckets: fromBuckets.filter((bucket) => bucket !== 'expiring'),
         protocols: Array.isArray(fromRaw.protocols) ? fromRaw.protocols : [],
         inboundIds: Array.isArray(fromRaw.inboundIds) ? fromRaw.inboundIds : [],
       },
