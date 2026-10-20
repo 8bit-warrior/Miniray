@@ -16,30 +16,21 @@ describe('computeTrafficDisplay', () => {
   });
 
   it('returns 100% bar for unlimited clients', () => {
-    const d = computeTrafficDisplay(
-      { up: 5 * gb, down: 2 * gb, total: 0, enabled: true },
-      false,
-    );
+    const d = computeTrafficDisplay({ up: 5 * gb, down: 2 * gb, total: 0, enabled: true }, false);
     expect(d.percent).toBe(100);
     expect(d.isUnlimited).toBe(true);
     expect(d.strokeColor).toBe('#722ed1');
   });
 
   it('marks depleted clients with exception status', () => {
-    const d = computeTrafficDisplay(
-      { up: gb, down: 0, total: gb, enabled: true },
-      false,
-    );
+    const d = computeTrafficDisplay({ up: gb, down: 0, total: gb, enabled: true }, false);
     expect(d.isDepleted).toBe(true);
     expect(d.status).toBe('exception');
     expect(d.percent).toBe(100);
   });
 
   it('uses gray stroke when client is disabled', () => {
-    const d = computeTrafficDisplay(
-      { up: 0.5 * gb, down: 0, total: gb, enabled: false },
-      false,
-    );
+    const d = computeTrafficDisplay({ up: 0.5 * gb, down: 0, total: gb, enabled: false }, false);
     expect(d.strokeColor).toBe('#bcbcbc');
     expect(d.status).toBeUndefined();
   });

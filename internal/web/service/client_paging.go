@@ -155,10 +155,10 @@ func clientSearchCond(variants []string) (string, []any) {
 // memory cost ~200ms per request at 20k clients on a page that polls every
 // 5 seconds, which is what made the table feel stuck on large panels.
 type clientQuery struct {
-	db               *gorm.DB
-	joins            []clientQueryJoin
-	usedExpr         string
-	nowMs            int64
+	db       *gorm.DB
+	joins    []clientQueryJoin
+	usedExpr string
+	nowMs    int64
 }
 
 type clientQueryJoin struct {
@@ -168,10 +168,10 @@ type clientQueryJoin struct {
 
 func newClientQuery(db *gorm.DB, nowMs int64) clientQuery {
 	q := clientQuery{
-		db:               db,
-		nowMs:            nowMs,
-		joins:            []clientQueryJoin{{sql: "LEFT JOIN client_traffics ct ON ct.email = c.email"}},
-		usedExpr:         "(COALESCE(ct.up, 0) + COALESCE(ct.down, 0))",
+		db:       db,
+		nowMs:    nowMs,
+		joins:    []clientQueryJoin{{sql: "LEFT JOIN client_traffics ct ON ct.email = c.email"}},
+		usedExpr: "(COALESCE(ct.up, 0) + COALESCE(ct.down, 0))",
 	}
 	return q
 }
