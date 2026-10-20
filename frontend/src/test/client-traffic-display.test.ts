@@ -7,7 +7,7 @@ describe('computeTrafficDisplay', () => {
 
   it('returns 50% for half-used limited quota', () => {
     const d = computeTrafficDisplay(
-      { up: 0.25 * gb, down: 0.25 * gb, total: gb, enabled: true, trafficDiff: 0 },
+      { up: 0.25 * gb, down: 0.25 * gb, total: gb, enabled: true },
       false,
     );
     expect(d.percent).toBe(50);
@@ -17,7 +17,7 @@ describe('computeTrafficDisplay', () => {
 
   it('returns 100% bar for unlimited clients', () => {
     const d = computeTrafficDisplay(
-      { up: 5 * gb, down: 2 * gb, total: 0, enabled: true, trafficDiff: 0 },
+      { up: 5 * gb, down: 2 * gb, total: 0, enabled: true },
       false,
     );
     expect(d.percent).toBe(100);
@@ -27,7 +27,7 @@ describe('computeTrafficDisplay', () => {
 
   it('marks depleted clients with exception status', () => {
     const d = computeTrafficDisplay(
-      { up: gb, down: 0, total: gb, enabled: true, trafficDiff: 0 },
+      { up: gb, down: 0, total: gb, enabled: true },
       false,
     );
     expect(d.isDepleted).toBe(true);
@@ -37,19 +37,15 @@ describe('computeTrafficDisplay', () => {
 
   it('uses gray stroke when client is disabled', () => {
     const d = computeTrafficDisplay(
-      { up: 0.5 * gb, down: 0, total: gb, enabled: false, trafficDiff: 0 },
+      { up: 0.5 * gb, down: 0, total: gb, enabled: false },
       false,
     );
     expect(d.strokeColor).toBe('#bcbcbc');
     expect(d.status).toBeUndefined();
   });
 
-  it('uses warning color near traffic limit', () => {
-    const diff = 0.1 * gb;
-    const d = computeTrafficDisplay(
-      { up: 0.95 * gb, down: 0, total: gb, enabled: true, trafficDiff: diff },
-      false,
-    );
-    expect(d.strokeColor).toBe('#faad14');
+  it('keeps the progress bar green until the quota is exhausted', () => {
+    const d = computeTrafficDisplay({ up: 0.95 * gb, down: 0, total: gb, enabled: true }, false);
+    expect(d.strokeColor).toBe('#389e0a');
   });
 });

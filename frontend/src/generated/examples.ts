@@ -2,7 +2,6 @@
 export const EXAMPLES: Record<string, unknown> = {
   "AllSetting": {
     "datepicker": "",
-    "expireDiff": 0,
     "externalSubUserAgent": "",
     "externalTrafficInformEnable": false,
     "externalTrafficInformURI": "",
@@ -136,7 +135,6 @@ export const EXAMPLES: Record<string, unknown> = {
     "subURI": "",
     "subUpdates": 0,
     "timeLocation": "",
-    "trafficDiff": 0,
     "trustedProxyCIDRs": "",
     "twoFactorEnable": false,
     "twoFactorToken": "",
@@ -150,7 +148,6 @@ export const EXAMPLES: Record<string, unknown> = {
   },
   "AllSettingView": {
     "datepicker": "",
-    "expireDiff": 0,
     "externalSubUserAgent": "",
     "externalTrafficInformEnable": false,
     "externalTrafficInformURI": "",
@@ -289,7 +286,6 @@ export const EXAMPLES: Record<string, unknown> = {
     "subURI": "",
     "subUpdates": 0,
     "timeLocation": "",
-    "trafficDiff": 0,
     "trustedProxyCIDRs": "",
     "twoFactorEnable": false,
     "twoFactorToken": "",
@@ -412,8 +408,6 @@ export const EXAMPLES: Record<string, unknown> = {
       "deactiveCount": 150,
       "depleted": [],
       "depletedCount": 0,
-      "expiring": [],
-      "expiringCount": 0,
       "online": [
         "alice@example.com"
       ],
@@ -523,8 +517,6 @@ export const EXAMPLES: Record<string, unknown> = {
     "deactiveCount": 150,
     "depleted": [],
     "depletedCount": 0,
-    "expiring": [],
-    "expiringCount": 0,
     "online": [
       "alice@example.com"
     ],

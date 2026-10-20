@@ -123,14 +123,7 @@ func pagedEmails(items []ClientSlim) []string {
 func setupPagingServices(t *testing.T) (*ClientService, *InboundService, *SettingService) {
 	t.Helper()
 	setupBulkDB(t)
-	settingSvc := &SettingService{}
-	if err := settingSvc.setInt("expireDiff", 3); err != nil {
-		t.Fatalf("set expireDiff: %v", err)
-	}
-	if err := settingSvc.setInt("trafficDiff", 1); err != nil {
-		t.Fatalf("set trafficDiff: %v", err)
-	}
-	return &ClientService{}, &InboundService{}, settingSvc
+	return &ClientService{}, &InboundService{}, &SettingService{}
 }
 
 func TestListPagedSorting(t *testing.T) {
@@ -299,25 +292,22 @@ func TestListPagedSummary(t *testing.T) {
 		if s.DepletedCount != 3 {
 			t.Fatalf("depletedCount = %d, want 3", s.DepletedCount)
 		}
-		if s.ExpiringCount != 2 {
-			t.Fatalf("expiringCount = %d, want 2", s.ExpiringCount)
-		}
 		if s.DeactiveCount != 1 {
 			t.Fatalf("deactiveCount = %d, want 1", s.DeactiveCount)
 		}
-		if s.Active != 6 {
-			t.Fatalf("active = %d, want 6", s.Active)
+		if s.Active != 8 {
+			t.Fatalf("active = %d, want 8", s.Active)
 		}
 	})
 
 	t.Run("every client lands in exactly one counter", func(t *testing.T) {
-		if sum := s.Active + s.DepletedCount + s.ExpiringCount + s.DeactiveCount; sum != s.Total {
+		if sum := s.Active + s.DepletedCount + s.DeactiveCount; sum != s.Total {
 			t.Fatalf("buckets sum to %d, want %d", sum, s.Total)
 		}
 	})
 
 	t.Run("clicking a stat card filters to exactly the clients it counts", func(t *testing.T) {
-		cards := map[string]int{"active": s.Active, "depleted": s.DepletedCount, "expiring": s.ExpiringCount, "deactive": s.DeactiveCount}
+		cards := map[string]int{"active": s.Active, "depleted": s.DepletedCount, "deactive": s.DeactiveCount}
 		for bucket, count := range cards {
 			page, err := svc.ListPaged(inboundSvc, settingSvc, ClientPageParams{PageSize: 50, Filter: bucket})
 			if err != nil {
@@ -332,9 +322,6 @@ func TestListPagedSummary(t *testing.T) {
 	t.Run("bucket lists carry the matching emails", func(t *testing.T) {
 		if want := []string{"charlie@x", "delta@x", "foxtrot@x"}; !slices.Equal(s.Depleted, want) {
 			t.Fatalf("depleted = %v, want %v", s.Depleted, want)
-		}
-		if want := []string{"golf@x", "hotel@x"}; !slices.Equal(s.Expiring, want) {
-			t.Fatalf("expiring = %v, want %v", s.Expiring, want)
 		}
 		if want := []string{"echo@x"}; !slices.Equal(s.Deactive, want) {
 			t.Fatalf("deactive = %v, want %v", s.Deactive, want)
@@ -371,7 +358,7 @@ func TestClientQueryOnlineEmails(t *testing.T) {
 	_, _, _ = setupPagingServices(t)
 	seedPagingClients(t)
 
-	q := newClientQuery(database.GetDB(), time.Now().UnixMilli(), 0, 0)
+	q := newClientQuery(database.GetDB(), time.Now().UnixMilli())
 	emails, count, err := q.onlineEmails([]string{"alpha@x", "echo@x", "ghost@x", "kilo1@x"})
 	if err != nil {
 		t.Fatalf("onlineEmails: %v", err)

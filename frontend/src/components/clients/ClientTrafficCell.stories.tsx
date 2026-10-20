@@ -31,10 +31,6 @@ const meta = {
     down: { description: 'Downloaded bytes counted against the client.' },
     total: { description: 'Traffic quota in bytes; 0 or less renders as unlimited.' },
     enabled: { description: 'Grays the bar out when the client is disabled.' },
-    trafficDiff: {
-      description:
-        'Headroom in bytes below the quota at which the bar shifts from green to orange.',
-    },
     compact: { description: 'Smaller bar and tighter layout for dense table rows.' },
   },
 } satisfies Meta<typeof ClientTrafficCell>;
@@ -48,7 +44,6 @@ export const Default: Story = {
     up: 6 * GiB,
     down: 35 * GiB,
     total: 100 * GiB,
-    trafficDiff: 5 * GiB,
   },
 };
 
@@ -65,7 +60,6 @@ export const Depleted: Story = {
     up: 9 * GiB,
     down: 42 * GiB,
     total: 50 * GiB,
-    trafficDiff: 5 * GiB,
   },
 };
 

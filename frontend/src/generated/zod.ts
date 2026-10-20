@@ -23,7 +23,6 @@ export type transportBits = z.infer<typeof transportBitsSchema>;
 
 export const AllSettingSchema = z.object({
   datepicker: z.string(),
-  expireDiff: z.number().int().min(0),
   externalSubUserAgent: z.string(),
   externalTrafficInformEnable: z.boolean(),
   externalTrafficInformURI: z.string(),
@@ -157,7 +156,6 @@ export const AllSettingSchema = z.object({
   subURI: z.string(),
   subUpdates: z.number().int().min(0).max(525600),
   timeLocation: z.string(),
-  trafficDiff: z.number().int().min(0).max(100),
   trustedProxyCIDRs: z.string(),
   twoFactorEnable: z.boolean(),
   twoFactorToken: z.string(),
@@ -173,7 +171,6 @@ export type AllSetting = z.infer<typeof AllSettingSchema>;
 
 export const AllSettingViewSchema = z.object({
   datepicker: z.string(),
-  expireDiff: z.number().int().min(0),
   externalSubUserAgent: z.string(),
   externalTrafficInformEnable: z.boolean(),
   externalTrafficInformURI: z.string(),
@@ -312,7 +309,6 @@ export const AllSettingViewSchema = z.object({
   subURI: z.string(),
   subUpdates: z.number().int().min(0).max(525600),
   timeLocation: z.string(),
-  trafficDiff: z.number().int().min(0).max(100),
   trustedProxyCIDRs: z.string(),
   twoFactorEnable: z.boolean(),
   twoFactorToken: z.string(),
@@ -513,8 +509,6 @@ export const ClientsSummarySchema = z.object({
   deactiveCount: z.number().int(),
   depleted: z.array(z.string()),
   depletedCount: z.number().int(),
-  expiring: z.array(z.string()),
-  expiringCount: z.number().int(),
   online: z.array(z.string()),
   onlineCount: z.number().int(),
   total: z.number().int(),

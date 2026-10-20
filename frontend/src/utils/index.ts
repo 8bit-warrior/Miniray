@@ -830,15 +830,12 @@ export class ColorUtils {
 
   static clientUsageColor(
     clientStats: ClientUsageStats | null | undefined,
-    trafficDiff: number,
   ): string {
     switch (true) {
       case !clientStats || clientStats.total == 0:
         return COLORS.purple;
-      case clientStats!.up + clientStats!.down < clientStats!.total - trafficDiff:
-        return COLORS.success;
       case clientStats!.up + clientStats!.down < clientStats!.total:
-        return COLORS.warning;
+        return COLORS.success;
       default:
         return COLORS.danger;
     }

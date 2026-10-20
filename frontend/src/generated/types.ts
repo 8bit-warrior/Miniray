@@ -9,7 +9,6 @@ export type transportBits = number;
 
 export interface AllSetting {
   datepicker: string;
-  expireDiff: number;
   externalSubUserAgent: string;
   externalTrafficInformEnable: boolean;
   externalTrafficInformURI: string;
@@ -143,7 +142,6 @@ export interface AllSetting {
   subURI: string;
   subUpdates: number;
   timeLocation: string;
-  trafficDiff: number;
   trustedProxyCIDRs: string;
   twoFactorEnable: boolean;
   twoFactorToken: string;
@@ -158,7 +156,6 @@ export interface AllSetting {
 
 export interface AllSettingView {
   datepicker: string;
-  expireDiff: number;
   externalSubUserAgent: string;
   externalTrafficInformEnable: boolean;
   externalTrafficInformURI: string;
@@ -297,7 +294,6 @@ export interface AllSettingView {
   subURI: string;
   subUpdates: number;
   timeLocation: string;
-  trafficDiff: number;
   trustedProxyCIDRs: string;
   twoFactorEnable: boolean;
   twoFactorToken: string;
@@ -485,8 +481,6 @@ export interface ClientsSummary {
   deactiveCount: number;
   depleted: string[];
   depletedCount: number;
-  expiring: string[];
-  expiringCount: number;
   online: string[];
   onlineCount: number;
   total: number;

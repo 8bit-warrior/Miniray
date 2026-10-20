@@ -69,8 +69,6 @@ var defaultValueMap = map[string]string{
 	"realityScanCandidates":       DefaultRealityScanCandidatesCSV,
 	"ipLimitAllowlist":            "",
 	"pageSize":                    "25",
-	"expireDiff":                  "0",
-	"trafficDiff":                 "0",
 	"remarkTemplate":              DefaultRemarkTemplate,
 	"subShowIdentityOnAllLinks":   "false",
 	"subInfoNodeEnable":           "false",
@@ -585,14 +583,6 @@ func (s *SettingService) SetKeyFile(webKeyFile string) error {
 
 func (s *SettingService) GetKeyFile() (string, error) {
 	return s.getString("webKeyFile")
-}
-
-func (s *SettingService) GetExpireDiff() (int, error) {
-	return s.getInt("expireDiff")
-}
-
-func (s *SettingService) GetTrafficDiff() (int, error) {
-	return s.getInt("trafficDiff")
 }
 
 func (s *SettingService) GetSessionMaxAge() (int, error) {
@@ -1531,8 +1521,6 @@ func (s *SettingService) BuildSubURIBase(host string) string {
 func (s *SettingService) GetDefaultSettings(host string) (any, error) {
 	type settingFunc func() (any, error)
 	settings := map[string]settingFunc{
-		"expireDiff":       func() (any, error) { return s.GetExpireDiff() },
-		"trafficDiff":      func() (any, error) { return s.GetTrafficDiff() },
 		"pageSize":         func() (any, error) { return s.GetPageSize() },
 		"defaultCert":      func() (any, error) { return s.GetCertFile() },
 		"defaultKey":       func() (any, error) { return s.GetKeyFile() },

@@ -24,8 +24,6 @@ export const AllSettingSchema = z
     ipLimitAllowlist: z.string().optional(),
     panelOutbound: z.string().optional(),
     pageSize: z.number().int().min(0).max(1000).optional(),
-    expireDiff: nonNegativeInt.optional(),
-    trafficDiff: nonNegativeInt.max(100).optional(),
     remarkTemplate: z.string().optional(),
     subShowIdentityOnAllLinks: z.boolean().optional(),
     subInfoNodeEnable: z.boolean().optional(),

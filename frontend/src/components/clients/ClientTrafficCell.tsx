@@ -13,7 +13,6 @@ export interface ClientTrafficCellProps {
   down?: number;
   total?: number;
   enabled?: boolean;
-  trafficDiff?: number;
   compact?: boolean;
 }
 
@@ -26,15 +25,14 @@ const ClientTrafficCell = memo(function ClientTrafficCell({
   down = 0,
   total = 0,
   enabled = true,
-  trafficDiff = 0,
   compact = false,
 }: ClientTrafficCellProps) {
   const { t } = useTranslation();
   const { isDark } = useTheme();
 
   const display = useMemo(
-    () => computeTrafficDisplay({ up, down, total, enabled, trafficDiff }, isDark),
-    [up, down, total, enabled, trafficDiff, isDark],
+    () => computeTrafficDisplay({ up, down, total, enabled }, isDark),
+    [up, down, total, enabled, isDark],
   );
 
   const popover = (

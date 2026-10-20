@@ -27,7 +27,7 @@ interface FilterDrawerProps {
   inbounds: InboundOption[];
   protocols: string[];
 }
-const BUCKET_KEYS = ['active', 'expiring', 'depleted', 'deactive', 'online'] as const;
+const BUCKET_KEYS = ['active', 'depleted', 'deactive', 'online'] as const;
 export default function FilterDrawer({
   open,
   onOpenChange,
@@ -186,8 +186,6 @@ function bucketLabel(key: string, t: (k: string) => string): string {
   switch (key) {
     case 'active':
       return t('subscription.active');
-    case 'expiring':
-      return t('depletingSoon');
     case 'depleted':
       return t('depleted');
     case 'deactive':

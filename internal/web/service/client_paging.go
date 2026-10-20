@@ -85,11 +85,9 @@ type ClientsSummary struct {
 	Active        int      `json:"active" example:"1850"`
 	OnlineCount   int      `json:"onlineCount" example:"1"`
 	DepletedCount int      `json:"depletedCount" example:"0"`
-	ExpiringCount int      `json:"expiringCount" example:"0"`
 	DeactiveCount int      `json:"deactiveCount" example:"150"`
 	Online        []string `json:"online" example:"[\"alice@example.com\"]"`
 	Depleted      []string `json:"depleted" example:"[]"`
-	Expiring      []string `json:"expiring" example:"[]"`
 	Deactive      []string `json:"deactive" example:"[\"bob@example.com\"]"`
 }
 
@@ -161,8 +159,6 @@ type clientQuery struct {
 	joins            []clientQueryJoin
 	usedExpr         string
 	nowMs            int64
-	expireDiffMs     int64
-	trafficDiffBytes int64
 }
 
 type clientQueryJoin struct {
@@ -170,12 +166,10 @@ type clientQueryJoin struct {
 	args []any
 }
 
-func newClientQuery(db *gorm.DB, nowMs, expireDiffMs, trafficDiffBytes int64) clientQuery {
+func newClientQuery(db *gorm.DB, nowMs int64) clientQuery {
 	q := clientQuery{
 		db:               db,
 		nowMs:            nowMs,
-		expireDiffMs:     expireDiffMs,
-		trafficDiffBytes: trafficDiffBytes,
 		joins:            []clientQueryJoin{{sql: "LEFT JOIN client_traffics ct ON ct.email = c.email"}},
 		usedExpr:         "(COALESCE(ct.up, 0) + COALESCE(ct.down, 0))",
 	}
@@ -195,17 +189,8 @@ func (q clientQuery) depletedExpr() string {
 		" OR (c.expiry_time > 0 AND c.expiry_time <= " + sqlInt(q.nowMs) + "))"
 }
 
-func (q clientQuery) nearDepletionExpr() string {
-	return "((c.expiry_time > 0 AND c.expiry_time - " + sqlInt(q.nowMs) + " < " + sqlInt(q.expireDiffMs) + ")" +
-		" OR (c.total_gb > 0 AND c.total_gb - " + q.usedExpr + " < " + sqlInt(q.trafficDiffBytes) + "))"
-}
-
-func (q clientQuery) expiringExpr() string {
-	return "(" + sqlClientEnabled + " AND NOT " + q.depletedExpr() + " AND " + q.nearDepletionExpr() + ")"
-}
-
 func (q clientQuery) activeExpr() string {
-	return "(" + sqlClientEnabled + " AND NOT " + q.depletedExpr() + " AND NOT " + q.nearDepletionExpr() + ")"
+	return "(" + sqlClientEnabled + " AND NOT " + q.depletedExpr() + ")"
 }
 
 // deactiveExpr leaves a disabled client that also ran out to depleted, so the
@@ -284,8 +269,6 @@ func (q clientQuery) bucketCond(buckets, onlines []string) (string, []any) {
 			conds = append(conds, q.deactiveExpr())
 		case "depleted":
 			conds = append(conds, q.depletedExpr())
-		case "expiring":
-			conds = append(conds, q.expiringExpr())
 		case "online":
 			cond, inArgs := emailInCond("c.email", onlines)
 			conds = append(conds, "("+sqlClientEnabled+" AND "+cond+")")
@@ -338,7 +321,7 @@ func (q clientQuery) applyOrder(tx *gorm.DB, sortKey, order string) *gorm.DB {
 // ListPaged returns one page of clients together with the counts the clients
 // page header needs. Every predicate runs in SQL, so the cost tracks the page
 // size rather than the number of clients on the panel.
-func (s *ClientService) ListPaged(inboundSvc *InboundService, settingSvc *SettingService, params ClientPageParams) (*ClientPageResponse, error) {
+func (s *ClientService) ListPaged(inboundSvc *InboundService, _ *SettingService, params ClientPageParams) (*ClientPageResponse, error) {
 	db := database.GetDB()
 
 	pageSize := params.PageSize
@@ -353,18 +336,8 @@ func (s *ClientService) ListPaged(inboundSvc *InboundService, settingSvc *Settin
 		page = 1
 	}
 
-	var expireDiffMs, trafficDiffBytes int64
-	if settingSvc != nil {
-		if v, err := settingSvc.GetExpireDiff(); err == nil {
-			expireDiffMs = int64(v) * 86400000
-		}
-		if v, err := settingSvc.GetTrafficDiff(); err == nil {
-			trafficDiffBytes = int64(v) * 1073741824
-		}
-	}
-
 	onlines := inboundSvc.GetOnlineClients()
-	q := newClientQuery(db, time.Now().UnixMilli(), expireDiffMs, trafficDiffBytes)
+	q := newClientQuery(db, time.Now().UnixMilli())
 
 	var total int64
 	if err := db.Model(&model.ClientRecord{}).Count(&total).Error; err != nil {
@@ -472,14 +445,12 @@ func (q clientQuery) summary(onlines []string, total int) (ClientsSummary, error
 		Total:    total,
 		Online:   []string{},
 		Depleted: []string{},
-		Expiring: []string{},
 		Deactive: []string{},
 	}
 
 	var counts struct {
 		Active   int64
 		Depleted int64
-		Expiring int64
 		Deactive int64
 	}
 	// SUM over an empty table yields NULL, which not every driver scans into an
@@ -487,14 +458,12 @@ func (q clientQuery) summary(onlines []string, total int) (ClientsSummary, error
 	if err := q.from().Select(
 		"COALESCE(SUM(CASE WHEN " + q.activeExpr() + " THEN 1 ELSE 0 END), 0) AS active," +
 			" COALESCE(SUM(CASE WHEN " + q.depletedExpr() + " THEN 1 ELSE 0 END), 0) AS depleted," +
-			" COALESCE(SUM(CASE WHEN " + q.expiringExpr() + " THEN 1 ELSE 0 END), 0) AS expiring," +
 			" COALESCE(SUM(CASE WHEN " + q.deactiveExpr() + " THEN 1 ELSE 0 END), 0) AS deactive",
 	).Scan(&counts).Error; err != nil {
 		return s, err
 	}
 	s.Active = int(counts.Active)
 	s.DepletedCount = int(counts.Depleted)
-	s.ExpiringCount = int(counts.Expiring)
 	s.DeactiveCount = int(counts.Deactive)
 
 	buckets := []struct {
@@ -503,7 +472,6 @@ func (q clientQuery) summary(onlines []string, total int) (ClientsSummary, error
 		out   *[]string
 	}{
 		{q.depletedExpr(), s.DepletedCount, &s.Depleted},
-		{q.expiringExpr(), s.ExpiringCount, &s.Expiring},
 		{q.deactiveExpr(), s.DeactiveCount, &s.Deactive},
 	}
 	for _, b := range buckets {

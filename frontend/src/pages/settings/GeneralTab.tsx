@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Input, InputNumber, Select, Switch, Tabs } from 'antd';
 import {
   ApartmentOutlined,
-  BellOutlined,
   ClockCircleOutlined,
   GlobalOutlined,
   SafetyCertificateOutlined,
@@ -326,43 +325,6 @@ export default function GeneralTab({
                 <Switch
                   checked={allSetting.restartXrayOnClientDisable}
                   onChange={(v) => updateSetting({ restartXrayOnClientDisable: v })}
-                />
-              </SettingListItem>
-            </>
-          ),
-        },
-        {
-          key: '2',
-          label: catTabLabel(<BellOutlined />, t('pages.settings.notifications'), isMobile),
-          children: (
-            <>
-              <SettingListItem
-                paddings="small"
-                title={t('pages.settings.expireTimeDiff')}
-                badge={<DefaultSettingTag settingKey="expireDiff" value={allSetting.expireDiff} />}
-                description={t('pages.settings.expireTimeDiffDesc')}
-              >
-                <InputNumber
-                  value={allSetting.expireDiff}
-                  min={0}
-                  style={{ width: '100%' }}
-                  onChange={onNumber((v) => updateSetting({ expireDiff: v }))}
-                />
-              </SettingListItem>
-              <SettingListItem
-                paddings="small"
-                title={t('pages.settings.trafficDiff')}
-                badge={
-                  <DefaultSettingTag settingKey="trafficDiff" value={allSetting.trafficDiff} />
-                }
-                description={t('pages.settings.trafficDiffDesc')}
-              >
-                <InputNumber
-                  value={allSetting.trafficDiff}
-                  min={0}
-                  max={100}
-                  style={{ width: '100%' }}
-                  onChange={onNumber((v) => updateSetting({ trafficDiff: v }))}
                 />
               </SettingListItem>
             </>

@@ -2285,6 +2285,9 @@ func InitDB(dbPath string) error {
 	if err := initModels(); err != nil {
 		return err
 	}
+	if err := db.Where("key IN ?", []string{"expireDiff", "trafficDiff"}).Delete(&model.Setting{}).Error; err != nil {
+		return err
+	}
 
 	isUsersEmpty, err := isTableEmpty("users")
 	if err != nil {

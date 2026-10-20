@@ -96,9 +96,6 @@
 .dot-red {
   background: var(--ant-color-error);
 }
-.dot-orange {
-  background: var(--ant-color-warning);
-}
 .dot-gray {
   background: var(--ant-color-text-quaternary);
 }

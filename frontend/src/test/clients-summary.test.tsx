@@ -31,11 +31,9 @@ describe('client summary always reflects the server, never a client_stats recomp
     active: 3,
     onlineCount: 0,
     depletedCount: 0,
-    expiringCount: 0,
     deactiveCount: 0,
     online: [],
     depleted: [],
-    expiring: [],
     deactive: [],
   };
 

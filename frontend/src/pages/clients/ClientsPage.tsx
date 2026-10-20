@@ -139,7 +139,7 @@ function SummaryStat({ title, value, prefix, emails, selected, onSelect }: Summa
     </Popover>
   );
 }
-type Bucket = 'active' | 'deactive' | 'depleted' | 'expiring';
+type Bucket = 'active' | 'deactive' | 'depleted';
 interface PersistedFilterState {
   searchKey: string;
   filters: ClientFilters;
@@ -176,7 +176,7 @@ function readFilterState(): PersistedFilterState {
       filters: {
         ...emptyFilters(),
         ...fromRaw,
-        buckets: Array.isArray(fromRaw.buckets) ? fromRaw.buckets : [],
+        buckets: Array.isArray(fromRaw.buckets) ? fromRaw.buckets.filter((b) => b !== 'expiring') : [],
         protocols: Array.isArray(fromRaw.protocols) ? fromRaw.protocols : [],
         inboundIds: Array.isArray(fromRaw.inboundIds) ? fromRaw.inboundIds : [],
       },
@@ -279,8 +279,6 @@ export default function ClientsPage() {
     fetched,
     fetchError,
     subSettings,
-    expireDiff,
-    trafficDiff,
     pageSize,
     settingsReady,
     create,
@@ -476,20 +474,14 @@ export default function ClientsPage() {
       const exhausted = total > 0 && used >= total;
       if (expired || exhausted) return 'depleted';
       if (!row.enable) return 'deactive';
-      const nearExpiry =
-        (row.expiryTime ?? 0) > 0 && (row.expiryTime ?? 0) - now < (expireDiff || 0);
-      const nearLimit = total > 0 && total - used < (trafficDiff || 0);
-      if (nearExpiry || nearLimit) return 'expiring';
       return 'active';
     },
-    [expireDiff, trafficDiff],
+    [],
   );
   function bucketBadgeStatus(bucket: Bucket | null): 'success' | 'warning' | 'error' | 'default' {
     switch (bucket) {
       case 'depleted':
         return 'error';
-      case 'expiring':
-        return 'warning';
       case 'active':
         return 'success';
       default:
@@ -952,7 +944,6 @@ export default function ClientsPage() {
               </Tag>
             );
           if (!record.enable) return <Tag>{t('disabled')}</Tag>;
-          if (bucket === 'expiring') return <Tag color="orange">{t('depletingSoon')}</Tag>;
           return (
             <Tooltip title={lastOnlineTitle}>
               <Tag>{t('pages.clients.offline')}</Tag>
@@ -1001,7 +992,6 @@ export default function ClientsPage() {
             down={record.traffic?.down}
             total={record.totalGB}
             enabled={record.enable}
-            trafficDiff={trafficDiff}
           />
         ),
       },
@@ -1050,7 +1040,6 @@ export default function ClientsPage() {
       inboundsById,
       filters,
       datepicker,
-      trafficDiff,
       clientSpeed,
     ],
   );
@@ -1154,16 +1143,6 @@ export default function ClientsPage() {
                             prefix={<span className="dot dot-red" />}
                             selected={isOnlyBucket('depleted')}
                             onSelect={() => selectBucket('depleted')}
-                          />
-                        </Col>
-                        <Col xs={12} sm={8} md={4}>
-                          <SummaryStat
-                            title={t('depletingSoon')}
-                            value={summary.expiringCount}
-                            emails={summary.expiring}
-                            prefix={<span className="dot dot-orange" />}
-                            selected={isOnlyBucket('expiring')}
-                            onSelect={() => selectBucket('expiring')}
                           />
                         </Col>
                         <Col xs={12} sm={8} md={4}>
@@ -1549,11 +1528,6 @@ export default function ClientsPage() {
                                         {t('depleted')}
                                       </Tag>
                                     )}
-                                    {bucket === 'expiring' && (
-                                      <Tag color="orange" className="status-tag">
-                                        {t('depletingSoon')}
-                                      </Tag>
-                                    )}
                                     <div className="card-actions">
                                       <Tooltip title={t('pages.clients.clientInfo')}>
                                         <InfoCircleOutlined
@@ -1634,7 +1608,6 @@ export default function ClientsPage() {
                                     down={row.traffic?.down}
                                     total={row.totalGB}
                                     enabled={row.enable}
-                                    trafficDiff={trafficDiff}
                                   />
                                   {(() => {
                                     const speed = clientSpeed[row.email];
@@ -1805,8 +1778,6 @@ function bucketChipLabel(b: string, t: (k: string) => string): string {
   switch (b) {
     case 'active':
       return t('subscription.active');
-    case 'expiring':
-      return t('depletingSoon');
     case 'depleted':
       return t('depleted');
     case 'deactive':

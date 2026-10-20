@@ -76,11 +76,9 @@ const DEFAULT_SUMMARY: ClientsSummary = {
   active: 0,
   onlineCount: 0,
   depletedCount: 0,
-  expiringCount: 0,
   deactiveCount: 0,
   online: [],
   depleted: [],
-  expiring: [],
   deactive: [],
 };
 export interface ClientSpeedEntry {
@@ -259,8 +257,6 @@ export function useClients(options: UseClientsOptions = {}) {
     ],
   );
   const ipLimitEnable = !!defaults.ipLimitEnable;
-  const expireDiff = ((defaults.expireDiff as number) ?? 0) * 86400000;
-  const trafficDiff = ((defaults.trafficDiff as number) ?? 0) * 1073741824;
   const pageSize = (defaults.pageSize as number) ?? 0;
   // pageSize 0 means "one long page", which is indistinguishable from "the
   // settings have not arrived yet" — so callers need this flag to know when the
@@ -714,8 +710,6 @@ export function useClients(options: UseClientsOptions = {}) {
     fetchError,
     subSettings,
     ipLimitEnable,
-    expireDiff,
-    trafficDiff,
     pageSize,
     settingsReady,
     refresh,

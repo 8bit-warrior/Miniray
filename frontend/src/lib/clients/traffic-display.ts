@@ -5,7 +5,6 @@ export interface TrafficDisplayInput {
   down: number;
   total: number;
   enabled: boolean;
-  trafficDiff: number;
 }
 
 export interface TrafficDisplay {
@@ -46,7 +45,7 @@ export function computeTrafficDisplay(input: TrafficDisplayInput, isDark: boolea
   } else if (isUnlimited) {
     strokeColor = UNLIMITED_STROKE;
   } else {
-    strokeColor = ColorUtils.clientUsageColor({ up, down, total }, input.trafficDiff);
+    strokeColor = ColorUtils.clientUsageColor({ up, down, total });
   }
 
   return {
