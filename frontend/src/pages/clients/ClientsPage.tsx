@@ -176,7 +176,9 @@ function readFilterState(): PersistedFilterState {
       filters: {
         ...emptyFilters(),
         ...fromRaw,
-        buckets: Array.isArray(fromRaw.buckets) ? fromRaw.buckets.filter((b) => b !== 'expiring') : [],
+        buckets: Array.isArray(fromRaw.buckets)
+          ? fromRaw.buckets.filter((b) => b !== 'expiring')
+          : [],
         protocols: Array.isArray(fromRaw.protocols) ? fromRaw.protocols : [],
         inboundIds: Array.isArray(fromRaw.inboundIds) ? fromRaw.inboundIds : [],
       },

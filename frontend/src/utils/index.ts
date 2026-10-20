@@ -828,9 +828,7 @@ export class ColorUtils {
     }
   }
 
-  static clientUsageColor(
-    clientStats: ClientUsageStats | null | undefined,
-  ): string {
+  static clientUsageColor(clientStats: ClientUsageStats | null | undefined): string {
     switch (true) {
       case !clientStats || clientStats.total == 0:
         return COLORS.purple;
