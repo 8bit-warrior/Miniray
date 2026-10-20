@@ -1,5 +1,5 @@
 name: Build Miniray packages
-# Package workflow runs on version tags, manual dispatch, or an explicit main build request.
+# Main branch package builds require an explicit [build-packages] request.
 on:
   push:
     tags: ['v*.*.*']
